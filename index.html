@@ -41,195 +41,11 @@
         font-size: 0.9em;
       }
 
-      .mode-selector {
-        text-align: center;
-        margin-bottom: 30px;
-      }
-
-      .mode-btn {
-        background: white;
-        color: #667eea;
-        border: 2px solid #667eea;
-        padding: 15px 40px;
-        font-size: 1.1em;
-        font-weight: 600;
-        border-radius: 10px;
-        cursor: pointer;
-        margin: 0 10px;
-        transition: all 0.3s;
-      }
-
-      .mode-btn:hover {
-        background: #667eea;
-        color: white;
-        transform: translateY(-2px);
-      }
-
-      .mode-btn.active {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-color: #764ba2;
-      }
-
-      .join-section {
-        display: none;
-        background: #f8f9fa;
-        padding: 30px;
-        border-radius: 15px;
-        margin-bottom: 30px;
-      }
-
-      .join-section.active {
-        display: block;
-      }
-
-      .join-input-group {
-        max-width: 500px;
-        margin: 0 auto 20px;
-      }
-
-      .join-input-group label {
-        display: block;
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 10px;
-        font-size: 1.1em;
-        text-align: center;
-      }
-
-      .join-input-group input {
-        width: 100%;
-        padding: 15px;
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        font-size: 1.1em;
-        text-align: center;
-        transition: all 0.3s;
-      }
-
-      .join-input-group input:focus {
-        outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-      }
-
-      .tournament-code-display {
-        background: #e8eaf6;
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-        text-align: center;
-      }
-
-      .tournament-code-display h3 {
-        color: #667eea;
-        margin-bottom: 10px;
-      }
-
-      .code-box {
-        background: white;
-        padding: 15px 30px;
-        border-radius: 8px;
-        font-size: 2em;
-        font-weight: 700;
-        color: #667eea;
-        letter-spacing: 3px;
-        display: inline-block;
-        margin: 10px 0;
-        border: 3px solid #667eea;
-      }
-
-      .copy-btn {
-        background: #28a745;
-        color: white;
-        border: none;
-        padding: 10px 25px;
-        font-size: 0.9em;
-        font-weight: 600;
-        border-radius: 8px;
-        cursor: pointer;
-        margin-left: 10px;
-        transition: all 0.2s;
-      }
-
-      .copy-btn:hover {
-        background: #218838;
-        transform: scale(1.05);
-      }
-
-      .share-info {
-        margin-top: 15px;
-        padding: 15px;
-        background: #fff3cd;
-        border-radius: 8px;
-        color: #856404;
-        font-size: 0.9em;
-      }
-
-      .connection-status {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 10px 20px;
-        border-radius: 20px;
-        font-size: 0.9em;
-        font-weight: 600;
-        display: none;
-        align-items: center;
-        gap: 8px;
-        z-index: 1000;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      }
-
-      .connection-status.connected {
-        background: #d4edda;
-        color: #155724;
-        border: 2px solid #28a745;
-        display: flex;
-      }
-
-      .connection-status.disconnected {
-        background: #f8d7da;
-        color: #721c24;
-        border: 2px solid #dc3545;
-        display: flex;
-      }
-
-      .status-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        animation: pulse 2s infinite;
-      }
-
-      .status-dot.green {
-        background: #28a745;
-      }
-
-      .status-dot.red {
-        background: #dc3545;
-      }
-
-      @keyframes pulse {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.5;
-        }
-      }
-
       .input-section {
         background: #f8f9fa;
         padding: 30px;
         border-radius: 15px;
         margin-bottom: 30px;
-        display: none;
-      }
-
-      .input-section.active {
-        display: block;
       }
 
       .player-count-selector {
@@ -379,17 +195,10 @@
       .header-actions {
         display: flex;
         gap: 10px;
-        flex-wrap: wrap;
       }
 
       .reset-btn {
         background: #6c757d;
-        padding: 10px 25px;
-        font-size: 0.9em;
-      }
-
-      .leave-btn {
-        background: #dc3545;
         padding: 10px 25px;
         font-size: 0.9em;
       }
@@ -748,53 +557,14 @@
         font-size: 0.9em;
         margin-top: 5px;
       }
-
-      .error-message {
-        background: #f8d7da;
-        color: #721c24;
-        padding: 15px;
-        border-radius: 8px;
-        margin: 20px 0;
-        border: 2px solid #dc3545;
-        text-align: center;
-      }
     </style>
   </head>
   <body>
-    <div class="connection-status" id="connectionStatus">
-      <div class="status-dot"></div>
-      <span id="statusText">Connecting...</span>
-    </div>
-
     <div class="container">
       <h1>🏆 Dynamic Tournament Generator</h1>
       <p class="subtitle">
-        Best of 3 Format | Real-time Sync | Advanced Ranking System
+        Best of 3 Format | Advanced Ranking System | Quality of Wins Matters
       </p>
-
-      <div class="mode-selector" id="modeSelector">
-        <button class="mode-btn" onclick="selectMode('create')">
-          Create Tournament
-        </button>
-        <button class="mode-btn" onclick="selectMode('join')">
-          Join Tournament
-        </button>
-      </div>
-
-      <div class="join-section" id="joinSection">
-        <div class="join-input-group">
-          <label for="tournamentCode">Enter Tournament Code:</label>
-          <input
-            type="text"
-            id="tournamentCode"
-            placeholder="e.g., ABC123"
-            maxlength="6"
-            style="text-transform: uppercase"
-          />
-        </div>
-        <button class="btn" onclick="joinTournament()">Join Tournament</button>
-        <div id="joinError"></div>
-      </div>
 
       <div class="input-section" id="inputSection">
         <div class="player-count-selector">
@@ -815,10 +585,9 @@
 
         <div class="matches-per-player-selector">
           <label for="matchesPerPlayer">Matches Per Player:</label>
-          <select
-            id="matchesPerPlayer"
-            onchange="updateTournamentInfo()"
-          ></select>
+          <select id="matchesPerPlayer" onchange="updateTournamentInfo()">
+            <!-- Options will be populated dynamically -->
+          </select>
           <div class="matches-info" id="matchesInfo"></div>
         </div>
 
@@ -830,31 +599,14 @@
       </div>
 
       <div id="bracket">
-        <div
-          class="tournament-code-display"
-          id="codeDisplay"
-          style="display: none"
-        >
-          <h3>🔗 Share this code with other players:</h3>
-          <div>
-            <span class="code-box" id="displayCode"></span>
-            <button class="copy-btn" onclick="copyTournamentCode()">
-              📋 Copy
-            </button>
-          </div>
-          <div class="share-info">
-            Others can join by clicking "Join Tournament" and entering this code
-          </div>
-        </div>
-
         <div class="header-bar">
           <div>
             <h2>Tournament Matches</h2>
             <div class="progress-text" id="progressText"></div>
           </div>
           <div class="header-actions">
-            <button class="btn leave-btn" onclick="leaveTournament()">
-              Leave Tournament
+            <button class="btn reset-btn" onclick="resetTournament()">
+              New Tournament
             </button>
           </div>
         </div>
@@ -881,7 +633,10 @@
                 <li>Game Won: +1 pt</li>
                 <li>Game Lost: -0.5 pts</li>
               </ul>
-              <em style="font-size: 0.9em">Tiebreaker: Quality of wins</em>
+              <em style="font-size: 0.9em"
+                >Tiebreaker: Quality of wins (beating higher-ranked
+                opponents)</em
+              >
             </div>
             <div class="standings-table" id="standingsTable"></div>
           </div>
@@ -891,172 +646,13 @@
       </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
     <script>
-      // Firebase configuration - REPLACE WITH YOUR OWN CONFIG
-      const firebaseConfig = {
-        apiKey: "",
-        authDomain: "",
-        databaseURL:
-          "",
-        projectId: "",
-        storageBucket: "",
-        messagingSenderId: "",
-        appId: "",
-      };
-
-      // Initialize Firebase
-      let app, database, tournamentRef, currentTournamentCode;
-      let isFirebaseInitialized = false;
-
-      try {
-        app = firebase.initializeApp(firebaseConfig);
-        database = firebase.database();
-        isFirebaseInitialized = true;
-        updateConnectionStatus(true);
-      } catch (error) {
-        console.error("Firebase initialization error:", error);
-        updateConnectionStatus(false);
-      }
-
       let players = [];
       let matches = [];
       let playerCount = 7;
       let matchesPerPlayer = 3;
-      let isCreator = false;
 
-      function updateConnectionStatus(connected) {
-        const statusEl = document.getElementById("connectionStatus");
-        const statusText = document.getElementById("statusText");
-        const statusDot = statusEl.querySelector(".status-dot");
-
-        if (connected) {
-          statusEl.className = "connection-status connected";
-          statusText.textContent = "Connected";
-          statusDot.className = "status-dot green";
-        } else {
-          statusEl.className = "connection-status disconnected";
-          statusText.textContent = "Disconnected";
-          statusDot.className = "status-dot red";
-        }
-      }
-
-      // Monitor connection status
-      if (isFirebaseInitialized) {
-        const connectedRef = database.ref(".info/connected");
-        connectedRef.on("value", (snap) => {
-          updateConnectionStatus(snap.val() === true);
-        });
-      }
-
-      function generateTournamentCode() {
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        let code = "";
-        for (let i = 0; i < 6; i++) {
-          code += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return code;
-      }
-
-      function selectMode(mode) {
-        document.querySelectorAll(".mode-btn").forEach((btn) => {
-          btn.classList.remove("active");
-        });
-        event.target.classList.add("active");
-
-        document.getElementById("joinSection").classList.remove("active");
-        document.getElementById("inputSection").classList.remove("active");
-
-        if (mode === "create") {
-          document.getElementById("inputSection").classList.add("active");
-        } else {
-          document.getElementById("joinSection").classList.add("active");
-        }
-      }
-
-      async function joinTournament() {
-        if (!isFirebaseInitialized) {
-          showError(
-            "joinError",
-            "Firebase is not configured. Please check console."
-          );
-          return;
-        }
-
-        const code = document
-          .getElementById("tournamentCode")
-          .value.trim()
-          .toUpperCase();
-        if (!code) {
-          showError("joinError", "Please enter a tournament code");
-          return;
-        }
-
-        try {
-          const snapshot = await database
-            .ref("tournaments/" + code)
-            .once("value");
-          if (!snapshot.exists()) {
-            showError(
-              "joinError",
-              "Tournament not found. Please check the code."
-            );
-            return;
-          }
-
-          currentTournamentCode = code;
-          tournamentRef = database.ref("tournaments/" + code);
-          isCreator = false;
-
-          // Load tournament data
-          const tournamentData = snapshot.val();
-          players = tournamentData.players;
-          matches = tournamentData.matches;
-          playerCount = players.length;
-          matchesPerPlayer = tournamentData.matchesPerPlayer;
-
-          // Hide mode selector and join section
-          document.getElementById("modeSelector").style.display = "none";
-          document.getElementById("joinSection").style.display = "none";
-          document.getElementById("bracket").style.display = "block";
-          document.getElementById("codeDisplay").style.display = "none";
-
-          // Listen for updates
-          listenToTournamentUpdates();
-
-          // Render tournament
-          renderFullTournament();
-        } catch (error) {
-          console.error("Error joining tournament:", error);
-          showError("joinError", "Error joining tournament. Please try again.");
-        }
-      }
-
-      function showError(elementId, message) {
-        const el = document.getElementById(elementId);
-        el.innerHTML = `<div class="error-message">${message}</div>`;
-        setTimeout(() => {
-          el.innerHTML = "";
-        }, 5000);
-      }
-
-      function copyTournamentCode() {
-        const code = document.getElementById("displayCode").textContent;
-        navigator.clipboard.writeText(code).then(() => {
-          const btn = event.target;
-          const originalText = btn.textContent;
-          btn.textContent = "✓ Copied!";
-          btn.style.background = "#28a745";
-          setTimeout(() => {
-            btn.textContent = originalText;
-            btn.style.background = "";
-          }, 2000);
-        });
-      }
-
+      // Calculate valid matches per player for a given player count
       function getValidMatchesPerPlayer(numPlayers) {
         const validOptions = [];
         const maxPossible = numPlayers - 1;
@@ -1194,14 +790,7 @@
         return selectedMatches;
       }
 
-      async function generateBracket() {
-        if (!isFirebaseInitialized) {
-          alert(
-            "Firebase is not configured. Please check the console for setup instructions."
-          );
-          return;
-        }
-
+      function generateBracket() {
         players = [];
         for (let i = 1; i <= playerCount; i++) {
           const name = document.getElementById(`p${i}`).value.trim();
@@ -1225,60 +814,12 @@
           winner: null,
         }));
 
-        // Generate tournament code and save to Firebase
-        currentTournamentCode = generateTournamentCode();
-        tournamentRef = database.ref("tournaments/" + currentTournamentCode);
-        isCreator = true;
+        document.getElementById("inputSection").style.display = "none";
+        document.getElementById("bracket").style.display = "block";
 
-        try {
-          await tournamentRef.set({
-            players: players,
-            matches: matches,
-            matchesPerPlayer: matchesPerPlayer,
-            createdAt: firebase.database.ServerValue.TIMESTAMP,
-          });
-
-          // Hide input section and show tournament
-          document.getElementById("modeSelector").style.display = "none";
-          document.getElementById("inputSection").style.display = "none";
-          document.getElementById("bracket").style.display = "block";
-
-          // Show tournament code
-          document.getElementById("displayCode").textContent =
-            currentTournamentCode;
-          document.getElementById("codeDisplay").style.display = "block";
-
-          // Listen for updates
-          listenToTournamentUpdates();
-
-          // Render tournament
-          renderFullTournament();
-        } catch (error) {
-          console.error("Error creating tournament:", error);
-          alert("Error creating tournament. Please try again.");
-        }
-      }
-
-      function listenToTournamentUpdates() {
-        tournamentRef.on("value", (snapshot) => {
-          if (!snapshot.exists()) {
-            alert("Tournament has been deleted.");
-            leaveTournament();
-            return;
-          }
-
-          const data = snapshot.val();
-          matches = data.matches;
-
-          renderMatches();
-          updateStandings();
-          updateProgress();
-        });
-      }
-
-      function renderFullTournament() {
         document.getElementById("gamesPerPlayer").textContent =
           matchesPerPlayer;
+
         renderSchedule();
         renderMatches();
         updateStandings();
@@ -1451,7 +992,7 @@
         });
       }
 
-      async function recordGame(matchId, gameNum, winner) {
+      function recordGame(matchId, gameNum, winner) {
         const match = matches[matchId];
 
         if (gameNum > 0) {
@@ -1487,13 +1028,9 @@
           match.winner = null;
         }
 
-        // Update Firebase
-        try {
-          await tournamentRef.child("matches").set(matches);
-        } catch (error) {
-          console.error("Error updating match:", error);
-          alert("Error updating match. Please try again.");
-        }
+        renderMatches();
+        updateStandings();
+        updateProgress();
       }
 
       function calculateQualityScore(playerIndex, stats) {
@@ -1511,6 +1048,7 @@
             const opponentStats = stats[opponentIndex];
 
             if (m.winner === playerNum) {
+              // Win against opponent: add opponent's points as quality score
               qualityScore += opponentStats.points;
             }
           }
@@ -1520,6 +1058,7 @@
       }
 
       function updateStandings() {
+        // First pass: Calculate basic stats
         const stats = players.map((player, index) => {
           const playerMatches = matches.filter(
             (m) => m.player1 === index || m.player2 === index
@@ -1551,6 +1090,7 @@
             }
           });
 
+          // NEW SCORING: Match wins (3pts) + Games won (1pt) - Games lost (0.5pt)
           const points = wins * 3 + gamesWon - gamesLost * 0.5;
 
           return {
@@ -1563,17 +1103,21 @@
             points,
             matchesPlayed: wins + losses,
             opponents,
-            qualityScore: 0,
+            qualityScore: 0, // Will be calculated in second pass
           };
         });
 
+        // Second pass: Calculate quality scores based on opponent final standings
         stats.forEach((stat, index) => {
           stat.qualityScore = calculateQualityScore(index, stats);
         });
 
+        // Sort with comprehensive tiebreaker rules
         stats.sort((a, b) => {
+          // 1. Total points
           if (Math.abs(b.points - a.points) > 0.01) return b.points - a.points;
 
+          // 2. Head-to-head if they played each other
           const h2hMatch = matches.find(
             (m) =>
               (m.player1 === a.playerIndex && m.player2 === b.playerIndex) ||
@@ -1588,25 +1132,31 @@
             }
           }
 
+          // 3. Quality of wins (sum of beaten opponents' points)
           if (Math.abs(b.qualityScore - a.qualityScore) > 0.01) {
             return b.qualityScore - a.qualityScore;
           }
 
+          // 4. Match win percentage
           const aWinPct = a.matchesPlayed > 0 ? a.wins / a.matchesPlayed : 0;
           const bWinPct = b.matchesPlayed > 0 ? b.wins / b.matchesPlayed : 0;
           if (Math.abs(bWinPct - aWinPct) > 0.01) return bWinPct - aWinPct;
 
+          // 5. Game differential
           const aGameDiff = a.gamesWon - a.gamesLost;
           const bGameDiff = b.gamesWon - b.gamesLost;
           if (bGameDiff !== aGameDiff) return bGameDiff - aGameDiff;
 
+          // 6. Total games won
           return b.gamesWon - a.gamesWon;
         });
 
+        // Assign ranks and detect ties
         let currentRank = 1;
         const rankedStats = stats.map((stat, index) => {
           if (index > 0) {
             const prev = stats[index - 1];
+            // Check if tied on points and quality score
             const pointsTied = Math.abs(stat.points - prev.points) < 0.01;
             const qualityTied =
               Math.abs(stat.qualityScore - prev.qualityScore) < 0.01;
@@ -1619,6 +1169,7 @@
           return { ...stat, rank: currentRank };
         });
 
+        // Identify which ranks have ties
         const tiedRanks = new Set();
         for (let i = 0; i < rankedStats.length - 1; i++) {
           if (rankedStats[i].rank === rankedStats[i + 1].rank) {
@@ -1643,6 +1194,7 @@
           else if (stat.rank === 2) rankClass = "silver";
           else if (stat.rank === 3) rankClass = "bronze";
 
+          // Build opponent lists
           const beatenList = stat.opponents.beaten
             .map((idx) => {
               const oppStat = rankedStats.find((s) => s.playerIndex === idx);
@@ -1741,61 +1293,14 @@
         ).textContent = `${completed} of ${total} matches completed`;
       }
 
-      function leaveTournament() {
-        if (tournamentRef) {
-          tournamentRef.off();
-        }
-
-        // Reset state
-        currentTournamentCode = null;
-        tournamentRef = null;
-        isCreator = false;
-        players = [];
-        matches = [];
-
-        // Reset UI
+      function resetTournament() {
+        document.getElementById("inputSection").style.display = "block";
         document.getElementById("bracket").style.display = "none";
-        document.getElementById("modeSelector").style.display = "block";
-        document.querySelectorAll(".mode-btn").forEach((btn) => {
-          btn.classList.remove("active");
-        });
-
-        // Clear inputs
-        document.getElementById("tournamentCode").value = "";
-
         updateMatchesPerPlayerOptions();
       }
 
       // Initialize on load
       updateMatchesPerPlayerOptions();
-
-      // Log setup instructions if Firebase is not configured
-      if (!isFirebaseInitialized) {
-        console.log(
-          "%cFirebase Setup Required",
-          "color: red; font-size: 20px; font-weight: bold;"
-        );
-        console.log(
-          "%cTo enable real-time sync:",
-          "color: blue; font-size: 14px;"
-        );
-        console.log("1. Go to https://console.firebase.google.com/");
-        console.log("2. Create a new project");
-        console.log("3. Enable Realtime Database");
-        console.log("4. Set database rules to:");
-        console.log(`{
-  "rules": {
-    "tournaments": {
-      "$tournamentId": {
-        ".read": true,
-        ".write": true
-      }
-    }
-  }
-}`);
-        console.log("5. Get your config from Project Settings > General");
-        console.log("6. Replace the firebaseConfig object in the code");
-      }
     </script>
   </body>
 </html>
