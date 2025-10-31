@@ -948,14 +948,14 @@
 </div>
 
 <div class="container">
-  <h1>🏆 Dynamic Tournament Generator</h1>
+  <h1>🏆 Magic Mikes Tournament Generator</h1>
   <p class="subtitle">
     Best of 3 Format | Real-time Sync | Advanced Ranking System
   </p>
 
   <div class="mode-selector" id="modeSelector">
     <button class="mode-btn" onclick="selectMode('create')">
-      🔐 Create Tournament
+      Create Tournament
     </button>
     <button class="mode-btn" onclick="selectMode('join')">
       Join Tournament
@@ -970,7 +970,7 @@
         <input
                 type="text"
                 id="tournamentCode"
-                placeholder="e.g., ABC123"
+                placeholder="e.g., ABC12345"
                 maxlength="8"
                 minlength="8"
                 style="text-transform: uppercase"
@@ -1114,11 +1114,9 @@
     updateConnectionStatus(true);
 
     // Firebase App Check (protects access from non-verified clients)
-    // Replace with your reCAPTCHA v3 site key. In production, consider injecting via CI/CD.
     const APP_CHECK_SITE_KEY = window.APP_CHECK_SITE_KEY || '6LdJy_0rAAAAAB2qZf8gPmTGsKvHnTu3ANaKtOKC';
     try {
       // Set to a debug token string locally if you need to test without real challenges
-      // self.FIREBASE_APPCHECK_DEBUG_TOKEN = false; // e.g., 'DEBUG_TOKEN_STRING' during local testing
       const appCheck = firebase.appCheck();
       appCheck.activate(APP_CHECK_SITE_KEY, true); // true = auto-refresh
     } catch (e) {
