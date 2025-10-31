@@ -346,6 +346,23 @@
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 
+    /* Duplicate name styles */
+    .input-group input.duplicate {
+      border-color: #dc3545;
+      background-color: #fff5f5;
+    }
+
+    .input-group .error-message {
+      color: #dc3545;
+      font-size: 0.75em;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .input-group input.duplicate + .error-message {
+      display: block;
+    }
+
     .btn {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
@@ -1144,6 +1161,45 @@
   let matchesPerPlayer = 3;
   let isCreator = false;
 
+  // ===== DUPLICATE NAME DETECTION =====
+  function checkDuplicateNames() {
+    const names = new Map();
+    let hasDuplicates = false;
+
+    for (let i = 1; i <= playerCount; i++) {
+      const input = document.getElementById(`p${i}`);
+      if (!input) continue;
+      const name = input.value.trim().toLowerCase();
+
+      input.classList.remove("duplicate");
+
+      if (name) {
+        if (names.has(name)) {
+          input.classList.add("duplicate");
+          const other = names.get(name);
+          if (other) other.classList.add("duplicate");
+          hasDuplicates = true;
+        } else {
+          names.set(name, input);
+        }
+      }
+    }
+
+    const generateBtn = document.getElementById("generateBtn");
+    if (generateBtn) generateBtn.disabled = hasDuplicates;
+
+    return !hasDuplicates;
+  }
+
+  function attachDuplicateCheckers() {
+    for (let i = 1; i <= playerCount; i++) {
+      const input = document.getElementById(`p${i}`);
+      if (!input) continue;
+      input.addEventListener("input", checkDuplicateNames);
+      input.addEventListener("blur", checkDuplicateNames);
+    }
+  }
+
 
   // Handle join form submission
   async function handleJoinSubmit(event) {
@@ -1380,9 +1436,15 @@
                               placeholder="Enter name"
                               required
                               onkeydown="handlePlayerInputEnter(event, ${i})">
+                          <span class="error-message">⚠️ Duplicate name</span>
                       `;
       container.appendChild(inputGroup);
     }
+
+    // Attach duplicate check listeners after inputs are rendered
+    attachDuplicateCheckers();
+    // Initial validation to set button state
+    checkDuplicateNames();
   }
 
   function handlePlayerInputEnter(event, currentPlayer) {
