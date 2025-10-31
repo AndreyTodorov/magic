@@ -1,0 +1,1801 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Tournament Bracket</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
+
+      h1 {
+        text-align: center;
+        color: #667eea;
+        margin-bottom: 10px;
+        font-size: 2.5em;
+      }
+
+      .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 30px;
+        font-size: 0.9em;
+      }
+
+      .mode-selector {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .mode-btn {
+        background: white;
+        color: #667eea;
+        border: 2px solid #667eea;
+        padding: 15px 40px;
+        font-size: 1.1em;
+        font-weight: 600;
+        border-radius: 10px;
+        cursor: pointer;
+        margin: 0 10px;
+        transition: all 0.3s;
+      }
+
+      .mode-btn:hover {
+        background: #667eea;
+        color: white;
+        transform: translateY(-2px);
+      }
+
+      .mode-btn.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #764ba2;
+      }
+
+      .join-section {
+        display: none;
+        background: #f8f9fa;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+      }
+
+      .join-section.active {
+        display: block;
+      }
+
+      .join-input-group {
+        max-width: 500px;
+        margin: 0 auto 20px;
+      }
+
+      .join-input-group label {
+        display: block;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+        font-size: 1.1em;
+        text-align: center;
+      }
+
+      .join-input-group input {
+        width: 100%;
+        padding: 15px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 1.1em;
+        text-align: center;
+        transition: all 0.3s;
+      }
+
+      .join-input-group input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .tournament-code-display {
+        background: #e8eaf6;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      .tournament-code-display h3 {
+        color: #667eea;
+        margin-bottom: 10px;
+      }
+
+      .code-box {
+        background: white;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 2em;
+        font-weight: 700;
+        color: #667eea;
+        letter-spacing: 3px;
+        display: inline-block;
+        margin: 10px 0;
+        border: 3px solid #667eea;
+      }
+
+      .copy-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 10px 25px;
+        font-size: 0.9em;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-left: 10px;
+        transition: all 0.2s;
+      }
+
+      .copy-btn:hover {
+        background: #218838;
+        transform: scale(1.05);
+      }
+
+      .share-info {
+        margin-top: 15px;
+        padding: 15px;
+        background: #fff3cd;
+        border-radius: 8px;
+        color: #856404;
+        font-size: 0.9em;
+      }
+
+      .connection-status {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-size: 0.9em;
+        font-weight: 600;
+        display: none;
+        align-items: center;
+        gap: 8px;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .connection-status.connected {
+        background: #d4edda;
+        color: #155724;
+        border: 2px solid #28a745;
+        display: flex;
+      }
+
+      .connection-status.disconnected {
+        background: #f8d7da;
+        color: #721c24;
+        border: 2px solid #dc3545;
+        display: flex;
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+
+      .status-dot.green {
+        background: #28a745;
+      }
+
+      .status-dot.red {
+        background: #dc3545;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .input-section {
+        background: #f8f9fa;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        display: none;
+      }
+
+      .input-section.active {
+        display: block;
+      }
+
+      .player-count-selector {
+        text-align: center;
+        margin-bottom: 25px;
+      }
+
+      .player-count-selector label {
+        font-weight: 600;
+        color: #333;
+        margin-right: 15px;
+        font-size: 1.1em;
+      }
+
+      .player-count-selector select {
+        padding: 10px 20px;
+        border: 2px solid #667eea;
+        border-radius: 8px;
+        font-size: 1em;
+        background: white;
+        cursor: pointer;
+        font-weight: 600;
+        color: #667eea;
+      }
+
+      .matches-per-player-selector {
+        text-align: center;
+        margin-bottom: 25px;
+        padding: 20px;
+        background: #e8eaf6;
+        border-radius: 10px;
+      }
+
+      .matches-per-player-selector label {
+        font-weight: 600;
+        color: #333;
+        margin-right: 15px;
+        font-size: 1.1em;
+      }
+
+      .matches-per-player-selector select {
+        padding: 10px 20px;
+        border: 2px solid #667eea;
+        border-radius: 8px;
+        font-size: 1em;
+        background: white;
+        cursor: pointer;
+        font-weight: 600;
+        color: #667eea;
+      }
+
+      .matches-info {
+        margin-top: 10px;
+        padding: 10px;
+        background: white;
+        border-radius: 6px;
+        font-size: 0.9em;
+        color: #666;
+      }
+
+      .matches-info strong {
+        color: #667eea;
+      }
+
+      .input-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      .input-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .input-group label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+        font-size: 0.9em;
+      }
+
+      .input-group input {
+        padding: 12px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 1em;
+        transition: all 0.3s;
+      }
+
+      .input-group input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 15px 40px;
+        font-size: 1.1em;
+        font-weight: 600;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        display: block;
+        margin: 0 auto;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      #bracket {
+        display: none;
+      }
+
+      .header-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding-bottom: 15px;
+        border-bottom: 3px solid #667eea;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+
+      .header-bar h2 {
+        color: #667eea;
+        font-size: 1.8em;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .reset-btn {
+        background: #6c757d;
+        padding: 10px 25px;
+        font-size: 0.9em;
+      }
+
+      .leave-btn {
+        background: #dc3545;
+        padding: 10px 25px;
+        font-size: 0.9em;
+      }
+
+      .tournament-layout {
+        display: grid;
+        grid-template-columns: 400px 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+      }
+
+      @media (max-width: 1024px) {
+        .tournament-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .standings-panel {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 15px;
+        height: fit-content;
+        position: sticky;
+        top: 20px;
+      }
+
+      .standings-panel h3 {
+        color: #667eea;
+        margin-bottom: 15px;
+        font-size: 1.5em;
+        text-align: center;
+      }
+
+      .scoring-legend {
+        background: #e3f2fd;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        font-size: 0.85em;
+        color: #1976d2;
+      }
+
+      .scoring-legend strong {
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      .scoring-legend ul {
+        margin-left: 20px;
+        margin-top: 5px;
+      }
+
+      .standings-table {
+        width: 100%;
+      }
+
+      .standing-row {
+        background: white;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.3s;
+        border: 2px solid transparent;
+        cursor: pointer;
+      }
+
+      .standing-row:hover {
+        border-color: #667eea;
+        transform: translateX(5px);
+      }
+
+      .standing-row.tied {
+        background: #fff9e6;
+      }
+
+      .standing-rank {
+        font-size: 1.2em;
+        font-weight: 700;
+        color: #667eea;
+        min-width: 35px;
+      }
+
+      .standing-rank.gold {
+        color: #ffd700;
+      }
+
+      .standing-rank.silver {
+        color: #c0c0c0;
+      }
+
+      .standing-rank.bronze {
+        color: #cd7f32;
+      }
+
+      .standing-rank.tied-indicator::after {
+        content: "T";
+        font-size: 0.6em;
+        vertical-align: super;
+        margin-left: 2px;
+      }
+
+      .standing-info {
+        flex: 1;
+        margin: 0 10px;
+      }
+
+      .standing-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 3px;
+      }
+
+      .standing-record {
+        font-size: 0.8em;
+        color: #666;
+        line-height: 1.4;
+      }
+
+      .standing-details {
+        font-size: 0.75em;
+        color: #999;
+        margin-top: 2px;
+      }
+
+      .standing-points {
+        font-size: 1.3em;
+        font-weight: 700;
+        color: #667eea;
+        min-width: 45px;
+        text-align: right;
+      }
+
+      .standing-breakdown {
+        display: none;
+        margin-top: 10px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        font-size: 0.85em;
+      }
+
+      .standing-row.expanded .standing-breakdown {
+        display: block;
+      }
+
+      .breakdown-section {
+        margin-bottom: 8px;
+      }
+
+      .breakdown-section strong {
+        color: #667eea;
+      }
+
+      .opponent-list {
+        margin-top: 5px;
+        padding-left: 10px;
+      }
+
+      .opponent-item {
+        padding: 3px 0;
+        color: #666;
+      }
+
+      .opponent-item.win {
+        color: #28a745;
+      }
+
+      .opponent-item.loss {
+        color: #dc3545;
+      }
+
+      .matches-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+      }
+
+      .match-card {
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 20px;
+        transition: all 0.3s;
+      }
+
+      .match-card:hover {
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        border-color: #667eea;
+      }
+
+      .match-card.completed {
+        background: #f0f8f0;
+        border-color: #28a745;
+      }
+
+      .match-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+
+      .match-number {
+        font-size: 0.8em;
+        color: #999;
+        font-weight: 600;
+      }
+
+      .best-of-badge {
+        background: #667eea;
+        color: white;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 0.75em;
+        font-weight: 600;
+      }
+
+      .match-players {
+        margin-bottom: 15px;
+      }
+
+      .player-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        background: #f8f9fa;
+      }
+
+      .player-row.winner {
+        background: #d4edda;
+        border: 2px solid #28a745;
+      }
+
+      .player-name {
+        font-weight: 600;
+        color: #333;
+        flex: 1;
+      }
+
+      .game-score {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+      }
+
+      .game-result {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.85em;
+        border: 2px solid #ddd;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .game-result:hover:not(.disabled) {
+        transform: scale(1.1);
+      }
+
+      .game-result.win {
+        background: #28a745;
+        color: white;
+        border-color: #28a745;
+      }
+
+      .game-result.loss {
+        background: #dc3545;
+        color: white;
+        border-color: #dc3545;
+      }
+
+      .game-result.disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .match-score-display {
+        text-align: center;
+        font-size: 1.5em;
+        font-weight: 700;
+        color: #667eea;
+        margin: 15px 0;
+      }
+
+      .winner-banner {
+        background: #28a745;
+        color: white;
+        text-align: center;
+        padding: 8px;
+        border-radius: 8px;
+        font-weight: 600;
+        margin-top: 10px;
+      }
+
+      .schedule-info {
+        background: #e3f2fd;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 25px;
+        border-left: 4px solid #2196f3;
+      }
+
+      .schedule-info h4 {
+        color: #1976d2;
+        margin-bottom: 15px;
+      }
+
+      .schedule-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 10px;
+      }
+
+      .schedule-item {
+        background: white;
+        padding: 10px 15px;
+        border-radius: 6px;
+        font-size: 0.9em;
+      }
+
+      .schedule-item strong {
+        color: #1976d2;
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 20px 0;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        transition: width 0.5s ease;
+      }
+
+      .progress-text {
+        text-align: center;
+        color: #666;
+        font-size: 0.9em;
+        margin-top: 5px;
+      }
+
+      .error-message {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px 0;
+        border: 2px solid #dc3545;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="connection-status" id="connectionStatus">
+      <div class="status-dot"></div>
+      <span id="statusText">Connecting...</span>
+    </div>
+
+    <div class="container">
+      <h1>🏆 Dynamic Tournament Generator</h1>
+      <p class="subtitle">
+        Best of 3 Format | Real-time Sync | Advanced Ranking System
+      </p>
+
+      <div class="mode-selector" id="modeSelector">
+        <button class="mode-btn" onclick="selectMode('create')">
+          Create Tournament
+        </button>
+        <button class="mode-btn" onclick="selectMode('join')">
+          Join Tournament
+        </button>
+      </div>
+
+      <div class="join-section" id="joinSection">
+        <div class="join-input-group">
+          <label for="tournamentCode">Enter Tournament Code:</label>
+          <input
+            type="text"
+            id="tournamentCode"
+            placeholder="e.g., ABC123"
+            maxlength="6"
+            style="text-transform: uppercase"
+          />
+        </div>
+        <button class="btn" onclick="joinTournament()">Join Tournament</button>
+        <div id="joinError"></div>
+      </div>
+
+      <div class="input-section" id="inputSection">
+        <div class="player-count-selector">
+          <label for="playerCount">Number of Players:</label>
+          <select id="playerCount" onchange="updateMatchesPerPlayerOptions()">
+            <option value="3">3 Players</option>
+            <option value="4">4 Players</option>
+            <option value="5">5 Players</option>
+            <option value="6">6 Players</option>
+            <option value="7" selected>7 Players</option>
+            <option value="8">8 Players</option>
+            <option value="9">9 Players</option>
+            <option value="10">10 Players</option>
+            <option value="11">11 Players</option>
+            <option value="12">12 Players</option>
+          </select>
+        </div>
+
+        <div class="matches-per-player-selector">
+          <label for="matchesPerPlayer">Matches Per Player:</label>
+          <select
+            id="matchesPerPlayer"
+            onchange="updateTournamentInfo()"
+          ></select>
+          <div class="matches-info" id="matchesInfo"></div>
+        </div>
+
+        <div class="input-grid" id="playerInputs"></div>
+
+        <button class="btn" onclick="generateBracket()" id="generateBtn">
+          Generate Tournament
+        </button>
+      </div>
+
+      <div id="bracket">
+        <div
+          class="tournament-code-display"
+          id="codeDisplay"
+          style="display: none"
+        >
+          <h3>🔗 Share this code with other players:</h3>
+          <div>
+            <span class="code-box" id="displayCode"></span>
+            <button class="copy-btn" onclick="copyTournamentCode()">
+              📋 Copy
+            </button>
+          </div>
+          <div class="share-info">
+            Others can join by clicking "Join Tournament" and entering this code
+          </div>
+        </div>
+
+        <div class="header-bar">
+          <div>
+            <h2>Tournament Matches</h2>
+            <div class="progress-text" id="progressText"></div>
+          </div>
+          <div class="header-actions">
+            <button class="btn leave-btn" onclick="leaveTournament()">
+              Leave Tournament
+            </button>
+          </div>
+        </div>
+
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="schedule-info">
+          <h4>
+            📋 Player Schedule - Each player competes in
+            <span id="gamesPerPlayer"></span> matches
+          </h4>
+          <div class="schedule-grid" id="scheduleGrid"></div>
+        </div>
+
+        <div class="tournament-layout">
+          <div class="standings-panel">
+            <h3>🏅 Live Standings</h3>
+            <div class="scoring-legend">
+              <strong>📊 Scoring System:</strong>
+              <ul>
+                <li>Match Win: +3 pts</li>
+                <li>Game Won: +1 pt</li>
+                <li>Game Lost: -0.5 pts</li>
+              </ul>
+              <em style="font-size: 0.9em">Tiebreaker: Quality of wins</em>
+            </div>
+            <div class="standings-table" id="standingsTable"></div>
+          </div>
+
+          <div class="matches-container" id="matchesContainer"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <script>
+      // Firebase configuration - REPLACE WITH YOUR OWN CONFIG
+      const firebaseConfig = {
+        apiKey: "",
+        authDomain: "",
+        databaseURL:
+          "",
+        projectId: "",
+        storageBucket: "",
+        messagingSenderId: "",
+        appId: "",
+      };
+
+      // Initialize Firebase
+      let app, database, tournamentRef, currentTournamentCode;
+      let isFirebaseInitialized = false;
+
+      try {
+        app = firebase.initializeApp(firebaseConfig);
+        database = firebase.database();
+        isFirebaseInitialized = true;
+        updateConnectionStatus(true);
+      } catch (error) {
+        console.error("Firebase initialization error:", error);
+        updateConnectionStatus(false);
+      }
+
+      let players = [];
+      let matches = [];
+      let playerCount = 7;
+      let matchesPerPlayer = 3;
+      let isCreator = false;
+
+      function updateConnectionStatus(connected) {
+        const statusEl = document.getElementById("connectionStatus");
+        const statusText = document.getElementById("statusText");
+        const statusDot = statusEl.querySelector(".status-dot");
+
+        if (connected) {
+          statusEl.className = "connection-status connected";
+          statusText.textContent = "Connected";
+          statusDot.className = "status-dot green";
+        } else {
+          statusEl.className = "connection-status disconnected";
+          statusText.textContent = "Disconnected";
+          statusDot.className = "status-dot red";
+        }
+      }
+
+      // Monitor connection status
+      if (isFirebaseInitialized) {
+        const connectedRef = database.ref(".info/connected");
+        connectedRef.on("value", (snap) => {
+          updateConnectionStatus(snap.val() === true);
+        });
+      }
+
+      function generateTournamentCode() {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        let code = "";
+        for (let i = 0; i < 6; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+      }
+
+      function selectMode(mode) {
+        document.querySelectorAll(".mode-btn").forEach((btn) => {
+          btn.classList.remove("active");
+        });
+        event.target.classList.add("active");
+
+        document.getElementById("joinSection").classList.remove("active");
+        document.getElementById("inputSection").classList.remove("active");
+
+        if (mode === "create") {
+          document.getElementById("inputSection").classList.add("active");
+        } else {
+          document.getElementById("joinSection").classList.add("active");
+        }
+      }
+
+      async function joinTournament() {
+        if (!isFirebaseInitialized) {
+          showError(
+            "joinError",
+            "Firebase is not configured. Please check console."
+          );
+          return;
+        }
+
+        const code = document
+          .getElementById("tournamentCode")
+          .value.trim()
+          .toUpperCase();
+        if (!code) {
+          showError("joinError", "Please enter a tournament code");
+          return;
+        }
+
+        try {
+          const snapshot = await database
+            .ref("tournaments/" + code)
+            .once("value");
+          if (!snapshot.exists()) {
+            showError(
+              "joinError",
+              "Tournament not found. Please check the code."
+            );
+            return;
+          }
+
+          currentTournamentCode = code;
+          tournamentRef = database.ref("tournaments/" + code);
+          isCreator = false;
+
+          // Load tournament data
+          const tournamentData = snapshot.val();
+          players = tournamentData.players;
+          matches = tournamentData.matches;
+          playerCount = players.length;
+          matchesPerPlayer = tournamentData.matchesPerPlayer;
+
+          // Hide mode selector and join section
+          document.getElementById("modeSelector").style.display = "none";
+          document.getElementById("joinSection").style.display = "none";
+          document.getElementById("bracket").style.display = "block";
+          document.getElementById("codeDisplay").style.display = "none";
+
+          // Listen for updates
+          listenToTournamentUpdates();
+
+          // Render tournament
+          renderFullTournament();
+        } catch (error) {
+          console.error("Error joining tournament:", error);
+          showError("joinError", "Error joining tournament. Please try again.");
+        }
+      }
+
+      function showError(elementId, message) {
+        const el = document.getElementById(elementId);
+        el.innerHTML = `<div class="error-message">${message}</div>`;
+        setTimeout(() => {
+          el.innerHTML = "";
+        }, 5000);
+      }
+
+      function copyTournamentCode() {
+        const code = document.getElementById("displayCode").textContent;
+        navigator.clipboard.writeText(code).then(() => {
+          const btn = event.target;
+          const originalText = btn.textContent;
+          btn.textContent = "✓ Copied!";
+          btn.style.background = "#28a745";
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = "";
+          }, 2000);
+        });
+      }
+
+      function getValidMatchesPerPlayer(numPlayers) {
+        const validOptions = [];
+        const maxPossible = numPlayers - 1;
+
+        for (let m = 1; m <= maxPossible; m++) {
+          if ((numPlayers * m) % 2 === 0) {
+            validOptions.push(m);
+          }
+        }
+
+        return validOptions;
+      }
+
+      function updateMatchesPerPlayerOptions() {
+        playerCount = parseInt(document.getElementById("playerCount").value);
+        const select = document.getElementById("matchesPerPlayer");
+        const validOptions = getValidMatchesPerPlayer(playerCount);
+
+        select.innerHTML = "";
+
+        validOptions.forEach((option) => {
+          const opt = document.createElement("option");
+          opt.value = option;
+          opt.textContent = `${option} ${option === 1 ? "Match" : "Matches"}`;
+          select.appendChild(opt);
+        });
+
+        const middleIndex = Math.floor(validOptions.length / 2);
+        select.selectedIndex = middleIndex;
+        matchesPerPlayer = validOptions[middleIndex];
+
+        updateTournamentInfo();
+        updatePlayerInputs();
+      }
+
+      function updateTournamentInfo() {
+        matchesPerPlayer = parseInt(
+          document.getElementById("matchesPerPlayer").value
+        );
+        const totalMatches = (playerCount * matchesPerPlayer) / 2;
+        const infoDiv = document.getElementById("matchesInfo");
+
+        infoDiv.innerHTML = `
+                <strong>Tournament Details:</strong><br>
+                ${playerCount} players × ${matchesPerPlayer} ${
+          matchesPerPlayer === 1 ? "match" : "matches"
+        } each =
+                <strong>${totalMatches} total ${
+          totalMatches === 1 ? "match" : "matches"
+        }</strong>
+            `;
+      }
+
+      function updatePlayerInputs() {
+        const container = document.getElementById("playerInputs");
+        container.innerHTML = "";
+
+        for (let i = 1; i <= playerCount; i++) {
+          const inputGroup = document.createElement("div");
+          inputGroup.className = "input-group";
+          inputGroup.innerHTML = `
+                    <label for="p${i}">Player ${i}</label>
+                    <input type="text" id="p${i}" placeholder="Enter name" required>
+                `;
+          container.appendChild(inputGroup);
+        }
+      }
+
+      function generateMatchStructure(numPlayers, matchesPerPerson) {
+        const matchCount = Array(numPlayers).fill(0);
+        const selectedMatches = [];
+        const targetMatches = (numPlayers * matchesPerPerson) / 2;
+
+        const allPossibleMatches = [];
+        for (let i = 0; i < numPlayers; i++) {
+          for (let j = i + 1; j < numPlayers; j++) {
+            allPossibleMatches.push([i, j]);
+          }
+        }
+
+        for (let i = allPossibleMatches.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [allPossibleMatches[i], allPossibleMatches[j]] = [
+            allPossibleMatches[j],
+            allPossibleMatches[i],
+          ];
+        }
+
+        let attempts = 0;
+        const maxAttempts = 1000;
+
+        while (
+          selectedMatches.length < targetMatches &&
+          attempts < maxAttempts
+        ) {
+          attempts++;
+
+          for (const [p1, p2] of allPossibleMatches) {
+            if (selectedMatches.length >= targetMatches) break;
+
+            if (
+              matchCount[p1] < matchesPerPerson &&
+              matchCount[p2] < matchesPerPerson
+            ) {
+              const alreadySelected = selectedMatches.some(
+                (m) =>
+                  (m[0] === p1 && m[1] === p2) || (m[0] === p2 && m[1] === p1)
+              );
+
+              if (!alreadySelected) {
+                selectedMatches.push([p1, p2]);
+                matchCount[p1]++;
+                matchCount[p2]++;
+              }
+            }
+          }
+
+          if (
+            selectedMatches.length < targetMatches &&
+            attempts < maxAttempts
+          ) {
+            selectedMatches.length = 0;
+            matchCount.fill(0);
+
+            for (let i = allPossibleMatches.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [allPossibleMatches[i], allPossibleMatches[j]] = [
+                allPossibleMatches[j],
+                allPossibleMatches[i],
+              ];
+            }
+          }
+        }
+
+        return selectedMatches;
+      }
+
+      async function generateBracket() {
+        if (!isFirebaseInitialized) {
+          alert(
+            "Firebase is not configured. Please check the console for setup instructions."
+          );
+          return;
+        }
+
+        players = [];
+        for (let i = 1; i <= playerCount; i++) {
+          const name = document.getElementById(`p${i}`).value.trim();
+          if (!name) {
+            alert(`Please enter a name for Player ${i}`);
+            return;
+          }
+          players.push(name);
+        }
+
+        const matchStructure = generateMatchStructure(
+          playerCount,
+          matchesPerPlayer
+        );
+
+        matches = matchStructure.map((match, index) => ({
+          id: index,
+          player1: match[0],
+          player2: match[1],
+          games: [null, null, null],
+          winner: null,
+        }));
+
+        // Generate tournament code and save to Firebase
+        currentTournamentCode = generateTournamentCode();
+        tournamentRef = database.ref("tournaments/" + currentTournamentCode);
+        isCreator = true;
+
+        try {
+          await tournamentRef.set({
+            players: players,
+            matches: matches,
+            matchesPerPlayer: matchesPerPlayer,
+            createdAt: firebase.database.ServerValue.TIMESTAMP,
+          });
+
+          // Hide input section and show tournament
+          document.getElementById("modeSelector").style.display = "none";
+          document.getElementById("inputSection").style.display = "none";
+          document.getElementById("bracket").style.display = "block";
+
+          // Show tournament code
+          document.getElementById("displayCode").textContent =
+            currentTournamentCode;
+          document.getElementById("codeDisplay").style.display = "block";
+
+          // Listen for updates
+          listenToTournamentUpdates();
+
+          // Render tournament
+          renderFullTournament();
+        } catch (error) {
+          console.error("Error creating tournament:", error);
+          alert("Error creating tournament. Please try again.");
+        }
+      }
+
+      function listenToTournamentUpdates() {
+        tournamentRef.on("value", (snapshot) => {
+          if (!snapshot.exists()) {
+            alert("Tournament has been deleted.");
+            leaveTournament();
+            return;
+          }
+
+          const data = snapshot.val();
+          matches = data.matches;
+
+          renderMatches();
+          updateStandings();
+          updateProgress();
+        });
+      }
+
+      function renderFullTournament() {
+        document.getElementById("gamesPerPlayer").textContent =
+          matchesPerPlayer;
+        renderSchedule();
+        renderMatches();
+        updateStandings();
+        updateProgress();
+      }
+
+      function renderSchedule() {
+        const scheduleGrid = document.getElementById("scheduleGrid");
+        scheduleGrid.innerHTML = "";
+
+        players.forEach((player, index) => {
+          const opponents = matches
+            .filter((m) => m.player1 === index || m.player2 === index)
+            .map((m) => {
+              const opponentIndex = m.player1 === index ? m.player2 : m.player1;
+              return players[opponentIndex];
+            });
+
+          const scheduleItem = document.createElement("div");
+          scheduleItem.className = "schedule-item";
+          scheduleItem.innerHTML = `
+                    <strong>${player}</strong>
+                    vs ${opponents.join(", ")}
+                `;
+          scheduleGrid.appendChild(scheduleItem);
+        });
+      }
+
+      function renderMatches() {
+        const container = document.getElementById("matchesContainer");
+        container.innerHTML = "";
+
+        matches.forEach((match) => {
+          const card = document.createElement("div");
+          card.className = "match-card";
+          if (match.winner !== null) {
+            card.classList.add("completed");
+          }
+
+          const p1Name = players[match.player1];
+          const p2Name = players[match.player2];
+
+          const p1Wins = match.games.filter((g) => g === 1).length;
+          const p2Wins = match.games.filter((g) => g === 2).length;
+
+          let winnerBanner = "";
+          if (match.winner !== null) {
+            const winnerName = match.winner === 1 ? p1Name : p2Name;
+            winnerBanner = `<div class="winner-banner">🏆 ${winnerName} wins!</div>`;
+          }
+
+          card.innerHTML = `
+                    <div class="match-header">
+                        <div class="match-number">Match ${match.id + 1}</div>
+                        <div class="best-of-badge">Best of 3</div>
+                    </div>
+
+                    <div class="match-score-display">${p1Wins} - ${p2Wins}</div>
+
+                    <div class="match-players">
+                        <div class="player-row ${
+                          match.winner === 1 ? "winner" : ""
+                        }">
+                            <div class="player-name">${p1Name}</div>
+                            <div class="game-score">
+                                ${[0, 1, 2]
+                                  .map((gameNum) => {
+                                    let canPlay = true;
+                                    if (gameNum > 0) {
+                                      for (let i = 0; i < gameNum; i++) {
+                                        if (match.games[i] === null) {
+                                          canPlay = false;
+                                          break;
+                                        }
+                                      }
+                                    }
+                                    if (
+                                      match.winner !== null &&
+                                      match.games[gameNum] === null
+                                    ) {
+                                      canPlay = false;
+                                    }
+
+                                    const isWin = match.games[gameNum] === 1;
+                                    const isLoss = match.games[gameNum] === 2;
+                                    const disabled =
+                                      !canPlay && match.games[gameNum] === null;
+
+                                    return `
+                                        <div class="game-result ${
+                                          isWin ? "win" : isLoss ? "loss" : ""
+                                        } ${disabled ? "disabled" : ""}"
+                                             onclick="${
+                                               !disabled ||
+                                               match.games[gameNum] !== null
+                                                 ? `recordGame(${match.id}, ${gameNum}, 1)`
+                                                 : "return false;"
+                                             }">
+                                            ${
+                                              isWin
+                                                ? "W"
+                                                : isLoss
+                                                ? "L"
+                                                : gameNum + 1
+                                            }
+                                        </div>
+                                    `;
+                                  })
+                                  .join("")}
+                            </div>
+                        </div>
+
+                        <div class="player-row ${
+                          match.winner === 2 ? "winner" : ""
+                        }">
+                            <div class="player-name">${p2Name}</div>
+                            <div class="game-score">
+                                ${[0, 1, 2]
+                                  .map((gameNum) => {
+                                    let canPlay = true;
+                                    if (gameNum > 0) {
+                                      for (let i = 0; i < gameNum; i++) {
+                                        if (match.games[i] === null) {
+                                          canPlay = false;
+                                          break;
+                                        }
+                                      }
+                                    }
+                                    if (
+                                      match.winner !== null &&
+                                      match.games[gameNum] === null
+                                    ) {
+                                      canPlay = false;
+                                    }
+
+                                    const isWin = match.games[gameNum] === 2;
+                                    const isLoss = match.games[gameNum] === 1;
+                                    const disabled =
+                                      !canPlay && match.games[gameNum] === null;
+
+                                    return `
+                                        <div class="game-result ${
+                                          isWin ? "win" : isLoss ? "loss" : ""
+                                        } ${disabled ? "disabled" : ""}"
+                                             onclick="${
+                                               !disabled ||
+                                               match.games[gameNum] !== null
+                                                 ? `recordGame(${match.id}, ${gameNum}, 2)`
+                                                 : "return false;"
+                                             }">
+                                            ${
+                                              isWin
+                                                ? "W"
+                                                : isLoss
+                                                ? "L"
+                                                : gameNum + 1
+                                            }
+                                        </div>
+                                    `;
+                                  })
+                                  .join("")}
+                            </div>
+                        </div>
+                    </div>
+
+                    ${winnerBanner}
+                `;
+
+          container.appendChild(card);
+        });
+      }
+
+      async function recordGame(matchId, gameNum, winner) {
+        const match = matches[matchId];
+
+        if (gameNum > 0) {
+          for (let i = 0; i < gameNum; i++) {
+            if (match.games[i] === null) {
+              alert(`Please complete Game ${i + 1} first!`);
+              return;
+            }
+          }
+        }
+
+        if (match.winner !== null && match.games[gameNum] === null) return;
+
+        if (match.games[gameNum] === winner) {
+          match.games[gameNum] = null;
+
+          for (let i = gameNum + 1; i < 3; i++) {
+            match.games[i] = null;
+          }
+          match.winner = null;
+        } else {
+          match.games[gameNum] = winner;
+        }
+
+        const p1Wins = match.games.filter((g) => g === 1).length;
+        const p2Wins = match.games.filter((g) => g === 2).length;
+
+        if (p1Wins >= 2) {
+          match.winner = 1;
+        } else if (p2Wins >= 2) {
+          match.winner = 2;
+        } else {
+          match.winner = null;
+        }
+
+        // Update Firebase
+        try {
+          await tournamentRef.child("matches").set(matches);
+        } catch (error) {
+          console.error("Error updating match:", error);
+          alert("Error updating match. Please try again.");
+        }
+      }
+
+      function calculateQualityScore(playerIndex, stats) {
+        let qualityScore = 0;
+
+        const playerMatches = matches.filter(
+          (m) => m.player1 === playerIndex || m.player2 === playerIndex
+        );
+
+        playerMatches.forEach((m) => {
+          if (m.winner !== null) {
+            const isPlayer1 = m.player1 === playerIndex;
+            const playerNum = isPlayer1 ? 1 : 2;
+            const opponentIndex = isPlayer1 ? m.player2 : m.player1;
+            const opponentStats = stats[opponentIndex];
+
+            if (m.winner === playerNum) {
+              qualityScore += opponentStats.points;
+            }
+          }
+        });
+
+        return qualityScore;
+      }
+
+      function updateStandings() {
+        const stats = players.map((player, index) => {
+          const playerMatches = matches.filter(
+            (m) => m.player1 === index || m.player2 === index
+          );
+          let wins = 0,
+            losses = 0,
+            gamesWon = 0,
+            gamesLost = 0;
+          const opponents = { beaten: [], lostTo: [] };
+
+          playerMatches.forEach((m) => {
+            if (m.winner !== null) {
+              const isPlayer1 = m.player1 === index;
+              const playerNum = isPlayer1 ? 1 : 2;
+              const opponentIndex = isPlayer1 ? m.player2 : m.player1;
+
+              if (m.winner === playerNum) {
+                wins++;
+                opponents.beaten.push(opponentIndex);
+              } else {
+                losses++;
+                opponents.lostTo.push(opponentIndex);
+              }
+
+              m.games.forEach((game) => {
+                if (game === playerNum) gamesWon++;
+                else if (game !== null) gamesLost++;
+              });
+            }
+          });
+
+          const points = wins * 3 + gamesWon - gamesLost * 0.5;
+
+          return {
+            player,
+            playerIndex: index,
+            wins,
+            losses,
+            gamesWon,
+            gamesLost,
+            points,
+            matchesPlayed: wins + losses,
+            opponents,
+            qualityScore: 0,
+          };
+        });
+
+        stats.forEach((stat, index) => {
+          stat.qualityScore = calculateQualityScore(index, stats);
+        });
+
+        stats.sort((a, b) => {
+          if (Math.abs(b.points - a.points) > 0.01) return b.points - a.points;
+
+          const h2hMatch = matches.find(
+            (m) =>
+              (m.player1 === a.playerIndex && m.player2 === b.playerIndex) ||
+              (m.player1 === b.playerIndex && m.player2 === a.playerIndex)
+          );
+
+          if (h2hMatch && h2hMatch.winner !== null) {
+            if (h2hMatch.player1 === a.playerIndex) {
+              return h2hMatch.winner === 1 ? -1 : 1;
+            } else {
+              return h2hMatch.winner === 1 ? 1 : -1;
+            }
+          }
+
+          if (Math.abs(b.qualityScore - a.qualityScore) > 0.01) {
+            return b.qualityScore - a.qualityScore;
+          }
+
+          const aWinPct = a.matchesPlayed > 0 ? a.wins / a.matchesPlayed : 0;
+          const bWinPct = b.matchesPlayed > 0 ? b.wins / b.matchesPlayed : 0;
+          if (Math.abs(bWinPct - aWinPct) > 0.01) return bWinPct - aWinPct;
+
+          const aGameDiff = a.gamesWon - a.gamesLost;
+          const bGameDiff = b.gamesWon - b.gamesLost;
+          if (bGameDiff !== aGameDiff) return bGameDiff - aGameDiff;
+
+          return b.gamesWon - a.gamesWon;
+        });
+
+        let currentRank = 1;
+        const rankedStats = stats.map((stat, index) => {
+          if (index > 0) {
+            const prev = stats[index - 1];
+            const pointsTied = Math.abs(stat.points - prev.points) < 0.01;
+            const qualityTied =
+              Math.abs(stat.qualityScore - prev.qualityScore) < 0.01;
+
+            if (!pointsTied || !qualityTied) {
+              currentRank = index + 1;
+            }
+          }
+
+          return { ...stat, rank: currentRank };
+        });
+
+        const tiedRanks = new Set();
+        for (let i = 0; i < rankedStats.length - 1; i++) {
+          if (rankedStats[i].rank === rankedStats[i + 1].rank) {
+            tiedRanks.add(rankedStats[i].rank);
+          }
+        }
+
+        const standingsTable = document.getElementById("standingsTable");
+        standingsTable.innerHTML = "";
+
+        rankedStats.forEach((stat) => {
+          const row = document.createElement("div");
+          row.className = "standing-row";
+          row.onclick = () => toggleStandingDetails(row);
+
+          const isTied = tiedRanks.has(stat.rank);
+          if (isTied) row.classList.add("tied");
+
+          let rankClass = "";
+          let tiedIndicator = isTied ? " tied-indicator" : "";
+          if (stat.rank === 1) rankClass = "gold";
+          else if (stat.rank === 2) rankClass = "silver";
+          else if (stat.rank === 3) rankClass = "bronze";
+
+          const beatenList = stat.opponents.beaten
+            .map((idx) => {
+              const oppStat = rankedStats.find((s) => s.playerIndex === idx);
+              return `<div class="opponent-item win">✓ ${players[idx]} (Rank ${oppStat.rank})</div>`;
+            })
+            .join("");
+
+          const lostToList = stat.opponents.lostTo
+            .map((idx) => {
+              const oppStat = rankedStats.find((s) => s.playerIndex === idx);
+              return `<div class="opponent-item loss">✗ ${players[idx]} (Rank ${oppStat.rank})</div>`;
+            })
+            .join("");
+
+          row.innerHTML = `
+                    <div class="standing-rank ${rankClass}${tiedIndicator}">${
+            stat.rank
+          }</div>
+                    <div class="standing-info">
+                        <div class="standing-name">${stat.player}</div>
+                        <div class="standing-record">
+                            ${stat.wins}-${stat.losses} matches
+                        </div>
+                        <div class="standing-details">
+                            ${stat.gamesWon}-${
+            stat.gamesLost
+          } games | Quality: ${stat.qualityScore.toFixed(1)}
+                        </div>
+                        <div class="standing-breakdown">
+                            <div class="breakdown-section">
+                                <strong>Points Breakdown:</strong><br>
+                                Match Wins: ${stat.wins} × 3 = ${
+            stat.wins * 3
+          } pts<br>
+                                Games Won: ${stat.gamesWon} × 1 = ${
+            stat.gamesWon
+          } pts<br>
+                                Games Lost: ${stat.gamesLost} × -0.5 = ${(
+            stat.gamesLost * -0.5
+          ).toFixed(1)} pts<br>
+                                <strong>Total: ${stat.points.toFixed(
+                                  1
+                                )} pts</strong>
+                            </div>
+                            ${
+                              beatenList
+                                ? `
+                                <div class="breakdown-section">
+                                    <strong>Victories Against:</strong>
+                                    <div class="opponent-list">${beatenList}</div>
+                                </div>
+                            `
+                                : ""
+                            }
+                            ${
+                              lostToList
+                                ? `
+                                <div class="breakdown-section">
+                                    <strong>Losses Against:</strong>
+                                    <div class="opponent-list">${lostToList}</div>
+                                </div>
+                            `
+                                : ""
+                            }
+                            <div class="breakdown-section">
+                                <strong>Quality Score:</strong> ${stat.qualityScore.toFixed(
+                                  1
+                                )}<br>
+                                <em style="font-size: 0.9em; color: #666;">
+                                    (Sum of beaten opponents' points)
+                                </em>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="standing-points">${stat.points.toFixed(
+                      1
+                    )}<span style="font-size: 0.6em; color: #999;">pts</span></div>
+                `;
+
+          standingsTable.appendChild(row);
+        });
+      }
+
+      function toggleStandingDetails(row) {
+        row.classList.toggle("expanded");
+      }
+
+      function updateProgress() {
+        const completed = matches.filter((m) => m.winner !== null).length;
+        const total = matches.length;
+        const percentage = (completed / total) * 100;
+
+        document.getElementById("progressFill").style.width = percentage + "%";
+        document.getElementById(
+          "progressText"
+        ).textContent = `${completed} of ${total} matches completed`;
+      }
+
+      function leaveTournament() {
+        if (tournamentRef) {
+          tournamentRef.off();
+        }
+
+        // Reset state
+        currentTournamentCode = null;
+        tournamentRef = null;
+        isCreator = false;
+        players = [];
+        matches = [];
+
+        // Reset UI
+        document.getElementById("bracket").style.display = "none";
+        document.getElementById("modeSelector").style.display = "block";
+        document.querySelectorAll(".mode-btn").forEach((btn) => {
+          btn.classList.remove("active");
+        });
+
+        // Clear inputs
+        document.getElementById("tournamentCode").value = "";
+
+        updateMatchesPerPlayerOptions();
+      }
+
+      // Initialize on load
+      updateMatchesPerPlayerOptions();
+
+      // Log setup instructions if Firebase is not configured
+      if (!isFirebaseInitialized) {
+        console.log(
+          "%cFirebase Setup Required",
+          "color: red; font-size: 20px; font-weight: bold;"
+        );
+        console.log(
+          "%cTo enable real-time sync:",
+          "color: blue; font-size: 14px;"
+        );
+        console.log("1. Go to https://console.firebase.google.com/");
+        console.log("2. Create a new project");
+        console.log("3. Enable Realtime Database");
+        console.log("4. Set database rules to:");
+        console.log(`{
+  "rules": {
+    "tournaments": {
+      "$tournamentId": {
+        ".read": true,
+        ".write": true
+      }
+    }
+  }
+}`);
+        console.log("5. Get your config from Project Settings > General");
+        console.log("6. Replace the firebaseConfig object in the code");
+      }
+    </script>
+  </body>
+</html>
