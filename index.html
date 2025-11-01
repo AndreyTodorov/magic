@@ -1348,7 +1348,9 @@
           document.getElementById("modeSelector").style.display = "none";
           document.getElementById("joinSection").style.display = "none";
           document.getElementById("bracket").style.display = "block";
-          document.getElementById("codeDisplay").style.display = "none";
+          document.getElementById("displayCode").textContent =
+            currentTournamentCode;
+          document.getElementById("codeDisplay").style.display = "block";
 
           listenToTournamentUpdates();
           renderFullTournament();
