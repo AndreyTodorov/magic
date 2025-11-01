@@ -79,22 +79,3 @@ const APP_CONFIG = {
         GAME_LOSS: -0.5,
     },
 };
-
-// Log setup instructions if Firebase is not configured
-if (FIREBASE_CONFIG.apiKey === 'FIREBASE_API_KEY') {
-    console.log(
-        '%cFirebase Setup Required',
-        'color: red; font-size: 20px; font-weight: bold;'
-    );
-    console.log(
-        '%cTo enable real-time sync:',
-        'color: blue; font-size: 14px;'
-    );
-    console.log('1. Go to https://console.firebase.google.com/');
-    console.log('2. Create a new project');
-    console.log('3. Enable Realtime Database');
-    console.log('4. Set database rules to:');
-    console.log(DATABASE_RULES);
-    console.log('5. Get your config from Project Settings > General');
-    console.log('6. Replace the values in js/config.js');
-}

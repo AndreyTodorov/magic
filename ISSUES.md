@@ -5,3 +5,6 @@
  - [ ] Show to the user a better explanation of how the tiebreaking works with all the different options in a popup or similar
  - [ ] When a match is done, lock the match and show the winner. If the user wants to make changes to the results becaue of a mistake, they can undo the changes by unlocking the match. A simple confirm dialog should be shown to the user.
  - [ ] When ordering the matches, show the finished matches at the bottom
+ - [ ] Using .env files for configuration
+ - [ ] Deploy script to replace the environment variables placeholders in the build
+ - [ ] add DATABASE_RULES to the database rules
