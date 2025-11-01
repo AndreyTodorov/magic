@@ -1138,11 +1138,8 @@
         // Firebase App Check (protects access from non-verified clients)
         const APPCHECK_SITE_KEY = "APP_CHECK_SITE_KEY";
         try {
-          // Set to a debug token string locally if you need to test without real challenges
           const appCheck = firebase.appCheck();
-          // Initialize App Check with reCAPTCHA v3
-          appCheck.activate(APPCHECK_SITE_KEY,true);
-          // appCheck.activate(APPCHECK_SITE_KEY, true); // true = auto-refresh
+          appCheck.activate(APPCHECK_SITE_KEY, true); // true = auto-refresh
         } catch (e) {
           console.warn("App Check activation failed:", e);
         }
