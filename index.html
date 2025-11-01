@@ -893,6 +893,13 @@
           width: 6px;
           height: 6px;
         }
+
+        .scores-section {
+          order: 2;
+        }
+        .matches-section {
+          order: 1;
+        }
       }
 
       /* Extra small screens */
@@ -964,7 +971,7 @@
     </div>
 
     <div class="container">
-      <h1>🏆 Magic Mikes Tournament Generator</h1>
+      <h1>🏆 Magic Mikes Tournament</h1>
       <p class="subtitle">
         Best of 3 Format | Real-time Sync | Advanced Ranking System
       </p>
@@ -1076,7 +1083,7 @@
         </div>
 
         <div class="tournament-layout">
-          <div class="standings-panel">
+          <div class="standings-panel scores-section">
             <h3>🏅 Live Standings</h3>
             <div class="scoring-legend">
               <strong>📊 Scoring System:</strong>
@@ -1090,7 +1097,10 @@
             <div class="standings-table" id="standingsTable"></div>
           </div>
 
-          <div class="matches-container" id="matchesContainer"></div>
+          <div
+            class="matches-container matches-section"
+            id="matchesContainer"
+          ></div>
         </div>
       </div>
     </div>
