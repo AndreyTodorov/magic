@@ -1126,12 +1126,11 @@
         updateConnectionStatus(true);
 
         // Firebase App Check (protects access from non-verified clients)
-        const APP_CHECK_SITE_KEY =
-          window.APP_CHECK_SITE_KEY || "APP_CHECK_SITE_KEY";
+        const APPCHECK_SITE_KEY = "APP_CHECK_SITE_KEY";
         try {
           // Set to a debug token string locally if you need to test without real challenges
           const appCheck = firebase.appCheck();
-          appCheck.activate(APP_CHECK_SITE_KEY, true); // true = auto-refresh
+          appCheck.activate(APPCHECK_SITE_KEY, true); // true = auto-refresh
         } catch (e) {
           console.warn("App Check activation failed:", e);
         }
