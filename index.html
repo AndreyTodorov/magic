@@ -1141,12 +1141,7 @@
           // Set to a debug token string locally if you need to test without real challenges
           const appCheck = firebase.appCheck();
           // Initialize App Check with reCAPTCHA v3
-          appCheck.activate({
-            provider: new firebase.appCheck.ReCaptchaV3Provider(
-              APPCHECK_SITE_KEY
-            ),
-            isTokenAutoRefreshEnabled: true,
-          });
+          appCheck.activate(APPCHECK_SITE_KEY,true);
           // appCheck.activate(APPCHECK_SITE_KEY, true); // true = auto-refresh
         } catch (e) {
           console.warn("App Check activation failed:", e);
