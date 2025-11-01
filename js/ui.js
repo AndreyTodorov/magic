@@ -1,0 +1,564 @@
+/**
+ * UI MODULE
+ * Handles all DOM manipulation and UI rendering
+ */
+
+class UIManager {
+    constructor() {
+        this.elements = {};
+        this.currentSection = null;
+    }
+
+    /**
+     * Cache DOM elements
+     */
+    cacheElements() {
+        this.elements = {
+            // Sections
+            modeSelector: document.getElementById('modeSelector'),
+            joinSection: document.getElementById('joinSection'),
+            createSection: document.getElementById('createSection'),
+            tournamentSection: document.getElementById('tournamentSection'),
+
+            // Forms
+            joinForm: document.getElementById('joinForm'),
+            tournamentCode: document.getElementById('tournamentCode'),
+            joinSubmitBtn: document.getElementById('joinSubmitBtn'),
+            joinError: document.getElementById('joinError'),
+
+            playerCount: document.getElementById('playerCount'),
+            matchesPerPlayer: document.getElementById('matchesPerPlayer'),
+            matchesInfo: document.getElementById('matchesInfo'),
+            playerInputs: document.getElementById('playerInputs'),
+            generateBtn: document.getElementById('generateBtn'),
+
+            // Tournament view
+            codeDisplay: document.getElementById('codeDisplay'),
+            displayCode: document.getElementById('displayCode'),
+            copyCodeBtn: document.getElementById('copyCodeBtn'),
+            leaveTournamentBtn: document.getElementById('leaveTournamentBtn'),
+
+            progressFill: document.getElementById('progressFill'),
+            progressText: document.getElementById('progressText'),
+            gamesPerPlayer: document.getElementById('gamesPerPlayer'),
+            scheduleGrid: document.getElementById('scheduleGrid'),
+            standingsTable: document.getElementById('standingsTable'),
+            matchesContainer: document.getElementById('matchesContainer'),
+        };
+    }
+
+    /**
+     * Show specific section
+     */
+    showSection(sectionName) {
+        // Hide all sections
+        ['modeSelector', 'joinSection', 'createSection', 'tournamentSection'].forEach(
+            (section) => {
+                const el = this.elements[section];
+                if (el) el.classList.remove('active');
+            }
+        );
+
+        // Show requested section
+        const section = this.elements[sectionName];
+        if (section) {
+            section.classList.add('active');
+            this.currentSection = sectionName;
+        }
+    }
+
+    /**
+     * Show error message
+     */
+    showError(elementId, message, duration = 5000) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+
+        el.innerHTML = `<div class="alert alert--error">${message}</div>`;
+
+        if (duration > 0) {
+            setTimeout(() => {
+                el.innerHTML = '';
+            }, duration);
+        }
+    }
+
+    /**
+     * Clear error message
+     */
+    clearError(elementId) {
+        const el = document.getElementById(elementId);
+        if (el) el.innerHTML = '';
+    }
+
+    /**
+     * Set button loading state
+     */
+    setButtonLoading(button, isLoading, loadingText = '🔄 Loading...') {
+        if (!button) return;
+
+        if (isLoading) {
+            button.dataset.originalText = button.textContent;
+            button.textContent = loadingText;
+            button.disabled = true;
+        } else {
+            button.textContent = button.dataset.originalText || button.textContent;
+            button.disabled = false;
+            delete button.dataset.originalText;
+        }
+    }
+
+    /**
+     * Update matches-per-player options
+     */
+    updateMatchesPerPlayerOptions(playerCount) {
+        const select = this.elements.matchesPerPlayer;
+        if (!select) return;
+
+        const validOptions = tournamentManager.getValidMatchesPerPlayer(playerCount);
+        select.innerHTML = '';
+
+        validOptions.forEach((option) => {
+            const opt = document.createElement('option');
+            opt.value = option;
+            opt.textContent = `${option} ${option === 1 ? 'Match' : 'Matches'}`;
+            select.appendChild(opt);
+        });
+
+        // Select middle option
+        const middleIndex = Math.floor(validOptions.length / 2);
+        select.selectedIndex = middleIndex;
+
+        return validOptions[middleIndex];
+    }
+
+    /**
+     * Update tournament info display
+     */
+    updateTournamentInfo(playerCount, matchesPerPlayer) {
+        const totalMatches = tournamentManager.getTotalMatches(
+            playerCount,
+            matchesPerPlayer
+        );
+
+        if (this.elements.matchesInfo) {
+            this.elements.matchesInfo.innerHTML = `
+        <strong>Tournament Details:</strong><br>
+        ${playerCount} players × ${matchesPerPlayer} ${
+                matchesPerPlayer === 1 ? 'match' : 'matches'
+            } each =
+        <strong>${totalMatches} total ${
+                totalMatches === 1 ? 'match' : 'matches'
+            }</strong>
+      `;
+        }
+    }
+
+    /**
+     * Render player input fields
+     */
+    renderPlayerInputs(playerCount) {
+        const container = this.elements.playerInputs;
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        for (let i = 1; i <= playerCount; i++) {
+            const inputGroup = document.createElement('div');
+            inputGroup.className = 'form-group';
+            inputGroup.innerHTML = `
+        <label for="p${i}" class="form-label">Player ${i}</label>
+        <input
+          type="text"
+          id="p${i}"
+          class="form-input"
+          placeholder="Enter name"
+          required
+          data-player-index="${i}">
+        <span class="form-error">⚠️ Duplicate name</span>
+      `;
+            container.appendChild(inputGroup);
+        }
+    }
+
+    /**
+     * Check for duplicate player names
+     */
+    checkDuplicateNames(playerCount) {
+        const names = [];
+        const inputs = [];
+
+        for (let i = 1; i <= playerCount; i++) {
+            const input = document.getElementById(`p${i}`);
+            if (input) {
+                inputs.push(input);
+                names.push(input.value.trim());
+                input.classList.remove('form-input--error');
+            }
+        }
+
+        const validation = tournamentManager.validatePlayerNames(names);
+
+        // Mark duplicates
+        if (validation.duplicates.length > 0) {
+            validation.duplicates.forEach((dup) => {
+                dup.indices.forEach((idx) => {
+                    if (inputs[idx]) {
+                        inputs[idx].classList.add('form-input--error');
+                    }
+                });
+            });
+        }
+
+        // Update button state
+        if (this.elements.generateBtn) {
+            this.elements.generateBtn.disabled = !validation.isValid;
+        }
+
+        return validation.isValid;
+    }
+
+    /**
+     * Display tournament code
+     */
+    displayTournamentCode(code) {
+        if (this.elements.displayCode) {
+            this.elements.displayCode.textContent = code;
+        }
+        if (this.elements.codeDisplay) {
+            this.elements.codeDisplay.style.display = 'block';
+        }
+    }
+
+    /**
+     * Copy tournament code to clipboard
+     */
+    async copyTournamentCode() {
+        const code = this.elements.displayCode?.textContent;
+        if (!code) return;
+
+        try {
+            await navigator.clipboard.writeText(code);
+
+            const btn = this.elements.copyCodeBtn;
+            if (btn) {
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Copied!';
+                btn.style.background = 'var(--color-success)';
+
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            }
+        } catch (error) {
+            console.error('Failed to copy:', error);
+            alert('Failed to copy code. Code: ' + code);
+        }
+    }
+
+    /**
+     * Render player schedule
+     */
+    renderSchedule(players, matches) {
+        const container = this.elements.scheduleGrid;
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        players.forEach((player, index) => {
+            const opponents = matches
+                .filter((m) => m.player1 === index || m.player2 === index)
+                .map((m) => {
+                    const opponentIndex = m.player1 === index ? m.player2 : m.player1;
+                    return players[opponentIndex];
+                });
+
+            const scheduleItem = document.createElement('div');
+            scheduleItem.className = 'schedule-item';
+            scheduleItem.innerHTML = `
+        <strong>${this.escapeHtml(player)}</strong>
+        vs ${opponents.map(o => this.escapeHtml(o)).join(', ')}
+      `;
+            container.appendChild(scheduleItem);
+        });
+    }
+
+    /**
+     * Render all matches
+     */
+    renderMatches(matches, players) {
+        const container = this.elements.matchesContainer;
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        matches.forEach((match) => {
+            if (!match || !match.games || !Array.isArray(match.games)) {
+                console.warn('Invalid match data:', match);
+                return;
+            }
+
+            const card = this.createMatchCard(match, players);
+            container.appendChild(card);
+        });
+    }
+
+    /**
+     * Create match card element
+     */
+    createMatchCard(match, players) {
+        const card = document.createElement('div');
+        card.className = 'match-card';
+        card.setAttribute('role', 'listitem');
+
+        if (match.winner !== null) {
+            card.classList.add('completed');
+        }
+
+        const p1Name = players[match.player1];
+        const p2Name = players[match.player2];
+        const p1Wins = match.games.filter((g) => g === 1).length;
+        const p2Wins = match.games.filter((g) => g === 2).length;
+
+        let winnerBanner = '';
+        if (match.winner !== null) {
+            const winnerName = match.winner === 1 ? p1Name : p2Name;
+            winnerBanner = `<div class="winner-banner">🏆 ${this.escapeHtml(winnerName)} wins!</div>`;
+        }
+
+        card.innerHTML = `
+      <div class="match-card__header">
+        <div class="match-number">Match ${match.id + 1}</div>
+        <div class="badge">Best of 3</div>
+      </div>
+
+      <div class="match-score-display">${p1Wins} - ${p2Wins}</div>
+
+      <div class="match-players">
+        ${this.createPlayerRow(match, p1Name, 1, players)}
+        ${this.createPlayerRow(match, p2Name, 2, players)}
+      </div>
+
+      ${winnerBanner}
+    `;
+
+        return card;
+    }
+
+    /**
+     * Create player row in match card
+     */
+    createPlayerRow(match, playerName, playerNum, players) {
+        const isWinner = match.winner === playerNum;
+
+        return `
+      <div class="player-row ${isWinner ? 'winner' : ''}">
+        <div class="player-name">${this.escapeHtml(playerName)}</div>
+        <div class="game-score">
+          ${[0, 1, 2]
+            .map((gameNum) => this.createGameResult(match, gameNum, playerNum))
+            .join('')}
+        </div>
+      </div>
+    `;
+    }
+
+    /**
+     * Create game result button
+     */
+    createGameResult(match, gameNum, playerNum) {
+        // Check if game can be played
+        let canPlay = true;
+        if (gameNum > 0) {
+            for (let i = 0; i < gameNum; i++) {
+                if (match.games[i] === null) {
+                    canPlay = false;
+                    break;
+                }
+            }
+        }
+        if (match.winner !== null && match.games[gameNum] === null) {
+            canPlay = false;
+        }
+
+        const isWin = match.games[gameNum] === playerNum;
+        const isLoss = match.games[gameNum] !== null && !isWin;
+        const disabled = !canPlay && match.games[gameNum] === null;
+
+        const classes = [
+            'game-result',
+            isWin ? 'win' : '',
+            isLoss ? 'loss' : '',
+            disabled ? 'disabled' : '',
+        ]
+            .filter(Boolean)
+            .join(' ');
+
+        const label = isWin ? 'W' : isLoss ? 'L' : gameNum + 1;
+        const onclick = !disabled || match.games[gameNum] !== null
+            ? `app.recordGame(${match.id}, ${gameNum}, ${playerNum})`
+            : 'return false;';
+
+        return `
+      <button
+        class="${classes}"
+        onclick="${onclick}"
+        aria-label="Game ${gameNum + 1}: ${label}"
+        ${disabled && match.games[gameNum] === null ? 'disabled' : ''}>
+        ${label}
+      </button>
+    `;
+    }
+
+    /**
+     * Render standings table
+     */
+    renderStandings(rankedStats, tiedRanks, players) {
+        const container = this.elements.standingsTable;
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        rankedStats.forEach((stat) => {
+            const row = this.createStandingRow(stat, tiedRanks, rankedStats, players);
+            container.appendChild(row);
+        });
+    }
+
+    /**
+     * Create standing row element
+     */
+    createStandingRow(stat, tiedRanks, rankedStats, players) {
+        const row = document.createElement('div');
+        row.className = 'standing-row';
+        row.setAttribute('role', 'listitem');
+        row.onclick = () => this.toggleStandingDetails(row);
+
+        const isTied = tiedRanks.has(stat.rank);
+        if (isTied) row.classList.add('tied');
+
+        let rankClass = '';
+        let tiedIndicator = isTied ? ' tied-indicator' : '';
+        if (stat.rank === 1) rankClass = 'gold';
+        else if (stat.rank === 2) rankClass = 'silver';
+        else if (stat.rank === 3) rankClass = 'bronze';
+
+        const beatenList = this.createOpponentList(stat.opponents.beaten, rankedStats, players, 'win');
+        const lostToList = this.createOpponentList(stat.opponents.lostTo, rankedStats, players, 'loss');
+
+        row.innerHTML = `
+      <div class="standing-rank ${rankClass}${tiedIndicator}">${stat.rank}</div>
+      <div class="standing-info">
+        <div class="standing-name">${this.escapeHtml(stat.player)}</div>
+        <div class="standing-record">${stat.wins}-${stat.losses} matches</div>
+        <div class="standing-details">
+          ${stat.gamesWon}-${stat.gamesLost} games | Quality: ${stat.qualityScore.toFixed(1)}
+        </div>
+        <div class="standing-breakdown">
+          <div class="breakdown-section">
+            <strong>Points Breakdown:</strong><br>
+            Match Wins: ${stat.wins} × 3 = ${stat.wins * 3} pts<br>
+            Games Won: ${stat.gamesWon} × 1 = ${stat.gamesWon} pts<br>
+            Games Lost: ${stat.gamesLost} × -0.5 = ${(stat.gamesLost * -0.5).toFixed(1)} pts<br>
+            <strong>Total: ${stat.points.toFixed(1)} pts</strong>
+          </div>
+          ${beatenList ? `
+            <div class="breakdown-section">
+              <strong>Victories Against:</strong>
+              <div class="opponent-list">${beatenList}</div>
+            </div>
+          ` : ''}
+          ${lostToList ? `
+            <div class="breakdown-section">
+              <strong>Losses Against:</strong>
+              <div class="opponent-list">${lostToList}</div>
+            </div>
+          ` : ''}
+          <div class="breakdown-section">
+            <strong>Quality Score:</strong> ${stat.qualityScore.toFixed(1)}<br>
+            <em style="font-size: 0.9em; color: #666;">
+              (Sum of beaten opponents' points)
+            </em>
+          </div>
+        </div>
+      </div>
+      <div class="standing-points">${stat.points.toFixed(1)}<span style="font-size: 0.6em; color: #999;">pts</span></div>
+    `;
+
+        return row;
+    }
+
+    /**
+     * Create opponent list HTML
+     */
+    createOpponentList(opponentIndices, rankedStats, players, type) {
+        return opponentIndices
+            .map((idx) => {
+                const oppStat = rankedStats.find((s) => s.playerIndex === idx);
+                const icon = type === 'win' ? '✓' : '✗';
+                return `<div class="opponent-item ${type}">${icon} ${this.escapeHtml(players[idx])} (Rank ${oppStat.rank})</div>`;
+            })
+            .join('');
+    }
+
+    /**
+     * Toggle standing row details
+     */
+    toggleStandingDetails(row) {
+        row.classList.toggle('expanded');
+    }
+
+    /**
+     * Update progress bar
+     */
+    updateProgress(completed, total) {
+        const percentage = total > 0 ? (completed / total) * 100 : 0;
+
+        if (this.elements.progressFill) {
+            this.elements.progressFill.style.width = percentage + '%';
+        }
+
+        if (this.elements.progressText) {
+            this.elements.progressText.textContent = `${completed} of ${total} matches completed`;
+        }
+    }
+
+    /**
+     * Escape HTML to prevent XSS
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
+     * Reset to initial state
+     */
+    resetToInitialState() {
+        // Clear forms
+        if (this.elements.tournamentCode) {
+            this.elements.tournamentCode.value = '';
+        }
+
+        // Reset player count
+        if (this.elements.playerCount) {
+            this.elements.playerCount.value = APP_CONFIG.DEFAULT_PLAYERS;
+        }
+
+        // Clear errors
+        this.clearError('joinError');
+
+        // Show mode selector
+        this.showSection('modeSelector');
+
+        // Clear mode button selection
+        document.querySelectorAll('.mode-btn').forEach((btn) => {
+            btn.classList.remove('active');
+        });
+    }
+}
+
+// Create global instance
+const uiManager = new UIManager();

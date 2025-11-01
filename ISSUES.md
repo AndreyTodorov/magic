@@ -1,0 +1,5 @@
+ - [ ] Add three tabs for quickly switching between the three views (Player Schedule, Live Standings, Matches) 
+ - [ ] In the player schedule, if a player has played all games, show the player's overall rating and color the row accordingly
+ - [ ] Create and join tournaments buttons should be disabled if the user is inside a tournament. They have to leave the tournament first.
+ - [ ] Add a "Best of X" dropdown to choose the number of games a player has to play to be considered a winner
+ - [ ] Add a button to toggle the dark mode
