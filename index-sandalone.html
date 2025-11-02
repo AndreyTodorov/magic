@@ -3,18 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="Magic Mikes Tournament - Real-time Best of 3 Tournament Manager"
-    />
-    <title>Magic Mikes Tournament</title>
+    <title>Magic Mikes Tournament (Local Mode)</title>
     <link rel="stylesheet" href="css/styles.css" />
   </head>
   <body>
-    <!-- Connection Status Indicator -->
+    <!-- Connection Status -->
     <div class="connection-status" id="connectionStatus">
       <div class="status-dot"></div>
-      <span id="statusText">Connecting...</span>
+      <span id="statusText">Local Mode</span>
     </div>
 
     <!-- Main Container -->
@@ -23,8 +19,20 @@
       <header class="app-header">
         <h1 class="app-title">🏆 Magic Mikes Tournament</h1>
         <p class="app-subtitle">
-          Best of 3 Format | Real-time Sync | Advanced Ranking System
+          Best of 3 Format | Local Mode | Advanced Ranking System
         </p>
+        <div
+          style="
+            background: #fff3cd;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            margin-top: 10px;
+          "
+        >
+          💾 <strong>Local Mode:</strong> All data stored in your browser (no
+          internet required)
+        </div>
       </header>
 
       <!-- Mode Selection -->
@@ -134,27 +142,17 @@
         id="tournamentSection"
         aria-labelledby="tournamentTitle"
       >
-        <!-- Tournament Code Display -->
         <div class="code-display" id="codeDisplay">
-          <h3 class="code-display__title">
-            🔗 Share this code with other players:
-          </h3>
+          <h3 class="code-display__title">🔗 Tournament Code:</h3>
           <div>
-            <span
-              class="code-box"
-              id="displayCode"
-              aria-label="Tournament code"
-            ></span>
-            <button
-              class="btn btn--success btn--small"
-              id="copyCodeBtn"
-              aria-label="Copy tournament code"
-            >
+            <span class="code-box" id="displayCode"></span>
+            <button class="btn btn--success btn--small" id="copyCodeBtn">
               📋 Copy Code
             </button>
           </div>
           <div class="alert alert--warning">
-            Others can join by clicking "Join Tournament" and entering this code
+            Save this code to access your tournament later (stored locally in
+            browser)
           </div>
         </div>
 
@@ -177,7 +175,6 @@
           </div>
         </div>
 
-        <!-- Progress Bar -->
         <div
           class="progress-bar"
           role="progressbar"
@@ -214,7 +211,7 @@
           <button
             class="tab-btn"
             id="tabStandings"
-            data-view="standings"
+            data-vie="standings"
             role="tab"
             aria-pressed="false"
           >
@@ -223,7 +220,6 @@
 
         </div>
 
-        <!-- Player Schedule -->
         <div class="schedule-info" id="scheduleInfo">
           <h4 class="schedule-info__title">
             📋 Player Schedule - Each player competes in
@@ -232,19 +228,9 @@
           <div class="schedule-grid" id="scheduleGrid"></div>
         </div>
 
-        <!-- Tournament Layout (Standings + Matches) -->
         <div class="tournament-layout">
-          <!-- Standings Panel -->
-          <aside
-            id="standingsPanel"
-            class="standings-panel"
-            aria-labelledby="standingsTitle"
-          >
-            <h3 class="standings-panel__title" id="standingsTitle">
-              🏅 Live Standings
-            </h3>
-
-            <!-- Scoring Legend (click to expand for details) -->
+          <aside id="standingsPanel" class="standings-panel">
+            <h3 class="standings-panel__title">🏅 Live Standings</h3>
             <div
               class="scoring-legend"
               id="scoringLegend"
@@ -315,11 +301,9 @@
                 </p>
               </div>
             </div>
-
             <div class="standings-table" id="standingsTable" role="list"></div>
           </aside>
 
-          <!-- Matches Container -->
           <main
             class="matches-container"
             id="matchesContainer"
@@ -329,15 +313,9 @@
       </section>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-app-check-compat.js"></script>
-
-    <!-- Application Scripts -->
+    <!-- Load scripts in order -->
     <script src="js/config.js"></script>
-    <script src="js/firebase.js"></script>
+    <script src="js/localStorage-manager.js"></script>
     <script src="js/tournament.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/app.js"></script>
