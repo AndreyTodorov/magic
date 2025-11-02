@@ -452,6 +452,37 @@ body {
   text-align: center;
 }
 
+/* Collapsible code display: collapsed by default when shown */
+.code-display {
+  position: relative;
+  max-height: 1000px; /* large default */
+  overflow: hidden;
+}
+
+.code-display.collapsed {
+  max-height: 60px; /* keep title + small bit visible */
+  padding-bottom: 0.5rem;
+}
+
+.code-display__title {
+  cursor: pointer;
+  display: inline-block;
+  user-select: none;
+}
+
+.code-display__title::after {
+  content: "▾";
+  margin-left: 8px;
+  display: inline-block;
+  transition: transform var(--transition-fast);
+  color: var(--color-primary);
+}
+
+/* When expanded (not collapsed) rotate the chevron */
+.code-display:not(.collapsed) .code-display__title::after {
+  transform: rotate(180deg);
+}
+
 .code-display__title {
   color: var(--color-primary);
   margin-bottom: var(--spacing-sm);
@@ -510,7 +541,6 @@ body {
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-lg);
   padding-bottom: var(--spacing-md);
-  border-bottom: 3px solid var(--color-primary);
 }
 
 .header-bar__title {
@@ -604,6 +634,7 @@ body {
 
 .schedule-item__title {
   display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 8px;
 }

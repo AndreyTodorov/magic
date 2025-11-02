@@ -136,9 +136,9 @@ class App {
 
     // Show appropriate section
     if (mode === "create") {
-      uiManager.showSection("createSection");
+      uiManager.showSection(["modeSelector", "createSection"]);
     } else if (mode === "join") {
-      uiManager.showSection("joinSection");
+      uiManager.showSection(["modeSelector", "joinSection"]);
     }
   }
 
@@ -395,6 +395,12 @@ class App {
 
     // Update progress
     const progress = tournamentManager.getProgress();
+    // Auto-collapse the code display once any matches have been completed
+    try {
+      uiManager.setCodeDisplayCollapsed(progress.completed > 0);
+    } catch (err) {
+      // ignore if UI manager not ready
+    }
     uiManager.updateProgress(progress.completed, progress.total);
   }
 

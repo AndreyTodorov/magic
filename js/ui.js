@@ -104,10 +104,40 @@ class UIManager {
       // fail silently if DOM not ready
       console.warn("scoring legend init failed", err);
     }
+
+    // Attach toggle handler for code display (click title to expand/collapse, and not the whole box, because copying code will close it)
+    try {
+      const codeDisplay = this.elements.codeDisplay;
+      if (codeDisplay) {
+        // find title element inside codeDisplay
+        const title = codeDisplay.querySelector(".code-display__title");
+        if (title) {
+          // Make it keyboard accessible
+          title.setAttribute("tabindex", "0");
+          title.setAttribute("role", "button");
+          title.setAttribute("aria-expanded", "false");
+
+          const toggleCodeDisplay = (e) => {
+            const collapsed = codeDisplay.classList.toggle("collapsed");
+            title.setAttribute("aria-expanded", (!collapsed).toString());
+          };
+
+          title.addEventListener("click", toggleCodeDisplay);
+          title.addEventListener("keydown", (ev) => {
+            if (ev.key === "Enter" || ev.key === " ") {
+              ev.preventDefault();
+              toggleCodeDisplay();
+            }
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("code display init failed", err);
+    }
   }
 
   /**
-   * Show specific section
+   * Show specific sections
    */
   showSection(sectionName) {
     // Hide all sections
@@ -121,14 +151,24 @@ class UIManager {
       if (el) el.classList.remove("active");
     });
 
-    // Show requested section
-    const section = this.elements[sectionName];
-    if (section) {
-      section.classList.add("active");
-      this.currentSection = sectionName;
-      // When entering the tournament section, ensure the selected view is applied
-      if (sectionName === "tournamentSection") {
-        this.switchView(this.currentView || "matches");
+    // sectionName can be an array to show multiple sections
+    if (Array.isArray(sectionName)) {
+      sectionName.forEach((name) => {
+        const section = this.elements[name];
+        if (section) {
+          section.classList.add("active");
+        }
+      });
+    } else {
+      // Show requested section
+      const section = this.elements[sectionName];
+      if (section) {
+        section.classList.add("active");
+        this.currentSection = sectionName;
+        // When entering the tournament section, ensure the selected view is applied
+        if (sectionName === "tournamentSection") {
+          this.switchView(this.currentView || "matches");
+        }
       }
     }
   }
@@ -345,6 +385,26 @@ class UIManager {
     }
     if (this.elements.codeDisplay) {
       this.elements.codeDisplay.style.display = "block";
+      // Start collapsed (so it doesn't take too much space); user can expand
+      this.setCodeDisplayCollapsed(true);
+    }
+  }
+
+  /**
+   * Collapse or expand the code display programmatically
+   */
+  setCodeDisplayCollapsed(collapsed) {
+    const el = this.elements.codeDisplay;
+    if (!el) return;
+
+    if (collapsed) {
+      el.classList.add("collapsed");
+      const title = el.querySelector(".code-display__title");
+      if (title) title.setAttribute("aria-expanded", "false");
+    } else {
+      el.classList.remove("collapsed");
+      const title = el.querySelector(".code-display__title");
+      if (title) title.setAttribute("aria-expanded", "true");
     }
   }
 
@@ -420,7 +480,7 @@ class UIManager {
           : "";
 
       const statusHtml = allCompleted
-        ? `<div class="player-status">✅ Completed</div>`
+        ? `<div class="player-status">✅ Done</div>`
         : "";
 
       scheduleItem.innerHTML = `
