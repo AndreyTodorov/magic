@@ -229,6 +229,44 @@ body {
   display: block;
 }
 
+/* === VIEW TABS (Schedule / Standings / Matches) === */
+.view-tabs {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: center;
+  margin: var(--spacing-md) 0;
+}
+
+.tab-btn {
+  background: var(--color-bg-primary);
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  padding: 8px 14px;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.tab-btn.active {
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-primary-dark) 100%
+  );
+  color: #fff;
+  border-color: var(--color-primary-dark);
+}
+
+.view-hidden {
+  display: none !important;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -378,7 +416,7 @@ body {
 /* === INPUT GRID === */
 .input-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-rows: repeat(auto-fit, minmax(180px, 1fr));
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-lg);
 }
@@ -898,10 +936,6 @@ body {
   }
   .container {
     padding: var(--spacing-2xl);
-  }
-
-  .tournament-layout {
-    grid-template-columns: 350px 1fr;
   }
 
   .standings-panel {

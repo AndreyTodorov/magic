@@ -51,6 +51,17 @@ class App {
       btn.addEventListener("click", (e) => this.handleModeSelection(e));
     });
 
+    // View tabs (Schedule / Standings / Matches)
+    uiManager.elements.tabSchedule?.addEventListener("click", () =>
+      uiManager.switchView("schedule")
+    );
+    uiManager.elements.tabStandings?.addEventListener("click", () =>
+      uiManager.switchView("standings")
+    );
+    uiManager.elements.tabMatches?.addEventListener("click", () =>
+      uiManager.switchView("matches")
+    );
+
     // Join form
     uiManager.elements.joinForm?.addEventListener("submit", (e) =>
       this.handleJoinSubmit(e)
@@ -106,6 +117,8 @@ class App {
     tournamentManager.matchesPerPlayer = matchesPerPlayer;
     uiManager.updateTournamentInfo(playerCount, matchesPerPlayer);
     uiManager.renderPlayerInputs(playerCount);
+    // Restore or apply previously selected sub-view (matches/schedule/standings)
+    uiManager.switchView(uiManager.currentView || "matches");
   }
 
   /**

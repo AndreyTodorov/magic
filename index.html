@@ -186,8 +186,44 @@
           <div class="progress-bar__fill" id="progressFill"></div>
         </div>
 
+        <!-- View Tabs: allow quick switching between Schedule / Standings / Matches -->
+        <div
+          class="view-tabs"
+          id="viewTabs"
+          role="tablist"
+          aria-label="Tournament views"
+        >
+          <button
+            class="tab-btn"
+            id="tabSchedule"
+            data-view="schedule"
+            role="tab"
+            aria-pressed="false"
+          >
+            📋 Player Schedule
+          </button>
+          <button
+            class="tab-btn"
+            id="tabStandings"
+            data-view="standings"
+            role="tab"
+            aria-pressed="false"
+          >
+            🏅 Live Standings
+          </button>
+          <button
+            class="tab-btn active"
+            id="tabMatches"
+            data-view="matches"
+            role="tab"
+            aria-pressed="true"
+          >
+            🎮 Matches
+          </button>
+        </div>
+
         <!-- Player Schedule -->
-        <div class="schedule-info">
+        <div class="schedule-info" id="scheduleInfo">
           <h4 class="schedule-info__title">
             📋 Player Schedule - Each player competes in
             <span id="gamesPerPlayer"></span> matches
@@ -198,7 +234,11 @@
         <!-- Tournament Layout (Standings + Matches) -->
         <div class="tournament-layout">
           <!-- Standings Panel -->
-          <aside class="standings-panel" aria-labelledby="standingsTitle">
+          <aside
+            id="standingsPanel"
+            class="standings-panel"
+            aria-labelledby="standingsTitle"
+          >
             <h3 class="standings-panel__title" id="standingsTitle">
               🏅 Live Standings
             </h3>
