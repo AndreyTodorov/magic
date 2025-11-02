@@ -350,20 +350,50 @@ class UIManager {
 
     container.innerHTML = "";
 
+    // Pull current standings so we can show overall rating when a player
+    // has completed all their matches.
+    const { rankedStats } = tournamentManager.getStandings();
+    const statsByIndex = new Map();
+    rankedStats.forEach((s) => statsByIndex.set(s.playerIndex, s));
+
     players.forEach((player, index) => {
-      const opponents = matches
-        .filter((m) => m.player1 === index || m.player2 === index)
-        .map((m) => {
-          const opponentIndex = m.player1 === index ? m.player2 : m.player1;
-          return players[opponentIndex];
-        });
+      const playerMatches = matches.filter(
+        (m) => m.player1 === index || m.player2 === index
+      );
+
+      const opponents = playerMatches.map((m) => {
+        const opponentIndex = m.player1 === index ? m.player2 : m.player1;
+        return players[opponentIndex];
+      });
+
+      // Consider a player 'completed' when all their matches have a winner
+      const allCompleted =
+        playerMatches.length > 0 && playerMatches.every((m) => m.winner !== null);
 
       const scheduleItem = document.createElement("div");
-      scheduleItem.className = "schedule-item";
+      scheduleItem.className = `schedule-item${allCompleted ? " completed" : ""}`;
+
+      // If completed, show overall rating (rank + points) if available
+      const stat = statsByIndex.get(index);
+      const ratingHtml = allCompleted && stat
+        ? `<div class="player-rating">Rank ${stat.rank} · ${stat.points.toFixed(1)} pts</div>`
+        : "";
+
+      const statusHtml = allCompleted
+        ? `<div class="player-status">✅ Completed</div>`
+        : "";
+
       scheduleItem.innerHTML = `
-        <strong>${this.escapeHtml(player)}</strong>
-        vs ${opponents.map((o) => this.escapeHtml(o)).join(", ")}
+        <div class="schedule-item__title">
+          <strong>${this.escapeHtml(player)}</strong>
+          ${ratingHtml}
+          ${statusHtml}
+        </div>
+        <div class="schedule-item__opponents">vs ${opponents
+          .map((o) => this.escapeHtml(o))
+          .join(", ")}</div>
       `;
+
       container.appendChild(scheduleItem);
     });
   }

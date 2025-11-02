@@ -1,6 +1,6 @@
 ### ISSUES
 
-- [ ] Add three tabs for quickly switching between the three views (Player Schedule, Live Standings, Matches) or tap to collapse and expand the sections
+- [x] Add three tabs for quickly switching between the three views (Player Schedule, Live Standings, Matches) or tap to collapse and expand the sections
 - [ ] In the player schedule, if a player has played all games, show the player's overall rating and color the row accordingly
 - [x] Create and join tournaments buttons should be disabled if the user is inside a tournament. They have to leave the tournament first.
 - [ ] Add a "Best of X" dropdown to choose the number of games a player has to play to be considered a winner
