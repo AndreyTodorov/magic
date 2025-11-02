@@ -1,3 +1,13 @@
 *.iml
 *.xml
 /.idea
+/.vscode
+.DS_Store
+/node_modules
+/dist
+/build
+/.expo
+.expo-shared
+.env
+.env.local
+.env.*.local
