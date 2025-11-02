@@ -1,144 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Magic Mikes Tournament (Local Mode)</title>
-  <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
-<!-- Connection Status -->
-<div class="connection-status" id="connectionStatus">
-  <div class="status-dot"></div>
-  <span id="statusText">Local Mode</span>
-</div>
-
-<!-- Main Container -->
-<div class="container">
-  <!-- Header -->
-  <header class="app-header">
-    <h1 class="app-title">🏆 Magic Mikes Tournament</h1>
-    <p class="app-subtitle">Best of 3 Format | Local Mode | Advanced Ranking System</p>
-    <div style="background: #fff3cd; padding: 8px; border-radius: 6px; font-size: 0.85em; margin-top: 10px;">
-      💾 <strong>Local Mode:</strong> All data stored in your browser (no internet required)
-    </div>
-  </header>
-
-  <!-- Mode Selection -->
-  <nav class="mode-selector" id="modeSelector">
-    <button class="mode-btn" data-mode="create">Create Tournament</button>
-    <button class="mode-btn" data-mode="join">Join Tournament</button>
-  </nav>
-
-  <!-- Join Tournament Section -->
-  <section class="section section--padded" id="joinSection">
-    <form id="joinForm">
-      <div class="form-group">
-        <label for="tournamentCode" class="form-label">Enter Tournament Code:</label>
-        <input
-                type="text"
-                id="tournamentCode"
-                class="form-input form-input--center"
-                placeholder="e.g., ABC12345"
-                maxlength="8"
-                minlength="8"
-                style="text-transform: uppercase"
-                required
-        />
-      </div>
-      <button type="submit" class="btn" id="joinSubmitBtn">Join Tournament</button>
-      <div id="joinError" role="alert"></div>
-    </form>
-  </section>
-
-  <!-- Create Tournament Section -->
-  <section class="section section--padded" id="createSection">
-    <div class="form-group text-center">
-      <label for="playerCount" class="form-label">Number of Players:</label>
-      <select id="playerCount" class="form-select">
-        <option value="3">3 Players</option>
-        <option value="4">4 Players</option>
-        <option value="5">5 Players</option>
-        <option value="6">6 Players</option>
-        <option value="7" selected>7 Players</option>
-        <option value="8">8 Players</option>
-        <option value="9">9 Players</option>
-        <option value="10">10 Players</option>
-        <option value="11">11 Players</option>
-        <option value="12">12 Players</option>
-      </select>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Magic Mikes Tournament (Local Mode)</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <!-- Connection Status -->
+    <div class="connection-status" id="connectionStatus">
+      <div class="status-dot"></div>
+      <span id="statusText">Local Mode</span>
     </div>
 
-    <div class="matches-selector">
-      <label for="matchesPerPlayer" class="form-label">Matches Per Player:</label>
-      <select id="matchesPerPlayer" class="form-select"></select>
-      <div class="matches-info" id="matchesInfo"></div>
-    </div>
-
-    <div class="input-grid" id="playerInputs"></div>
-
-    <button class="btn" id="generateBtn">Generate Tournament</button>
-  </section>
-
-  <!-- Tournament View -->
-  <section class="section" id="tournamentSection">
-    <div class="code-display" id="codeDisplay">
-      <h3 class="code-display__title">🔗 Tournament Code:</h3>
-      <div>
-        <span class="code-box" id="displayCode"></span>
-        <button class="btn btn--success btn--small" id="copyCodeBtn">📋 Copy Code</button>
-      </div>
-      <div class="alert alert--warning">
-        Save this code to access your tournament later (stored locally in browser)
-      </div>
-    </div>
-
-    <div class="header-bar">
-      <div>
-        <h2 class="header-bar__title">Tournament Matches</h2>
-        <div class="progress-text" id="progressText"></div>
-      </div>
-      <div class="header-bar__actions">
-        <button class="btn btn--danger btn--small" id="leaveTournamentBtn">Leave Tournament</button>
-      </div>
-    </div>
-
-    <div class="progress-bar">
-      <div class="progress-bar__fill" id="progressFill"></div>
-    </div>
-
-    <div class="schedule-info">
-      <h4 class="schedule-info__title">
-        📋 Player Schedule - Each player competes in <span id="gamesPerPlayer"></span> matches
-      </h4>
-      <div class="schedule-grid" id="scheduleGrid"></div>
-    </div>
-
-    <div class="tournament-layout">
-      <aside class="standings-panel">
-        <h3 class="standings-panel__title">🏅 Live Standings</h3>
-        <div class="scoring-legend">
-          <strong>📊 Scoring System:</strong>
-          <ul>
-            <li>Match Win: +3 pts</li>
-            <li>Game Won: +1 pt</li>
-            <li>Game Lost: -0.5 pts</li>
-          </ul>
-          <em>Tiebreaker: Quality of wins</em>
+    <!-- Main Container -->
+    <div class="container">
+      <!-- Header -->
+      <header class="app-header">
+        <h1 class="app-title">🏆 Magic Mikes Tournament</h1>
+        <p class="app-subtitle">
+          Best of 3 Format | Local Mode | Advanced Ranking System
+        </p>
+        <div
+          style="
+            background: #fff3cd;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            margin-top: 10px;
+          "
+        >
+          💾 <strong>Local Mode:</strong> All data stored in your browser (no
+          internet required)
         </div>
-        <div class="standings-table" id="standingsTable"></div>
-      </aside>
+      </header>
 
-      <main class="matches-container" id="matchesContainer"></main>
+      <!-- Mode Selection -->
+      <nav class="mode-selector" id="modeSelector">
+        <button
+          class="mode-btn"
+          data-mode="create"
+          aria-label="Create new tournament"
+        >
+          Create Tournament
+        </button>
+        <button
+          class="mode-btn"
+          data-mode="join"
+          aria-label="Join existing tournament"
+        >
+          Join Tournament
+        </button>
+      </nav>
+
+      <!-- Join Tournament Section -->
+      <section
+        class="section section--padded"
+        id="joinSection"
+        aria-labelledby="joinTitle"
+      >
+        <form id="joinForm">
+          <div class="form-group">
+            <label for="tournamentCode" class="form-label" id="joinTitle">
+              Enter Tournament Code:
+            </label>
+            <input
+              type="text"
+              id="tournamentCode"
+              class="form-input form-input--center"
+              placeholder="e.g., ABC12345"
+              maxlength="8"
+              minlength="8"
+              pattern="[A-Z0-9]{8}"
+              style="text-transform: uppercase"
+              required
+              aria-describedby="joinError"
+            />
+          </div>
+          <button type="submit" class="btn" id="joinSubmitBtn">
+            Join Tournament
+          </button>
+          <div id="joinError" role="alert" aria-live="polite"></div>
+        </form>
+      </section>
+
+      <!-- Create Tournament Section -->
+      <section
+        class="section section--padded"
+        id="createSection"
+        aria-labelledby="createTitle"
+      >
+        <!-- Player Count Selector -->
+        <div class="form-group text-center">
+          <label for="playerCount" class="form-label">Number of Players:</label>
+          <select
+            id="playerCount"
+            class="form-select"
+            aria-label="Select number of players"
+          >
+            <option value="3">3 Players</option>
+            <option value="4">4 Players</option>
+            <option value="5">5 Players</option>
+            <option value="6">6 Players</option>
+            <option value="7" selected>7 Players</option>
+            <option value="8">8 Players</option>
+            <option value="9">9 Players</option>
+            <option value="10">10 Players</option>
+            <option value="11">11 Players</option>
+            <option value="12">12 Players</option>
+          </select>
+        </div>
+
+        <!-- Matches Per Player Selector -->
+        <div class="matches-selector">
+          <label for="matchesPerPlayer" class="form-label"
+            >Matches Per Player:</label
+          >
+          <select
+            id="matchesPerPlayer"
+            class="form-select"
+            aria-label="Select matches per player"
+          ></select>
+          <div class="matches-info" id="matchesInfo" aria-live="polite"></div>
+        </div>
+
+        <!-- Player Name Inputs -->
+        <div class="input-grid" id="playerInputs"></div>
+
+        <button
+          class="btn"
+          id="generateBtn"
+          aria-label="Generate tournament bracket"
+        >
+          Generate Tournament
+        </button>
+      </section>
+
+      <!-- Tournament View -->
+      <section
+        class="section"
+        id="tournamentSection"
+        aria-labelledby="tournamentTitle"
+      >
+        <div class="code-display" id="codeDisplay">
+          <h3 class="code-display__title">🔗 Tournament Code:</h3>
+          <div>
+            <span class="code-box" id="displayCode"></span>
+            <button class="btn btn--success btn--small" id="copyCodeBtn">
+              📋 Copy Code
+            </button>
+          </div>
+          <div class="alert alert--warning">
+            Save this code to access your tournament later (stored locally in
+            browser)
+          </div>
+        </div>
+
+        <!-- Tournament Header -->
+        <div class="header-bar">
+          <div>
+            <h2 class="header-bar__title" id="tournamentTitle">
+              Tournament Matches
+            </h2>
+            <div
+              class="progress-text"
+              id="progressText"
+              aria-live="polite"
+            ></div>
+          </div>
+          <div class="header-bar__actions">
+            <button class="btn btn--danger btn--small" id="leaveTournamentBtn">
+              Leave Tournament
+            </button>
+          </div>
+        </div>
+
+        <div
+          class="progress-bar"
+          role="progressbar"
+          aria-label="Tournament completion"
+        >
+          <div class="progress-bar__fill" id="progressFill"></div>
+        </div>
+
+        <div class="schedule-info">
+          <h4 class="schedule-info__title">
+            📋 Player Schedule - Each player competes in
+            <span id="gamesPerPlayer"></span> matches
+          </h4>
+          <div class="schedule-grid" id="scheduleGrid"></div>
+        </div>
+
+        <div class="tournament-layout">
+          <aside class="standings-panel">
+            <h3 class="standings-panel__title">🏅 Live Standings</h3>
+            <div class="scoring-legend">
+              <strong>📊 Scoring System:</strong>
+              <ul>
+                <li>Match Win: +3 pts</li>
+                <li>Game Won: +1 pt</li>
+                <li>Game Lost: -0.5 pts</li>
+              </ul>
+              <em>Tiebreaker: Quality of wins</em>
+            </div>
+            <div class="standings-table" id="standingsTable" role="list"></div>
+          </aside>
+
+          <main
+            class="matches-container"
+            id="matchesContainer"
+            role="list"
+          ></main>
+        </div>
+      </section>
     </div>
-  </section>
-</div>
 
-<!-- Load scripts in order -->
-<script src="js/config.js"></script>
-<script src="js/localStorage-manager.js"></script>
-<script src="js/tournament.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/app.js"></script>
-</body>
+    <!-- Load scripts in order -->
+    <script src="js/config.js"></script>
+    <script src="js/localStorage-manager.js"></script>
+    <script src="js/tournament.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+  </body>
 </html>

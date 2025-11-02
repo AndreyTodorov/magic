@@ -1,177 +1,243 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Magic Mikes Tournament - Real-time Best of 3 Tournament Manager">
-  <title>Magic Mikes Tournament</title>
-  <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
-<!-- Connection Status Indicator -->
-<div class="connection-status" id="connectionStatus">
-  <div class="status-dot"></div>
-  <span id="statusText">Connecting...</span>
-</div>
-
-<!-- Main Container -->
-<div class="container">
-  <!-- Header -->
-  <header class="app-header">
-    <h1 class="app-title">🏆 Magic Mikes Tournament</h1>
-    <p class="app-subtitle">Best of 3 Format | Real-time Sync | Advanced Ranking System</p>
-  </header>
-
-  <!-- Mode Selection -->
-  <nav class="mode-selector" id="modeSelector">
-    <button class="mode-btn" data-mode="create" aria-label="Create new tournament">
-      Create Tournament
-    </button>
-    <button class="mode-btn" data-mode="join" aria-label="Join existing tournament">
-      Join Tournament
-    </button>
-  </nav>
-
-  <!-- Join Tournament Section -->
-  <section class="section section--padded" id="joinSection" aria-labelledby="joinTitle">
-    <form id="joinForm">
-      <div class="form-group">
-        <label for="tournamentCode" class="form-label" id="joinTitle">
-          Enter Tournament Code:
-        </label>
-        <input
-                type="text"
-                id="tournamentCode"
-                class="form-input form-input--center"
-                placeholder="e.g., ABC12345"
-                maxlength="8"
-                minlength="8"
-                pattern="[A-Z0-9]{8}"
-                style="text-transform: uppercase"
-                required
-                aria-describedby="joinError"
-        />
-      </div>
-      <button type="submit" class="btn" id="joinSubmitBtn">
-        Join Tournament
-      </button>
-      <div id="joinError" role="alert" aria-live="polite"></div>
-    </form>
-  </section>
-
-  <!-- Create Tournament Section -->
-  <section class="section section--padded" id="createSection" aria-labelledby="createTitle">
-    <!-- Player Count Selector -->
-    <div class="form-group text-center">
-      <label for="playerCount" class="form-label">Number of Players:</label>
-      <select id="playerCount" class="form-select" aria-label="Select number of players">
-        <option value="3">3 Players</option>
-        <option value="4">4 Players</option>
-        <option value="5">5 Players</option>
-        <option value="6">6 Players</option>
-        <option value="7" selected>7 Players</option>
-        <option value="8">8 Players</option>
-        <option value="9">9 Players</option>
-        <option value="10">10 Players</option>
-        <option value="11">11 Players</option>
-        <option value="12">12 Players</option>
-      </select>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Magic Mikes Tournament - Real-time Best of 3 Tournament Manager"
+    />
+    <title>Magic Mikes Tournament</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <!-- Connection Status Indicator -->
+    <div class="connection-status" id="connectionStatus">
+      <div class="status-dot"></div>
+      <span id="statusText">Connecting...</span>
     </div>
 
-    <!-- Matches Per Player Selector -->
-    <div class="matches-selector">
-      <label for="matchesPerPlayer" class="form-label">Matches Per Player:</label>
-      <select id="matchesPerPlayer" class="form-select" aria-label="Select matches per player"></select>
-      <div class="matches-info" id="matchesInfo" aria-live="polite"></div>
-    </div>
+    <!-- Main Container -->
+    <div class="container">
+      <!-- Header -->
+      <header class="app-header">
+        <h1 class="app-title">🏆 Magic Mikes Tournament</h1>
+        <p class="app-subtitle">
+          Best of 3 Format | Real-time Sync | Advanced Ranking System
+        </p>
+      </header>
 
-    <!-- Player Name Inputs -->
-    <div class="input-grid" id="playerInputs"></div>
-
-    <button class="btn" id="generateBtn" aria-label="Generate tournament bracket">
-      Generate Tournament
-    </button>
-  </section>
-
-  <!-- Tournament View -->
-  <section class="section" id="tournamentSection" aria-labelledby="tournamentTitle">
-    <!-- Tournament Code Display -->
-    <div class="code-display" id="codeDisplay">
-      <h3 class="code-display__title">🔗 Share this code with other players:</h3>
-      <div>
-        <span class="code-box" id="displayCode" aria-label="Tournament code"></span>
-        <button class="btn btn--success btn--small" id="copyCodeBtn" aria-label="Copy tournament code">
-          📋 Copy Code
+      <!-- Mode Selection -->
+      <nav class="mode-selector" id="modeSelector">
+        <button
+          class="mode-btn"
+          data-mode="create"
+          aria-label="Create new tournament"
+        >
+          Create Tournament
         </button>
-      </div>
-      <div class="alert alert--warning">
-        Others can join by clicking "Join Tournament" and entering this code
-      </div>
-    </div>
-
-    <!-- Tournament Header -->
-    <div class="header-bar">
-      <div>
-        <h2 class="header-bar__title" id="tournamentTitle">Tournament Matches</h2>
-        <div class="progress-text" id="progressText" aria-live="polite"></div>
-      </div>
-      <div class="header-bar__actions">
-        <button class="btn btn--danger btn--small" id="leaveTournamentBtn">
-          Leave Tournament
+        <button
+          class="mode-btn"
+          data-mode="join"
+          aria-label="Join existing tournament"
+        >
+          Join Tournament
         </button>
-      </div>
-    </div>
+      </nav>
 
-    <!-- Progress Bar -->
-    <div class="progress-bar" role="progressbar" aria-label="Tournament completion">
-      <div class="progress-bar__fill" id="progressFill"></div>
-    </div>
+      <!-- Join Tournament Section -->
+      <section
+        class="section section--padded"
+        id="joinSection"
+        aria-labelledby="joinTitle"
+      >
+        <form id="joinForm">
+          <div class="form-group">
+            <label for="tournamentCode" class="form-label" id="joinTitle">
+              Enter Tournament Code:
+            </label>
+            <input
+              type="text"
+              id="tournamentCode"
+              class="form-input form-input--center"
+              placeholder="e.g., ABC12345"
+              maxlength="8"
+              minlength="8"
+              pattern="[A-Z0-9]{8}"
+              style="text-transform: uppercase"
+              required
+              aria-describedby="joinError"
+            />
+          </div>
+          <button type="submit" class="btn" id="joinSubmitBtn">
+            Join Tournament
+          </button>
+          <div id="joinError" role="alert" aria-live="polite"></div>
+        </form>
+      </section>
 
-    <!-- Player Schedule -->
-    <div class="schedule-info">
-      <h4 class="schedule-info__title">
-        📋 Player Schedule - Each player competes in <span id="gamesPerPlayer"></span> matches
-      </h4>
-      <div class="schedule-grid" id="scheduleGrid"></div>
-    </div>
-
-    <!-- Tournament Layout (Standings + Matches) -->
-    <div class="tournament-layout">
-      <!-- Standings Panel -->
-      <aside class="standings-panel" aria-labelledby="standingsTitle">
-        <h3 class="standings-panel__title" id="standingsTitle">🏅 Live Standings</h3>
-
-        <!-- Scoring Legend -->
-        <div class="scoring-legend">
-          <strong>📊 Scoring System:</strong>
-          <ul>
-            <li>Match Win: +3 pts</li>
-            <li>Game Won: +1 pt</li>
-            <li>Game Lost: -0.5 pts</li>
-          </ul>
-          <em>Tiebreaker: Quality of wins</em>
+      <!-- Create Tournament Section -->
+      <section
+        class="section section--padded"
+        id="createSection"
+        aria-labelledby="createTitle"
+      >
+        <!-- Player Count Selector -->
+        <div class="form-group text-center">
+          <label for="playerCount" class="form-label">Number of Players:</label>
+          <select
+            id="playerCount"
+            class="form-select"
+            aria-label="Select number of players"
+          >
+            <option value="3">3 Players</option>
+            <option value="4">4 Players</option>
+            <option value="5">5 Players</option>
+            <option value="6">6 Players</option>
+            <option value="7" selected>7 Players</option>
+            <option value="8">8 Players</option>
+            <option value="9">9 Players</option>
+            <option value="10">10 Players</option>
+            <option value="11">11 Players</option>
+            <option value="12">12 Players</option>
+          </select>
         </div>
 
-        <div class="standings-table" id="standingsTable" role="list"></div>
-      </aside>
+        <!-- Matches Per Player Selector -->
+        <div class="matches-selector">
+          <label for="matchesPerPlayer" class="form-label"
+            >Matches Per Player:</label
+          >
+          <select
+            id="matchesPerPlayer"
+            class="form-select"
+            aria-label="Select matches per player"
+          ></select>
+          <div class="matches-info" id="matchesInfo" aria-live="polite"></div>
+        </div>
 
-      <!-- Matches Container -->
-      <main class="matches-container" id="matchesContainer" role="list"></main>
+        <!-- Player Name Inputs -->
+        <div class="input-grid" id="playerInputs"></div>
+
+        <button
+          class="btn"
+          id="generateBtn"
+          aria-label="Generate tournament bracket"
+        >
+          Generate Tournament
+        </button>
+      </section>
+
+      <!-- Tournament View -->
+      <section
+        class="section"
+        id="tournamentSection"
+        aria-labelledby="tournamentTitle"
+      >
+        <!-- Tournament Code Display -->
+        <div class="code-display" id="codeDisplay">
+          <h3 class="code-display__title">
+            🔗 Share this code with other players:
+          </h3>
+          <div>
+            <span
+              class="code-box"
+              id="displayCode"
+              aria-label="Tournament code"
+            ></span>
+            <button
+              class="btn btn--success btn--small"
+              id="copyCodeBtn"
+              aria-label="Copy tournament code"
+            >
+              📋 Copy Code
+            </button>
+          </div>
+          <div class="alert alert--warning">
+            Others can join by clicking "Join Tournament" and entering this code
+          </div>
+        </div>
+
+        <!-- Tournament Header -->
+        <div class="header-bar">
+          <div>
+            <h2 class="header-bar__title" id="tournamentTitle">
+              Tournament Matches
+            </h2>
+            <div
+              class="progress-text"
+              id="progressText"
+              aria-live="polite"
+            ></div>
+          </div>
+          <div class="header-bar__actions">
+            <button class="btn btn--danger btn--small" id="leaveTournamentBtn">
+              Leave Tournament
+            </button>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div
+          class="progress-bar"
+          role="progressbar"
+          aria-label="Tournament completion"
+        >
+          <div class="progress-bar__fill" id="progressFill"></div>
+        </div>
+
+        <!-- Player Schedule -->
+        <div class="schedule-info">
+          <h4 class="schedule-info__title">
+            📋 Player Schedule - Each player competes in
+            <span id="gamesPerPlayer"></span> matches
+          </h4>
+          <div class="schedule-grid" id="scheduleGrid"></div>
+        </div>
+
+        <!-- Tournament Layout (Standings + Matches) -->
+        <div class="tournament-layout">
+          <!-- Standings Panel -->
+          <aside class="standings-panel" aria-labelledby="standingsTitle">
+            <h3 class="standings-panel__title" id="standingsTitle">
+              🏅 Live Standings
+            </h3>
+
+            <!-- Scoring Legend -->
+            <div class="scoring-legend">
+              <strong>📊 Scoring System:</strong>
+              <ul>
+                <li>Match Win: +3 pts</li>
+                <li>Game Won: +1 pt</li>
+                <li>Game Lost: -0.5 pts</li>
+              </ul>
+              <em>Tiebreaker: Quality of wins</em>
+            </div>
+
+            <div class="standings-table" id="standingsTable" role="list"></div>
+          </aside>
+
+          <!-- Matches Container -->
+          <main
+            class="matches-container"
+            id="matchesContainer"
+            role="list"
+          ></main>
+        </div>
+      </section>
     </div>
-  </section>
-</div>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-app-check-compat.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-app-check-compat.js"></script>
 
-<!-- Application Scripts -->
-<script src="js/config.js"></script>
-<script src="js/firebase.js"></script>
-<script src="js/tournament.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/app.js"></script>
-</body>
+    <!-- Application Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/firebase.js"></script>
+    <script src="js/tournament.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+  </body>
 </html>
