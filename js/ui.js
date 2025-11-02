@@ -55,6 +55,9 @@ class UIManager {
       scheduleGrid: document.getElementById("scheduleGrid"),
       standingsTable: document.getElementById("standingsTable"),
       matchesContainer: document.getElementById("matchesContainer"),
+      // Scoring legend (expandable explanation)
+      scoringLegend: document.getElementById("scoringLegend"),
+      scoringLegendDetails: document.getElementById("scoringLegendDetails"),
     };
 
     // Restore saved view (if any)
@@ -69,6 +72,37 @@ class UIManager {
       }
     } catch (e) {
       // ignore storage errors
+    }
+
+    // Attach toggle handler for scoring legend (click and keyboard)
+    try {
+      const legend = this.elements.scoringLegend;
+      const details = this.elements.scoringLegendDetails;
+      if (legend && details) {
+        const toggle = (e) => {
+          // allow clicks from inner elements
+          const expanded = legend.getAttribute("aria-expanded") === "true";
+          legend.setAttribute("aria-expanded", (!expanded).toString());
+          if (expanded) {
+            details.hidden = true;
+            legend.classList.remove("expanded");
+          } else {
+            details.hidden = false;
+            legend.classList.add("expanded");
+          }
+        };
+
+        legend.addEventListener("click", toggle);
+        legend.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            toggle();
+          }
+        });
+      }
+    } catch (err) {
+      // fail silently if DOM not ready
+      console.warn("scoring legend init failed", err);
     }
   }
 
@@ -368,16 +402,22 @@ class UIManager {
 
       // Consider a player 'completed' when all their matches have a winner
       const allCompleted =
-        playerMatches.length > 0 && playerMatches.every((m) => m.winner !== null);
+        playerMatches.length > 0 &&
+        playerMatches.every((m) => m.winner !== null);
 
       const scheduleItem = document.createElement("div");
-      scheduleItem.className = `schedule-item${allCompleted ? " completed" : ""}`;
+      scheduleItem.className = `schedule-item${
+        allCompleted ? " completed" : ""
+      }`;
 
       // If completed, show overall rating (rank + points) if available
       const stat = statsByIndex.get(index);
-      const ratingHtml = allCompleted && stat
-        ? `<div class="player-rating">Rank ${stat.rank} · ${stat.points.toFixed(1)} pts</div>`
-        : "";
+      const ratingHtml =
+        allCompleted && stat
+          ? `<div class="player-rating">Rank ${
+              stat.rank
+            } · ${stat.points.toFixed(1)} pts</div>`
+          : "";
 
       const statusHtml = allCompleted
         ? `<div class="player-status">✅ Completed</div>`

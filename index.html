@@ -243,15 +243,76 @@
               🏅 Live Standings
             </h3>
 
-            <!-- Scoring Legend -->
-            <div class="scoring-legend">
-              <strong>📊 Scoring System:</strong>
+            <!-- Scoring Legend (click to expand for details) -->
+            <div
+              class="scoring-legend"
+              id="scoringLegend"
+              tabindex="0"
+              role="button"
+              aria-expanded="false"
+              aria-controls="scoringLegendDetails"
+            >
+              <div class="scoring-legend__header">
+                <strong>📊 Scoring System:</strong>
+                <span class="scoring-legend__chev" aria-hidden="true">▾</span>
+              </div>
+
               <ul>
                 <li>Match Win: +3 pts</li>
                 <li>Game Won: +1 pt</li>
                 <li>Game Lost: -0.5 pts</li>
               </ul>
               <em>Tiebreaker: Quality of wins</em>
+
+              <div
+                class="scoring-legend__details"
+                id="scoringLegendDetails"
+                hidden
+              >
+                <h4>How tiebreaking works</h4>
+                <ol>
+                  <li>
+                    <strong>Primary — Total Points:</strong> Players are ranked
+                    by total points (match wins × 3 + games won × 1 + games lost
+                    × -0.5).
+                  </li>
+                  <li>
+                    <strong>Secondary — Head-to-head:</strong> If two players
+                    are tied on points and played each other, the winner of
+                    their direct match ranks higher.
+                  </li>
+                  <li>
+                    <strong>Tertiary — Quality Score:</strong> Sum of the
+                    defeated opponents' total points. Beating stronger opponents
+                    increases your quality score.
+                  </li>
+                  <li>
+                    <strong>Fourth — Win Percentage:</strong> Percentage of
+                    matches won (useful when players have played different
+                    numbers of matches).
+                  </li>
+                  <li>
+                    <strong>Fifth — Game Differential:</strong> Games won −
+                    games lost.
+                  </li>
+                  <li>
+                    <strong>Final — Total Games Won:</strong> If still tied, the
+                    player with more games won ranks higher.
+                  </li>
+                </ol>
+
+                <p>
+                  Examples and notes: If points are identical but you beat a
+                  tied opponent directly, head-to-head decides the order. If
+                  head-to-head doesn't apply (no match between the tied players
+                  or a circular tie), the quality score (sum of beaten
+                  opponents' points) is used next.
+                </p>
+                <p style="font-size: 0.9em; color: #666; margin-top: 8px">
+                  You can change scoring values in <code>js/config.js</code> —
+                  see the APP_CONFIG.SCORING section.
+                </p>
+              </div>
             </div>
 
             <div class="standings-table" id="standingsTable" role="list"></div>

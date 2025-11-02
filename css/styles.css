@@ -592,9 +592,13 @@ body {
 
 /* Completed player card styling */
 .schedule-item.completed {
-  background: linear-gradient(90deg, rgba(40,167,69,0.06), rgba(16,185,129,0.03));
-  border: 1px solid rgba(40,167,69,0.18);
-  box-shadow: 0 4px 12px rgba(16,185,129,0.08);
+  background: linear-gradient(
+    90deg,
+    rgba(40, 167, 69, 0.06),
+    rgba(16, 185, 129, 0.03)
+  );
+  border: 1px solid rgba(40, 167, 69, 0.18);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);
   transform: translateY(-2px);
 }
 
@@ -613,7 +617,7 @@ body {
 .player-rating {
   font-size: 0.85rem;
   color: var(--color-primary-dark);
-  background: rgba(102,126,234,0.06);
+  background: rgba(102, 126, 234, 0.06);
   padding: 3px 8px;
   border-radius: 999px;
   font-weight: 700;
@@ -672,6 +676,44 @@ body {
   font-size: 0.9em;
   display: block;
   margin-top: var(--spacing-xs);
+}
+
+/* Expandable scoring legend */
+.scoring-legend {
+  cursor: pointer;
+}
+
+.scoring-legend__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.scoring-legend__chev {
+  font-size: 1.1rem;
+  color: var(--color-primary);
+  transition: transform var(--transition-fast);
+}
+
+.scoring-legend.expanded .scoring-legend__chev {
+  transform: rotate(180deg);
+}
+
+.scoring-legend__details {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: rgba(25, 118, 210, 0.04);
+  border-radius: var(--radius-sm);
+  font-size: clamp(0.75rem, 2vw, 0.9rem);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  transition: max-height 0.28s var(--transition-base),
+    opacity 0.2s var(--transition-fast);
+  overflow: hidden;
+}
+
+.scoring-legend__details[hidden] {
+  display: none;
 }
 
 /* === STANDING ROW === */
