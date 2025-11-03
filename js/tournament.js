@@ -153,10 +153,17 @@ class TournamentManager {
                 .sort((a, b) => parseInt(a) - parseInt(b))
                 .map((key) => {
                     const match = tournamentData.matches[key];
+                    // Normalize games array because Firebase omits nulls (missing indices become undefined)
+                    const games = Array.from({ length: APP_CONFIG.GAMES_PER_MATCH }, (_, i) => {
+                        const v = Array.isArray(match.games) ? match.games[i] : null;
+                        return v === 1 || v === 2 ? v : null;
+                    });
+                    // Normalize winner to null unless it is 1 or 2
+                    const winner = match.winner === 1 || match.winner === 2 ? match.winner : null;
                     return {
                         ...match,
-                        games: match.games || [null, null, null],
-                        winner: match.winner !== undefined ? match.winner : null,
+                        games,
+                        winner,
                     };
                 });
         } else {
