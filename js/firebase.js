@@ -84,6 +84,7 @@ class FirebaseManager {
    */
   monitorConnection() {
     const connectedRef = this.database.ref(".info/connected");
+    let wasDisconnected = false;
 
     connectedRef.on("value", (snapshot) => {
       const isConnected = snapshot.val() === true;
@@ -95,9 +96,25 @@ class FirebaseManager {
       this.connectionCallbacks.forEach((callback) => callback(isConnected));
 
       if (isConnected) {
-        console.log("✓ Connected to Firebase");
+        if (wasDisconnected) {
+          console.log("✓ Reconnected to Firebase");
+          // Show user-friendly notification
+          const statusText = document.getElementById("statusText");
+          if (statusText) {
+            statusText.textContent = "Reconnected";
+            setTimeout(() => {
+              if (snapshot.val() === true) {
+                statusText.textContent = "Connected";
+              }
+            }, 2000);
+          }
+        } else {
+          console.log("✓ Connected to Firebase");
+        }
+        wasDisconnected = false;
       } else {
         console.warn("⚠ Disconnected from Firebase");
+        wasDisconnected = true;
       }
     });
   }

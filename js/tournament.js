@@ -67,6 +67,8 @@ class TournamentManager {
         this.shuffleArray(allPossibleMatches);
 
         let attempts = 0;
+        // Max attempts prevents infinite loops if the match structure is impossible
+        // 1000 attempts is sufficient for valid configurations (up to 12 players)
         const maxAttempts = 1000;
 
         while (selectedMatches.length < targetMatches && attempts < maxAttempts) {
@@ -153,6 +155,10 @@ class TournamentManager {
                 .sort((a, b) => parseInt(a) - parseInt(b))
                 .map((key) => {
                     const match = tournamentData.matches[key];
+                    if (!match) {
+                        console.warn(`Invalid match data for key ${key}`);
+                        return null;
+                    }
                     // Normalize games array because Firebase omits nulls (missing indices become undefined)
                     const games = Array.from({ length: APP_CONFIG.GAMES_PER_MATCH }, (_, i) => {
                         const v = Array.isArray(match.games) ? match.games[i] : null;
@@ -165,10 +171,33 @@ class TournamentManager {
                         games,
                         winner,
                     };
-                });
+                })
+                .filter(match => match !== null);
         } else {
             this.matches = [];
         }
+    }
+
+    /**
+     * Sanitize player name (remove problematic characters)
+     */
+    sanitizePlayerName(name) {
+        if (!name) return '';
+
+        // Trim whitespace
+        let sanitized = name.trim();
+
+        // Limit length to 30 characters
+        sanitized = sanitized.substring(0, 30);
+
+        // Remove potentially problematic characters but keep common punctuation
+        // Allow letters, numbers, spaces, apostrophes, hyphens, periods
+        sanitized = sanitized.replace(/[^a-zA-Z0-9\s'\-\.]/g, '');
+
+        // Collapse multiple spaces into one
+        sanitized = sanitized.replace(/\s+/g, ' ');
+
+        return sanitized.trim();
     }
 
     /**
@@ -178,19 +207,21 @@ class TournamentManager {
         const seen = new Map();
         const duplicates = [];
         const empty = [];
+        const sanitized = [];
 
         names.forEach((name, index) => {
-            const trimmed = name.trim();
+            const clean = this.sanitizePlayerName(name);
+            sanitized.push(clean);
 
-            if (!trimmed) {
+            if (!clean) {
                 empty.push(index);
                 return;
             }
 
-            const normalized = trimmed.toLowerCase();
+            const normalized = clean.toLowerCase();
             if (seen.has(normalized)) {
                 duplicates.push({
-                    name: trimmed,
+                    name: clean,
                     indices: [seen.get(normalized), index],
                 });
             } else {
@@ -202,6 +233,7 @@ class TournamentManager {
             isValid: duplicates.length === 0 && empty.length === 0,
             duplicates,
             empty,
+            sanitized,
         };
     }
 

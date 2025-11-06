@@ -13,7 +13,7 @@ class App {
    * Initialize application
    */
   async init() {
-    console.log("🚀 Initializing Magic Mikes Tournament...");
+    logger.info("App", "Initializing Magic Mikes Tournament");
 
     // Cache DOM elements
     uiManager.cacheElements();
@@ -21,7 +21,7 @@ class App {
     // Initialize Firebase
     const firebaseOk = await firebaseManager.initialize();
     if (!firebaseOk) {
-      console.error("⚠️ Firebase initialization failed");
+      logger.error("App", "Firebase initialization failed");
       return;
     }
 
@@ -39,7 +39,7 @@ class App {
     // Attempt to rejoin tournament
     await this.attemptRejoin();
 
-    console.log("✓ Application initialized successfully");
+    logger.info("App", "Application initialized successfully");
   }
 
   /**
@@ -66,6 +66,11 @@ class App {
     uiManager.elements.joinForm?.addEventListener("submit", (e) =>
       this.handleJoinSubmit(e)
     );
+
+    // Real-time tournament code validation
+    uiManager.elements.tournamentCode?.addEventListener("input", (e) => {
+      this.validateTournamentCodeInput(e.target);
+    });
 
     // Player count change
     uiManager.elements.playerCount?.addEventListener("change", () =>
@@ -103,6 +108,18 @@ class App {
     document.addEventListener("input", (e) => {
       if (e.target.matches("[data-player-index]")) {
         this.debouncedDuplicateCheck();
+      }
+    });
+
+    // Game result buttons (event delegation for security)
+    document.addEventListener("click", (e) => {
+      if (e.target.matches(".game-result") && !e.target.disabled) {
+        const matchId = parseInt(e.target.dataset.matchId);
+        const gameNum = parseInt(e.target.dataset.gameNum);
+        const playerNum = parseInt(e.target.dataset.playerNum);
+        if (!isNaN(matchId) && !isNaN(gameNum) && !isNaN(playerNum)) {
+          this.recordGame(matchId, gameNum, playerNum);
+        }
       }
     });
   }
@@ -197,6 +214,41 @@ class App {
   }
 
   /**
+   * Validate tournament code input in real-time
+   */
+  validateTournamentCodeInput(input) {
+    if (!input) return;
+
+    // Auto-uppercase
+    const value = input.value.toUpperCase();
+    if (value !== input.value) {
+      input.value = value;
+    }
+
+    // Clear previous validation
+    uiManager.clearError("joinError");
+    input.classList.remove("form-input--error", "form-input--success");
+
+    // Validate format
+    if (value.length > 0) {
+      const isValid = /^[A-Z0-9]{0,8}$/.test(value);
+
+      if (!isValid) {
+        input.classList.add("form-input--error");
+        uiManager.showError("joinError", "Code must be 8 characters (letters and numbers only)", 0);
+      } else if (value.length === 8) {
+        input.classList.add("form-input--success");
+      }
+    }
+
+    // Enable/disable submit button
+    const isComplete = value.length === 8 && /^[A-Z0-9]{8}$/.test(value);
+    if (uiManager.elements.joinSubmitBtn) {
+      uiManager.elements.joinSubmitBtn.disabled = !isComplete;
+    }
+  }
+
+  /**
    * Handle join tournament form submission
    */
   async handleJoinSubmit(event) {
@@ -217,7 +269,7 @@ class App {
     try {
       await this.joinTournament(code);
     } catch (error) {
-      console.error("Join error:", error);
+      logger.error("App", "Failed to join tournament", error);
       uiManager.showError(
         "joinError",
         error.message || "Failed to join tournament"
@@ -261,7 +313,7 @@ class App {
     // Save session
     this.saveTournamentSession(code, false);
 
-    console.log("✓ Joined tournament:", code);
+    logger.info("App", `Successfully joined tournament: ${code}`);
   }
 
   /**
@@ -269,7 +321,7 @@ class App {
    */
   async handleGenerateTournament() {
     if (!firebaseManager.isInitialized) {
-      alert("Firebase is not configured. Please check the console.");
+      uiManager.showAlert("Firebase is not configured. Please check the console.", "error");
       return;
     }
 
@@ -277,20 +329,25 @@ class App {
 
     // Validate player names
     if (!uiManager.checkDuplicateNames(playerCount)) {
-      alert("Please fix duplicate or empty player names");
+      uiManager.showAlert("Please fix duplicate or empty player names", "error");
       return;
     }
 
-    // Collect player names
+    // Collect and sanitize player names
     const playerNames = [];
     for (let i = 1; i <= playerCount; i++) {
       const input = document.getElementById(`p${i}`);
-      const name = input?.value.trim();
-      if (!name) {
-        alert(`Please enter a name for Player ${i}`);
+      const name = input?.value;
+      if (!name || !name.trim()) {
+        uiManager.showAlert(`Please enter a name for Player ${i}`, "error");
         return;
       }
-      playerNames.push(name);
+      const sanitized = tournamentManager.sanitizePlayerName(name);
+      if (!sanitized) {
+        uiManager.showAlert(`Player ${i} name contains only invalid characters`, "error");
+        return;
+      }
+      playerNames.push(sanitized);
     }
 
     uiManager.setButtonLoading(
@@ -302,8 +359,8 @@ class App {
     try {
       await this.createTournament(playerNames);
     } catch (error) {
-      console.error("Create error:", error);
-      alert("Error creating tournament. Please try again.");
+      logger.error("App", "Failed to create tournament", error);
+      uiManager.showAlert("Error creating tournament. Please try again.", "error");
     } finally {
       uiManager.setButtonLoading(uiManager.elements.generateBtn, false);
     }
@@ -347,7 +404,7 @@ class App {
     // Save session
     this.saveTournamentSession(code, true);
 
-    console.log("✓ Tournament created:", code);
+    logger.info("App", `Successfully created tournament: ${code}`);
   }
 
   /**
@@ -356,15 +413,27 @@ class App {
   startTournamentListener(code) {
     // Unsubscribe from previous tournament if any
     if (this.unsubscribeTournament) {
+      logger.debug("App", "Cleaning up previous tournament listener");
       this.unsubscribeTournament();
+      this.unsubscribeTournament = null;
     }
+
+    // Ensure we're listening to the correct tournament
+    const currentCode = code;
+    logger.debug("App", `Starting listener for tournament: ${code}`);
 
     this.unsubscribeTournament = firebaseManager.onTournamentUpdate(
       code,
       (data) => {
+        // Ignore updates if we've switched tournaments
+        if (tournamentManager.currentTournamentCode !== currentCode) {
+          logger.debug("App", `Ignoring update from old tournament ${currentCode}`);
+          return;
+        }
+
         if (!data) {
-          alert("Tournament has been deleted.");
-          this.handleLeaveTournament();
+          uiManager.showAlert("Tournament has been deleted.", "warning");
+          this.leaveTournament();
           return;
         }
 
@@ -399,7 +468,8 @@ class App {
     try {
       uiManager.setCodeDisplayCollapsed(progress.completed > 0);
     } catch (err) {
-      // ignore if UI manager not ready
+      // Ignore if UI manager not ready (on initial load)
+      console.warn('Failed to toggle code display:', err);
     }
     uiManager.updateProgress(progress.completed, progress.total);
   }
@@ -411,7 +481,7 @@ class App {
     const result = tournamentManager.updateMatchGame(matchId, gameNum, winner);
 
     if (result.error) {
-      alert(result.error);
+      uiManager.showAlert(result.error, "warning");
       return;
     }
 
@@ -425,8 +495,8 @@ class App {
         result.match
       );
     } catch (error) {
-      console.error("Error updating match:", error);
-      alert("Error updating match. Please try again.");
+      logger.error("App", "Failed to update match", error);
+      uiManager.showAlert("Error updating match. Please try again.", "error");
     }
   }
 
@@ -464,7 +534,7 @@ class App {
     // Reset UI
     uiManager.resetToInitialState();
 
-    console.log("✓ Left tournament");
+    logger.info("App", "Left tournament");
   }
 
   /**

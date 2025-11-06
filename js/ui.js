@@ -71,7 +71,8 @@ class UIManager {
         this.currentView = saved;
       }
     } catch (e) {
-      // ignore storage errors
+      // Ignore storage errors (private browsing mode, etc.)
+      console.warn('Failed to restore view from localStorage:', e);
     }
 
     // Attach toggle handler for scoring legend (click and keyboard)
@@ -201,7 +202,8 @@ class UIManager {
     try {
       localStorage.setItem(this.localStorageKey, viewName);
     } catch (e) {
-      // ignore
+      // Ignore storage errors (quota exceeded, private browsing, etc.)
+      console.warn('Failed to save view to localStorage:', e);
     }
 
     // show selected
@@ -246,6 +248,47 @@ class UIManager {
   clearError(elementId) {
     const el = document.getElementById(elementId);
     if (el) el.innerHTML = "";
+  }
+
+  /**
+   * Show temporary alert message (replaces browser alert)
+   */
+  showAlert(message, type = "error", duration = 5000) {
+    // Create alert container if it doesn't exist
+    let alertContainer = document.getElementById("alertContainer");
+    if (!alertContainer) {
+      alertContainer = document.createElement("div");
+      alertContainer.id = "alertContainer";
+      alertContainer.className = "alert-container";
+      document.body.appendChild(alertContainer);
+    }
+
+    // Create alert element
+    const alertEl = document.createElement("div");
+    alertEl.className = `alert alert--${type} alert--popup`;
+    alertEl.setAttribute("role", "alert");
+    alertEl.innerHTML = `
+      <div class="alert__content">${this.escapeHtml(message)}</div>
+      <button class="alert__close" aria-label="Close">&times;</button>
+    `;
+
+    // Add to container
+    alertContainer.appendChild(alertEl);
+
+    // Handle close button
+    const closeBtn = alertEl.querySelector(".alert__close");
+    const removeAlert = () => {
+      alertEl.classList.add("alert--removing");
+      setTimeout(() => alertEl.remove(), 300);
+    };
+    closeBtn.addEventListener("click", removeAlert);
+
+    // Auto-remove after duration
+    if (duration > 0) {
+      setTimeout(removeAlert, duration);
+    }
+
+    return alertEl;
   }
 
   /**
@@ -612,15 +655,13 @@ class UIManager {
       .join(" ");
 
     const label = isWin ? "W" : isLoss ? "L" : gameNum + 1;
-    const onclick =
-      !disabled || match.games[gameNum] !== null
-        ? `app.recordGame(${match.id}, ${gameNum}, ${playerNum})`
-        : "return false;";
 
     return `
       <button
         class="${classes}"
-        onclick="${onclick}"
+        data-match-id="${match.id}"
+        data-game-num="${gameNum}"
+        data-player-num="${playerNum}"
         aria-label="Game ${gameNum + 1}: ${label}"
         ${disabled && match.games[gameNum] === null ? "disabled" : ""}>
         ${label}
@@ -649,8 +690,20 @@ class UIManager {
   createStandingRow(stat, tiedRanks, rankedStats, players) {
     const row = document.createElement("div");
     row.className = "standing-row";
-    row.setAttribute("role", "listitem");
-    row.onclick = () => this.toggleStandingDetails(row);
+    row.setAttribute("role", "button");
+    row.setAttribute("tabindex", "0");
+    row.setAttribute("aria-expanded", "false");
+    row.setAttribute("aria-label", `View details for ${stat.player}, rank ${stat.rank}, ${stat.points.toFixed(1)} points`);
+
+    // Handle both click and keyboard
+    const toggle = () => this.toggleStandingDetails(row);
+    row.onclick = toggle;
+    row.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        toggle();
+      }
+    };
 
     const isTied = tiedRanks.has(stat.rank);
     if (isTied) row.classList.add("tied");
@@ -749,7 +802,8 @@ class UIManager {
    * Toggle standing row details
    */
   toggleStandingDetails(row) {
-    row.classList.toggle("expanded");
+    const isExpanded = row.classList.toggle("expanded");
+    row.setAttribute("aria-expanded", isExpanded.toString());
   }
 
   /**

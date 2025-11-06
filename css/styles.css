@@ -336,6 +336,11 @@ body {
   background-color: #fff5f5;
 }
 
+.form-input--success {
+  border-color: var(--color-success);
+  background-color: #f0fff4;
+}
+
 .form-error {
   color: var(--color-danger);
   font-size: 0.75rem;
@@ -1134,5 +1139,88 @@ body {
   .mode-selector,
   .btn {
     display: none !important;
+  }
+}
+
+/* ============================================
+   POPUP ALERT SYSTEM
+   ============================================ */
+
+.alert-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  max-width: 400px;
+}
+
+.alert--popup {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  animation: slideIn 0.3s ease;
+  border-left: 4px solid;
+}
+
+.alert--popup.alert--removing {
+  animation: slideOut 0.3s ease forwards;
+}
+
+.alert__content {
+  flex: 1;
+}
+
+.alert__close {
+  background: transparent;
+  border: none;
+  font-size: 1.5em;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  line-height: 1;
+}
+
+.alert__close:hover {
+  opacity: 1;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .alert-container {
+    left: 10px;
+    right: 10px;
+    max-width: none;
   }
 }
