@@ -9,6 +9,9 @@ class UIManager {
     this.currentSection = null;
     this.currentView = "matches";
     this.localStorageKey = "mm_selected_view";
+    // Tracks whether the user explicitly collapsed/expanded the tournament code
+    // null = no explicit user action yet, true = user collapsed, false = user expanded
+    this.codeDisplayUserCollapsed = null;
   }
 
   /**
@@ -71,7 +74,8 @@ class UIManager {
         this.currentView = saved;
       }
     } catch (e) {
-      // ignore storage errors
+      // Ignore storage errors (private browsing mode, etc.)
+      console.warn("Failed to restore view from localStorage:", e);
     }
 
     // Attach toggle handler for scoring legend (click and keyboard)
@@ -120,6 +124,9 @@ class UIManager {
           const toggleCodeDisplay = (e) => {
             const collapsed = codeDisplay.classList.toggle("collapsed");
             title.setAttribute("aria-expanded", (!collapsed).toString());
+            // Record that the user explicitly toggled the code display so
+            // programmatic re-renders respect their choice unless forced.
+            this.codeDisplayUserCollapsed = collapsed;
           };
 
           title.addEventListener("click", toggleCodeDisplay);
@@ -201,7 +208,8 @@ class UIManager {
     try {
       localStorage.setItem(this.localStorageKey, viewName);
     } catch (e) {
-      // ignore
+      // Ignore storage errors (quota exceeded, private browsing, etc.)
+      console.warn("Failed to save view to localStorage:", e);
     }
 
     // show selected
@@ -249,9 +257,50 @@ class UIManager {
   }
 
   /**
+   * Show temporary alert message (replaces browser alert)
+   */
+  showAlert(message, type = "error", duration = 5000) {
+    // Create alert container if it doesn't exist
+    let alertContainer = document.getElementById("alertContainer");
+    if (!alertContainer) {
+      alertContainer = document.createElement("div");
+      alertContainer.id = "alertContainer";
+      alertContainer.className = "alert-container";
+      document.body.appendChild(alertContainer);
+    }
+
+    // Create alert element
+    const alertEl = document.createElement("div");
+    alertEl.className = `alert alert--${type} alert--popup`;
+    alertEl.setAttribute("role", "alert");
+    alertEl.innerHTML = `
+      <div class="alert__content">${this.escapeHtml(message)}</div>
+      <button class="alert__close" aria-label="Close">&times;</button>
+    `;
+
+    // Add to container
+    alertContainer.appendChild(alertEl);
+
+    // Handle close button
+    const closeBtn = alertEl.querySelector(".alert__close");
+    const removeAlert = () => {
+      alertEl.classList.add("alert--removing");
+      setTimeout(() => alertEl.remove(), 300);
+    };
+    closeBtn.addEventListener("click", removeAlert);
+
+    // Auto-remove after duration
+    if (duration > 0) {
+      setTimeout(removeAlert, duration);
+    }
+
+    return alertEl;
+  }
+
+  /**
    * Set button loading state
    */
-  setButtonLoading(button, isLoading, loadingText = "🔄 Loading...") {
+  setButtonLoading(button, isLoading, loadingText = "Loading...") {
     if (!button) return;
 
     if (isLoading) {
@@ -386,7 +435,8 @@ class UIManager {
     if (this.elements.codeDisplay) {
       this.elements.codeDisplay.style.display = "block";
       // Start collapsed (so it doesn't take too much space); user can expand
-      this.setCodeDisplayCollapsed(true);
+      // Force initial collapsed state when first displaying the code
+      this.setCodeDisplayCollapsed({ collapsed: true, force: true });
     }
   }
 
@@ -394,8 +444,35 @@ class UIManager {
    * Collapse or expand the code display programmatically
    */
   setCodeDisplayCollapsed(collapsed) {
+    // New signature: setCodeDisplayCollapsed(collapsed, options = {})
+    // options.force: when true, apply the change even if the user has
+    // explicitly toggled the code display. When false (default), do not
+    // override a user's explicit choice.
     const el = this.elements.codeDisplay;
     if (!el) return;
+
+    // Support backward-compatible single-argument calls where callers may
+    // pass only a boolean. If a caller passed an options object, handle it.
+    let force = false;
+    // If more than one argument was passed, the second arg will be in
+    // arguments[1] when invoked. But to keep simple and avoid breaking
+    // call-sites, detect if collapsed is an object.
+    if (typeof collapsed === "object" && collapsed !== null) {
+      const opts = collapsed;
+      collapsed = !!opts.collapsed;
+      force = !!opts.force;
+    } else if (arguments.length > 1) {
+      const opts = arguments[1] || {};
+      force = !!opts.force;
+    }
+
+    // If the user explicitly toggled the display and we're not forcing, do
+    // not change their preference. If user has not toggled (null) or force
+    // is true, apply the requested state.
+    if (this.codeDisplayUserCollapsed !== null && !force) {
+      // Respect user's explicit preference; do not programmatically change.
+      return;
+    }
 
     if (collapsed) {
       el.classList.add("collapsed");
@@ -480,7 +557,7 @@ class UIManager {
           : "";
 
       const statusHtml = allCompleted
-        ? `<div class="player-status">✅ Done</div>`
+        ? `<div class="player-status">Done</div>`
         : "";
 
       scheduleItem.innerHTML = `
@@ -538,7 +615,7 @@ class UIManager {
     let winnerBanner = "";
     if (match.winner !== null) {
       const winnerName = match.winner === 1 ? p1Name : p2Name;
-      winnerBanner = `<div class="winner-banner">🏆 ${this.escapeHtml(
+      winnerBanner = `<div class="winner-banner">${this.escapeHtml(
         winnerName
       )} wins!</div>`;
     }
@@ -612,15 +689,13 @@ class UIManager {
       .join(" ");
 
     const label = isWin ? "W" : isLoss ? "L" : gameNum + 1;
-    const onclick =
-      !disabled || match.games[gameNum] !== null
-        ? `app.recordGame(${match.id}, ${gameNum}, ${playerNum})`
-        : "return false;";
 
     return `
       <button
         class="${classes}"
-        onclick="${onclick}"
+        data-match-id="${match.id}"
+        data-game-num="${gameNum}"
+        data-player-num="${playerNum}"
         aria-label="Game ${gameNum + 1}: ${label}"
         ${disabled && match.games[gameNum] === null ? "disabled" : ""}>
         ${label}
@@ -649,8 +724,25 @@ class UIManager {
   createStandingRow(stat, tiedRanks, rankedStats, players) {
     const row = document.createElement("div");
     row.className = "standing-row";
-    row.setAttribute("role", "listitem");
-    row.onclick = () => this.toggleStandingDetails(row);
+    row.setAttribute("role", "button");
+    row.setAttribute("tabindex", "0");
+    row.setAttribute("aria-expanded", "false");
+    row.setAttribute(
+      "aria-label",
+      `View details for ${stat.player}, rank ${
+        stat.rank
+      }, ${stat.points.toFixed(1)} points`
+    );
+
+    // Handle both click and keyboard
+    const toggle = () => this.toggleStandingDetails(row);
+    row.onclick = toggle;
+    row.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        toggle();
+      }
+    };
 
     const isTied = tiedRanks.has(stat.rank);
     if (isTied) row.classList.add("tied");
@@ -749,7 +841,8 @@ class UIManager {
    * Toggle standing row details
    */
   toggleStandingDetails(row) {
-    row.classList.toggle("expanded");
+    const isExpanded = row.classList.toggle("expanded");
+    row.setAttribute("aria-expanded", isExpanded.toString());
   }
 
   /**
