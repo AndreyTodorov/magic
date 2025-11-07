@@ -956,10 +956,7 @@ body {
   border: 3px solid var(--color-border);
   max-height: 0;
   opacity: 0;
-  transition: max-height 0.3s ease-out,
-              opacity 0.25s ease-out,
-              padding 0.3s ease-out,
-              margin-top 0.3s ease-out;
+  transition: none;
 }
 
 .standing-row.expanded .standing-breakdown {
@@ -969,6 +966,10 @@ body {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--spacing-lg);
+  transition: max-height 0.3s ease-out,
+              opacity 0.25s ease-out,
+              padding 0.3s ease-out,
+              margin-top 0.3s ease-out;
 }
 
 .breakdown-section {
