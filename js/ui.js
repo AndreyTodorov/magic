@@ -9,6 +9,9 @@ class UIManager {
     this.currentSection = null;
     this.currentView = "matches";
     this.localStorageKey = "mm_selected_view";
+    // Tracks whether the user explicitly collapsed/expanded the tournament code
+    // null = no explicit user action yet, true = user collapsed, false = user expanded
+    this.codeDisplayUserCollapsed = null;
   }
 
   /**
@@ -121,6 +124,9 @@ class UIManager {
           const toggleCodeDisplay = (e) => {
             const collapsed = codeDisplay.classList.toggle("collapsed");
             title.setAttribute("aria-expanded", (!collapsed).toString());
+            // Record that the user explicitly toggled the code display so
+            // programmatic re-renders respect their choice unless forced.
+            this.codeDisplayUserCollapsed = collapsed;
           };
 
           title.addEventListener("click", toggleCodeDisplay);
@@ -429,7 +435,8 @@ class UIManager {
     if (this.elements.codeDisplay) {
       this.elements.codeDisplay.style.display = "block";
       // Start collapsed (so it doesn't take too much space); user can expand
-      this.setCodeDisplayCollapsed(true);
+      // Force initial collapsed state when first displaying the code
+      this.setCodeDisplayCollapsed({ collapsed: true, force: true });
     }
   }
 
@@ -437,8 +444,35 @@ class UIManager {
    * Collapse or expand the code display programmatically
    */
   setCodeDisplayCollapsed(collapsed) {
+    // New signature: setCodeDisplayCollapsed(collapsed, options = {})
+    // options.force: when true, apply the change even if the user has
+    // explicitly toggled the code display. When false (default), do not
+    // override a user's explicit choice.
     const el = this.elements.codeDisplay;
     if (!el) return;
+
+    // Support backward-compatible single-argument calls where callers may
+    // pass only a boolean. If a caller passed an options object, handle it.
+    let force = false;
+    // If more than one argument was passed, the second arg will be in
+    // arguments[1] when invoked. But to keep simple and avoid breaking
+    // call-sites, detect if collapsed is an object.
+    if (typeof collapsed === "object" && collapsed !== null) {
+      const opts = collapsed;
+      collapsed = !!opts.collapsed;
+      force = !!opts.force;
+    } else if (arguments.length > 1) {
+      const opts = arguments[1] || {};
+      force = !!opts.force;
+    }
+
+    // If the user explicitly toggled the display and we're not forcing, do
+    // not change their preference. If user has not toggled (null) or force
+    // is true, apply the requested state.
+    if (this.codeDisplayUserCollapsed !== null && !force) {
+      // Respect user's explicit preference; do not programmatically change.
+      return;
+    }
 
     if (collapsed) {
       el.classList.add("collapsed");

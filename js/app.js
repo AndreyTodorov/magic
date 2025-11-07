@@ -235,7 +235,11 @@ class App {
 
       if (!isValid) {
         input.classList.add("form-input--error");
-        uiManager.showError("joinError", "Code must be 8 characters (letters and numbers only)", 0);
+        uiManager.showError(
+          "joinError",
+          "Code must be 8 characters (letters and numbers only)",
+          0
+        );
       } else if (value.length === 8) {
         input.classList.add("form-input--success");
       }
@@ -321,7 +325,10 @@ class App {
    */
   async handleGenerateTournament() {
     if (!firebaseManager.isInitialized) {
-      uiManager.showAlert("Firebase is not configured. Please check the console.", "error");
+      uiManager.showAlert(
+        "Firebase is not configured. Please check the console.",
+        "error"
+      );
       return;
     }
 
@@ -329,7 +336,10 @@ class App {
 
     // Validate player names
     if (!uiManager.checkDuplicateNames(playerCount)) {
-      uiManager.showAlert("Please fix duplicate or empty player names", "error");
+      uiManager.showAlert(
+        "Please fix duplicate or empty player names",
+        "error"
+      );
       return;
     }
 
@@ -344,7 +354,10 @@ class App {
       }
       const sanitized = tournamentManager.sanitizePlayerName(name);
       if (!sanitized) {
-        uiManager.showAlert(`Player ${i} name contains only invalid characters`, "error");
+        uiManager.showAlert(
+          `Player ${i} name contains only invalid characters`,
+          "error"
+        );
         return;
       }
       playerNames.push(sanitized);
@@ -360,7 +373,10 @@ class App {
       await this.createTournament(playerNames);
     } catch (error) {
       logger.error("App", "Failed to create tournament", error);
-      uiManager.showAlert("Error creating tournament. Please try again.", "error");
+      uiManager.showAlert(
+        "Error creating tournament. Please try again.",
+        "error"
+      );
     } finally {
       uiManager.setButtonLoading(uiManager.elements.generateBtn, false);
     }
@@ -427,7 +443,10 @@ class App {
       (data) => {
         // Ignore updates if we've switched tournaments
         if (tournamentManager.currentTournamentCode !== currentCode) {
-          logger.debug("App", `Ignoring update from old tournament ${currentCode}`);
+          logger.debug(
+            "App",
+            `Ignoring update from old tournament ${currentCode}`
+          );
           return;
         }
 
@@ -464,12 +483,24 @@ class App {
 
     // Update progress
     const progress = tournamentManager.getProgress();
-    // Auto-collapse the code display once any matches have been completed
+    // Auto-collapse the code display once any matches have been completed.
+    // If the user manually collapsed/expanded the code display, respect
+    // their choice unless we need to force (for example, when at least one
+    // match is completed we force it closed).
     try {
-      uiManager.setCodeDisplayCollapsed(progress.completed > 0);
+      if (progress.completed > 0) {
+        // At least one completed match -> force collapse so it doesn't take
+        // space after play has started.
+        uiManager.setCodeDisplayCollapsed({ collapsed: true, force: true });
+      } else {
+        // No completed matches: try to expand programmatically only if the
+        // user hasn't explicitly toggled the control. Do not force expansion
+        // because the user may have chosen to keep it closed.
+        uiManager.setCodeDisplayCollapsed({ collapsed: false, force: false });
+      }
     } catch (err) {
       // Ignore if UI manager not ready (on initial load)
-      console.warn('Failed to toggle code display:', err);
+      console.warn("Failed to toggle code display:", err);
     }
     uiManager.updateProgress(progress.completed, progress.total);
   }
