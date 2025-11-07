@@ -3,7 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Magic Mikes Tournament (Local Mode)</title>
+    <title>Magic Mikes (Local Mode)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="css/styles.css" />
   </head>
   <body>
@@ -17,7 +23,7 @@
     <div class="container">
       <!-- Header -->
       <header class="app-header">
-        <h1 class="app-title">🏆 Magic Mikes Tournament</h1>
+        <h1 class="app-title">Magic Mikes</h1>
         <p class="app-subtitle">
           Best of 3 Format | Local Mode | Advanced Ranking System
         </p>
@@ -30,7 +36,7 @@
             margin-top: 10px;
           "
         >
-          💾 <strong>Local Mode:</strong> All data stored in your browser (no
+          <strong>Local Mode:</strong> All data stored in your browser (no
           internet required)
         </div>
       </header>
@@ -143,11 +149,11 @@
         aria-labelledby="tournamentTitle"
       >
         <div class="code-display" id="codeDisplay">
-          <h3 class="code-display__title">🔗 Tournament Code:</h3>
+          <h3 class="code-display__title">Tournament Code:</h3>
           <div>
             <span class="code-box" id="displayCode"></span>
             <button class="btn btn--success btn--small" id="copyCodeBtn">
-              📋 Copy Code
+              Copy Code
             </button>
           </div>
           <div class="alert alert--warning">
@@ -197,7 +203,7 @@
             role="tab"
             aria-pressed="false"
           >
-            📋 Player Schedule
+            Player Schedule
           </button>
           <button
             class="tab-btn active"
@@ -206,7 +212,7 @@
             role="tab"
             aria-pressed="true"
           >
-            🎮 Matches
+            Matches
           </button>
           <button
             class="tab-btn"
@@ -215,13 +221,13 @@
             role="tab"
             aria-pressed="false"
           >
-            🏅 Live Standings
+            Live Standings
           </button>
         </div>
 
         <div class="schedule-info" id="scheduleInfo">
           <h4 class="schedule-info__title">
-            📋 Player Schedule - Each player competes in
+            Player Schedule - Each player competes in
             <span id="gamesPerPlayer"></span> matches
           </h4>
           <div class="schedule-grid" id="scheduleGrid"></div>
@@ -229,7 +235,7 @@
 
         <div class="tournament-layout">
           <aside id="standingsPanel" class="standings-panel">
-            <h3 class="standings-panel__title">🏅 Live Standings</h3>
+            <h3 class="standings-panel__title">Live Standings</h3>
             <div
               class="scoring-legend"
               id="scoringLegend"
@@ -239,8 +245,8 @@
               aria-controls="scoringLegendDetails"
             >
               <div class="scoring-legend__header">
-                <strong>📊 Scoring System:</strong>
-                <span class="scoring-legend__chev" aria-hidden="true">▾</span>
+                <strong>Scoring System:</strong>
+                <span class="scoring-legend__chev" aria-hidden="true"></span>
               </div>
 
               <ul>

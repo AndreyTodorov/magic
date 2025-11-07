@@ -72,7 +72,7 @@ class UIManager {
       }
     } catch (e) {
       // Ignore storage errors (private browsing mode, etc.)
-      console.warn('Failed to restore view from localStorage:', e);
+      console.warn("Failed to restore view from localStorage:", e);
     }
 
     // Attach toggle handler for scoring legend (click and keyboard)
@@ -203,7 +203,7 @@ class UIManager {
       localStorage.setItem(this.localStorageKey, viewName);
     } catch (e) {
       // Ignore storage errors (quota exceeded, private browsing, etc.)
-      console.warn('Failed to save view to localStorage:', e);
+      console.warn("Failed to save view to localStorage:", e);
     }
 
     // show selected
@@ -294,7 +294,7 @@ class UIManager {
   /**
    * Set button loading state
    */
-  setButtonLoading(button, isLoading, loadingText = "🔄 Loading...") {
+  setButtonLoading(button, isLoading, loadingText = "Loading...") {
     if (!button) return;
 
     if (isLoading) {
@@ -523,7 +523,7 @@ class UIManager {
           : "";
 
       const statusHtml = allCompleted
-        ? `<div class="player-status">✅ Done</div>`
+        ? `<div class="player-status">Done</div>`
         : "";
 
       scheduleItem.innerHTML = `
@@ -581,7 +581,7 @@ class UIManager {
     let winnerBanner = "";
     if (match.winner !== null) {
       const winnerName = match.winner === 1 ? p1Name : p2Name;
-      winnerBanner = `<div class="winner-banner">🏆 ${this.escapeHtml(
+      winnerBanner = `<div class="winner-banner">${this.escapeHtml(
         winnerName
       )} wins!</div>`;
     }
@@ -693,7 +693,12 @@ class UIManager {
     row.setAttribute("role", "button");
     row.setAttribute("tabindex", "0");
     row.setAttribute("aria-expanded", "false");
-    row.setAttribute("aria-label", `View details for ${stat.player}, rank ${stat.rank}, ${stat.points.toFixed(1)} points`);
+    row.setAttribute(
+      "aria-label",
+      `View details for ${stat.player}, rank ${
+        stat.rank
+      }, ${stat.points.toFixed(1)} points`
+    );
 
     // Handle both click and keyboard
     const toggle = () => this.toggleStandingDetails(row);
