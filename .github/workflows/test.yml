@@ -49,7 +49,7 @@ jobs:
       #     token: ${{ secrets.CODECOV_TOKEN }}
       #   continue-on-error: true
 
-      - name: Comment coverage on PR
-        if: github.event_name == 'pull_request'
-        uses: davelosert/vitest-coverage-report-action@v2
-        continue-on-error: true
+      # - name: Comment coverage on PR
+      #   if: github.event_name == 'pull_request'
+      #   uses: davelosert/vitest-coverage-report-action@v2
+      #   continue-on-error: true
