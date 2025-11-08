@@ -183,7 +183,7 @@ class UIManager {
   /**
    * Switch which part of the tournament view is visible: 'schedule' | 'standings' | 'matches'
    */
-  switchView(viewName) {
+  switchView(viewName, shouldRender = false) {
     const scheduleEl = this.elements.scheduleInfo;
     const standingsEl = this.elements.standingsPanel;
     const matchesEl = this.elements.matchesContainer;
@@ -212,6 +212,8 @@ class UIManager {
       console.warn("Failed to save view to localStorage:", e);
     }
 
+    const previousView = this.currentView;
+
     // show selected
     if (viewName === "schedule") {
       scheduleEl.classList.remove("view-hidden");
@@ -230,6 +232,9 @@ class UIManager {
       this.elements.tabMatches?.setAttribute("aria-pressed", "true");
       this.currentView = "matches";
     }
+
+    // Return true if view changed (used by app.js to trigger render)
+    return previousView !== this.currentView;
   }
 
   /**
@@ -521,12 +526,6 @@ class UIManager {
 
     container.innerHTML = "";
 
-    // Pull current standings so we can show overall rating when a player
-    // has completed all their matches.
-    const { rankedStats } = tournamentManager.getStandings();
-    const statsByIndex = new Map();
-    rankedStats.forEach((s) => statsByIndex.set(s.playerIndex, s));
-
     players.forEach((player, index) => {
       const playerMatches = matches.filter(
         (m) => m.player1 === index || m.player2 === index
@@ -547,15 +546,6 @@ class UIManager {
         allCompleted ? " completed" : ""
       }`;
 
-      // If completed, show overall rating (rank + points) if available
-      const stat = statsByIndex.get(index);
-      const ratingHtml =
-        allCompleted && stat
-          ? `<div class="player-rating">Rank ${
-              stat.rank
-            } · ${stat.points.toFixed(1)} pts</div>`
-          : "";
-
       const statusHtml = allCompleted
         ? `<div class="player-status">Done</div>`
         : "";
@@ -563,7 +553,6 @@ class UIManager {
       scheduleItem.innerHTML = `
         <div class="schedule-item__title">
           <strong>${this.escapeHtml(player)}</strong>
-          ${ratingHtml}
           ${statusHtml}
         </div>
         <div class="schedule-item__opponents">vs ${opponents

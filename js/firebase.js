@@ -12,6 +12,7 @@ class FirebaseManager {
     this.currentUser = null;
     this.authReadyPromise = null;
     this.connectionCallbacks = [];
+    this.statusMinimizeTimeout = null;
   }
 
   /**
@@ -121,6 +122,7 @@ class FirebaseManager {
 
   /**
    * Update connection status UI
+   * Auto-minimizes to just a dot after 4 seconds of stable connection
    */
   updateConnectionStatus(connected) {
     const statusEl = document.getElementById("connectionStatus");
@@ -129,14 +131,26 @@ class FirebaseManager {
 
     if (!statusEl || !statusText || !statusDot) return;
 
+    // Clear any existing minimize timeout
+    clearTimeout(this.statusMinimizeTimeout);
+
+    // Remove minimized class initially to show full status
+    statusEl.classList.remove("minimized");
+
     if (connected) {
       statusEl.className = "connection-status connected";
       statusText.textContent = "Connected";
       statusDot.className = "status-dot connected";
+
+      // Auto-minimize after 4 seconds if connection remains stable
+      this.statusMinimizeTimeout = setTimeout(() => {
+        statusEl.classList.add("minimized");
+      }, 4000);
     } else {
       statusEl.className = "connection-status disconnected";
       statusText.textContent = "Disconnected";
       statusDot.className = "status-dot disconnected";
+      // Keep disconnected status visible (don't minimize)
     }
   }
 

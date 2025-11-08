@@ -25,7 +25,7 @@
   --color-bg-tertiary: #e0e7ff;
   --color-bg-pink: #fce7f3;
   --color-bg-cyan: #ccfbf1;
-  --color-bg-orange: #fed7aa;
+  --color-bg-orange: #f5e2cd;
 
   --color-border: #000000;
   --color-border-focus: var(--color-primary);
@@ -83,8 +83,8 @@ html {
 }
 
 body {
-  font-family: "Space Grotesk", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont,
-    "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+  font-family: "Space Grotesk", "Segoe UI", system-ui, -apple-system,
+    BlinkMacSystemFont, "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
   background: linear-gradient(135deg, #fef9c3 0%, #fed7aa 50%, #fce7f3 100%);
   background-attachment: fixed;
   min-height: 100vh;
@@ -136,17 +136,17 @@ body {
 /* === CONNECTION STATUS === */
 .connection-status {
   position: fixed;
-  top: var(--spacing-lg);
-  right: var(--spacing-lg);
-  padding: 12px var(--spacing-lg);
-  border-radius: var(--radius-lg);
-  font-size: clamp(0.75rem, 2vw, 0.9rem);
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: clamp(0.7rem, 1.8vw, 0.8rem);
   font-weight: 800;
   display: none;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   z-index: var(--z-fixed);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
   transition: all var(--transition-base);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -155,23 +155,43 @@ body {
 .connection-status.connected {
   background: var(--color-success);
   color: #ffffff;
-  border: var(--border-width) solid var(--color-border);
+  border: 3px solid var(--color-border);
   display: flex;
 }
 
 .connection-status.disconnected {
   background: var(--color-danger);
   color: #ffffff;
-  border: var(--border-width) solid var(--color-border);
+  border: 3px solid var(--color-border);
   display: flex;
 }
 
+/* Minimized state - only shows the blinking dot */
+.connection-status.minimized {
+  padding: 6px;
+  gap: 0;
+  width: 32px;
+  height: 32px;
+  justify-content: center;
+  border-radius: var(--radius-full);
+}
+
+.connection-status.minimized #statusText {
+  display: none;
+}
+
 .status-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: var(--radius-sm);
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
   flex-shrink: 0;
   border: 2px solid #000000;
+  transition: all var(--transition-base);
+}
+
+.connection-status.minimized .status-dot {
+  width: 14px;
+  height: 14px;
 }
 
 .status-dot.connected {
@@ -711,16 +731,6 @@ body {
   font-size: 0.9rem;
 }
 
-.player-rating {
-  font-size: 0.85rem;
-  color: var(--color-text-primary);
-  background: var(--color-bg-tertiary);
-  padding: 4px 10px;
-  border-radius: var(--radius-full);
-  font-weight: 800;
-  border: 2px solid var(--color-border);
-}
-
 .player-status {
   font-size: 0.85rem;
   color: var(--color-success);
@@ -838,7 +848,7 @@ body {
   gap: var(--spacing-md);
   align-items: center;
   transition: transform var(--transition-fast),
-              box-shadow var(--transition-fast);
+    box-shadow var(--transition-fast);
   border: var(--border-width) solid var(--color-border);
   cursor: pointer;
   box-shadow: var(--shadow-md);
@@ -870,33 +880,39 @@ body {
 
 .standing-rank {
   grid-area: rank;
-  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
   font-weight: 900;
-  color: var(--color-text-primary);
-  min-width: 50px;
+  color: #ffffff;
+  min-width: 60px;
+  min-height: 60px;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
+  background: var(--color-text-primary);
+  border-radius: var(--radius-lg);
+  border: 3px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .standing-rank.gold {
-  color: #fbbf24;
-  text-shadow: 2px 2px 0px #000000;
+  background: #fbbf24;
+  color: #000000;
 }
 .standing-rank.silver {
-  color: #9ca3af;
-  text-shadow: 2px 2px 0px #000000;
+  background: #9ca3af;
+  color: #000000;
 }
 .standing-rank.bronze {
-  color: #d97706;
-  text-shadow: 2px 2px 0px #000000;
+  background: #d97706;
+  color: #ffffff;
 }
 
 .standing-rank.tied-indicator::after {
   content: "T";
-  font-size: 0.6em;
+  font-size: 0.55em;
   vertical-align: super;
-  margin-left: 2px;
+  margin-left: 3px;
+  opacity: 0.8;
 }
 
 .standing-info {
@@ -905,6 +921,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  padding-left: 15px;
 }
 
 .standing-name {
@@ -966,10 +983,8 @@ body {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--spacing-lg);
-  transition: max-height 0.3s ease-out,
-              opacity 0.25s ease-out,
-              padding 0.3s ease-out,
-              margin-top 0.3s ease-out;
+  transition: max-height 0.3s ease-out, opacity 0.25s ease-out,
+    padding 0.3s ease-out, margin-top 0.3s ease-out;
 }
 
 .breakdown-section {
@@ -986,7 +1001,7 @@ body {
   animation-delay: 0.15s;
 }
 
-.standing-row.expanded .breakdown-section:nth-child(n+3) {
+.standing-row.expanded .breakdown-section:nth-child(n + 3) {
   animation-delay: 0.2s;
 }
 
@@ -1051,7 +1066,7 @@ body {
   animation-delay: 0.27s;
 }
 
-.standing-row.expanded .opponent-item:nth-child(n+6) {
+.standing-row.expanded .opponent-item:nth-child(n + 6) {
   animation-delay: 0.3s;
 }
 
@@ -1455,8 +1470,9 @@ body {
   }
 
   .standing-rank {
-    font-size: clamp(1.3rem, 5vw, 1.6rem);
-    min-width: 45px;
+    font-size: clamp(1.5rem, 6vw, 1.8rem);
+    min-width: 50px;
+    min-height: 50px;
   }
 
   .standing-points {
@@ -1529,8 +1545,20 @@ body {
   .connection-status {
     top: var(--spacing-xs);
     right: var(--spacing-xs);
-    padding: 8px var(--spacing-sm);
+    padding: 6px 10px;
     border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+  }
+
+  .connection-status.minimized {
+    padding: 5px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .connection-status.minimized .status-dot {
+    width: 12px;
+    height: 12px;
   }
 }
 
@@ -1540,7 +1568,7 @@ body {
   }
 }
 
-/* Touch devices */
+/* Touch devices - Optimize for mobile performance */
 @media (hover: none) and (pointer: coarse) {
   .btn,
   .mode-btn,
@@ -1556,6 +1584,54 @@ body {
 
   .standing-row {
     padding: var(--spacing-md) 12px;
+  }
+
+  /* Disable expensive animations on touch devices for better performance */
+  .standing-row {
+    transition: none;
+  }
+
+  .standing-row:hover {
+    transform: none;
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Simplify breakdown animations */
+  .standing-breakdown {
+    transition: max-height 0.2s ease-out, opacity 0.15s ease-out;
+  }
+
+  .standing-row.expanded .standing-breakdown {
+    transition: max-height 0.2s ease-out, opacity 0.15s ease-out,
+      padding 0.2s ease-out;
+  }
+
+  /* Disable staggered animations on mobile */
+  .breakdown-section,
+  .opponent-item {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  /* Simplify match card hover effects */
+  .match-card {
+    transition: none;
+  }
+
+  .match-card:hover {
+    transform: none;
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Simplify game result button transitions */
+  .game-result {
+    transition: background var(--transition-fast), color var(--transition-fast);
+  }
+
+  .game-result:hover:not(.disabled),
+  .game-result:active:not(.disabled) {
+    transform: none;
+    box-shadow: 2px 2px 0px #000000;
   }
 }
 

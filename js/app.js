@@ -7,6 +7,7 @@ class App {
   constructor() {
     this.unsubscribeTournament = null;
     this.debounceTimeout = null;
+    this.renderDebounceTimeout = null;
   }
 
   /**
@@ -52,15 +53,22 @@ class App {
     });
 
     // View tabs (Schedule / Standings / Matches)
-    uiManager.elements.tabSchedule?.addEventListener("click", () =>
-      uiManager.switchView("schedule")
-    );
-    uiManager.elements.tabStandings?.addEventListener("click", () =>
-      uiManager.switchView("standings")
-    );
-    uiManager.elements.tabMatches?.addEventListener("click", () =>
-      uiManager.switchView("matches")
-    );
+    // Only render the new view when switching tabs for better performance
+    uiManager.elements.tabSchedule?.addEventListener("click", () => {
+      if (uiManager.switchView("schedule")) {
+        this.renderTournament();
+      }
+    });
+    uiManager.elements.tabStandings?.addEventListener("click", () => {
+      if (uiManager.switchView("standings")) {
+        this.renderTournament();
+      }
+    });
+    uiManager.elements.tabMatches?.addEventListener("click", () => {
+      if (uiManager.switchView("matches")) {
+        this.renderTournament();
+      }
+    });
 
     // Join form
     uiManager.elements.joinForm?.addEventListener("submit", (e) =>
@@ -459,29 +467,36 @@ class App {
         // Update tournament data
         tournamentManager.loadTournament(data);
 
-        // Re-render
-        this.renderTournament();
+        // Debounce re-render for better mobile performance
+        // Prevents excessive re-renders when multiple rapid updates occur
+        clearTimeout(this.renderDebounceTimeout);
+        this.renderDebounceTimeout = setTimeout(() => {
+          this.renderTournament();
+        }, 100);
       }
     );
   }
 
   /**
    * Render complete tournament view
+   * OPTIMIZED: Only renders the currently visible view
    */
   renderTournament() {
     const { players, matches, matchesPerPlayer } = tournamentManager;
 
-    // Render schedule
-    uiManager.renderSchedule(players, matches);
+    // Only render the currently visible view for better mobile performance
+    const currentView = uiManager.currentView;
 
-    // Render matches
-    uiManager.renderMatches(matches, players);
+    if (currentView === "schedule") {
+      uiManager.renderSchedule(players, matches);
+    } else if (currentView === "matches") {
+      uiManager.renderMatches(matches, players);
+    } else if (currentView === "standings") {
+      const { rankedStats, tiedRanks } = tournamentManager.getStandings();
+      uiManager.renderStandings(rankedStats, tiedRanks, players);
+    }
 
-    // Render standings
-    const { rankedStats, tiedRanks } = tournamentManager.getStandings();
-    uiManager.renderStandings(rankedStats, tiedRanks, players);
-
-    // Update progress
+    // Update progress (lightweight operation)
     const progress = tournamentManager.getProgress();
     // Auto-collapse the code display once any matches have been completed.
     // If the user manually collapsed/expanded the code display, respect
