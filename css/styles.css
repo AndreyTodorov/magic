@@ -821,7 +821,6 @@ body {
 
 .scoring-legend strong {
   display: block;
-  margin-bottom: var(--spacing-xs);
 }
 
 .scoring-legend ul {
