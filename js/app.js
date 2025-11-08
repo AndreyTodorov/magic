@@ -114,6 +114,27 @@ class App {
       this.handleLeaveTournament()
     );
 
+    // Scroll to top button
+    const scrollToTopBtn = document.getElementById("scrollToTop");
+    if (scrollToTopBtn) {
+      // Show/hide button based on scroll position
+      window.addEventListener("scroll", () => {
+        if (window.pageYOffset > 300) {
+          scrollToTopBtn.classList.add("visible");
+        } else {
+          scrollToTopBtn.classList.remove("visible");
+        }
+      });
+
+      // Scroll to top when clicked
+      scrollToTopBtn.addEventListener("click", () => {
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      });
+    }
+
     // Player input enter key
     document.addEventListener("keydown", (e) => {
       if (e.target.matches("[data-player-index]") && e.key === "Enter") {

@@ -224,6 +224,42 @@ body {
   }
 }
 
+@keyframes shimmerGold {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes shimmerSilver {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes shimmerBronze {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 /* === MODE SELECTOR === */
 .mode-selector {
   display: flex;
@@ -901,16 +937,43 @@ body {
 }
 
 .standing-rank.gold {
-  background: #fbbf24;
+  background: linear-gradient(
+    135deg,
+    #f59e0b 0%,
+    #fbbf24 25%,
+    #fef3c7 50%,
+    #fbbf24 75%,
+    #f59e0b 100%
+  );
+  background-size: 200% 200%;
   color: #000000;
+  animation: shimmerGold 3s ease-in-out infinite;
 }
 .standing-rank.silver {
-  background: #9ca3af;
+  background: linear-gradient(
+    135deg,
+    #6b7280 0%,
+    #9ca3af 25%,
+    #e5e7eb 50%,
+    #9ca3af 75%,
+    #6b7280 100%
+  );
+  background-size: 200% 200%;
   color: #000000;
+  animation: shimmerSilver 3s ease-in-out infinite;
 }
 .standing-rank.bronze {
-  background: #d97706;
+  background: linear-gradient(
+    135deg,
+    #92400e 0%,
+    #d97706 25%,
+    #f59e0b 50%,
+    #d97706 75%,
+    #92400e 100%
+  );
+  background-size: 200% 200%;
   color: #ffffff;
+  animation: shimmerBronze 3s ease-in-out infinite;
 }
 
 .standing-rank.tied-indicator::after {
@@ -1686,6 +1749,59 @@ body {
   .mode-selector,
   .btn {
     display: none !important;
+  }
+}
+
+/* ============================================
+   SCROLL TO TOP BUTTON
+   ============================================ */
+
+.scroll-to-top {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 50px;
+  height: 50px;
+  background: var(--color-primary);
+  color: white;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 900;
+  z-index: var(--z-fixed);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-fast);
+  opacity: 0;
+  transform: translateY(100px);
+}
+
+.scroll-to-top.visible {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.scroll-to-top:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 8px 8px 0px #000000;
+}
+
+.scroll-to-top:active {
+  transform: translate(0, 0);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 768px) {
+  .scroll-to-top {
+    bottom: 15px;
+    right: 15px;
+    width: 44px;
+    height: 44px;
+    font-size: 1.3rem;
   }
 }
 
