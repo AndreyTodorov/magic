@@ -665,16 +665,6 @@ body {
   border-bottom: var(--border-width) solid var(--color-border);
 }
 
-.header-bar__title {
-  color: var(--color-text-primary);
-  font-size: clamp(1.4rem, 4vw, 2rem);
-  width: 100%;
-  margin: 0;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: -0.02em;
-}
-
 .header-bar__actions {
   display: flex;
   gap: var(--spacing-sm);
@@ -714,12 +704,8 @@ body {
   color: var(--color-text-primary);
   font-size: clamp(0.85rem, 2.2vw, 1rem);
   font-weight: 800;
-  text-shadow:
-    1px 1px 0 #fff,
-    -1px -1px 0 #fff,
-    1px -1px 0 #fff,
-    -1px 1px 0 #fff,
-    0 0 3px rgba(255, 255, 255, 0.8);
+  text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff,
+    -1px 1px 0 #fff, 0 0 3px rgba(255, 255, 255, 0.8);
   letter-spacing: 0.02em;
 }
 
@@ -1431,7 +1417,6 @@ body {
   }
 
   .view-tabs {
-    gap: var(--spacing-xs);
     margin: var(--spacing-md) 0;
     padding: 0 var(--spacing-xs);
   }
