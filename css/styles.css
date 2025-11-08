@@ -172,8 +172,14 @@ body {
   gap: 0;
   width: 32px;
   height: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  min-height: 32px;
+  max-height: 32px;
   justify-content: center;
+  align-items: center;
   border-radius: var(--radius-full);
+  flex-shrink: 0;
 }
 
 .connection-status.minimized #statusText {
@@ -1556,6 +1562,10 @@ body {
     padding: 5px;
     width: 28px;
     height: 28px;
+    min-width: 28px;
+    max-width: 28px;
+    min-height: 28px;
+    max-height: 28px;
   }
 
   .connection-status.minimized .status-dot {
