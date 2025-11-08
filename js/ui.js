@@ -809,9 +809,7 @@ class UIManager {
         <div class="standing-name">${this.escapeHtml(stat.player)}</div>
         <div class="standing-record">${stat.wins}-${stat.losses} matches</div>
         <div class="standing-details">
-          ${stat.gamesWon}-${
-      stat.gamesLost
-    } games | Quality: ${stat.qualityScore.toFixed(1)}
+          ${stat.gamesWon}-${stat.gamesLost} games<br>Quality: ${stat.qualityScore.toFixed(1)}
         </div>
         <div class="standing-breakdown">
           <div class="breakdown-section">

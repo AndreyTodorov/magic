@@ -1013,6 +1013,7 @@ body {
   font-size: clamp(0.75rem, 2vw, 0.85rem);
   color: var(--color-text-tertiary);
   font-weight: 600;
+  line-height: 1.1;
 }
 
 .standing-points {
