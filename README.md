@@ -1,3 +1,5 @@
+[![Tests](https://github.com/AndreyTodorov/magic/actions/workflows/test.yml/badge.svg)](https://github.com/AndreyTodorov/magic/actions/workflows/test.yml)
+
 # Magic Mikes Tournament
 
 A browser-based Best of 3 tournament management system for Magic: The Gathering.
@@ -130,18 +132,18 @@ Open the browser console (F12) for debugging tools:
 
 ```javascript
 // View all tournaments
-window.devTools.viewTournaments()
+window.devTools.viewTournaments();
 
 // Clear all data
-window.devTools.clearTournaments()
+window.devTools.clearTournaments();
 
 // Export backup
-window.devTools.exportTournaments()
+window.devTools.exportTournaments();
 
 // Logger commands
-window.mmLogger.setLevel(3)        // Set log level (0-4)
-window.mmLogger.getHistory()        // View log history
-window.mmLogger.exportLogs()        // Download logs
+window.mmLogger.setLevel(3); // Set log level (0-4)
+window.mmLogger.getHistory(); // View log history
+window.mmLogger.exportLogs(); // Download logs
 ```
 
 ## Development
@@ -191,6 +193,7 @@ See [CLAUDE.md](CLAUDE.md) for detailed development patterns.
 - ✅ Mobile browsers (iOS Safari, Chrome Mobile)
 
 Requires:
+
 - ES6+ support
 - localStorage
 - Fetch API
