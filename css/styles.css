@@ -882,13 +882,13 @@ body {
   grid-area: rank;
   font-size: clamp(1.8rem, 5vw, 2.5rem);
   font-weight: 900;
-  color: #ffffff;
+  color: var(--color-text-primary);
   min-width: 60px;
   min-height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-text-primary);
+  background: var(--color-bg-primary);
   border-radius: var(--radius-lg);
   border: 3px solid var(--color-border);
   box-shadow: var(--shadow-sm);
