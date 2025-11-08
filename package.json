@@ -1,0 +1,26 @@
+{
+  "name": "magic-mikes-tournament",
+  "version": "1.0.0",
+  "description": "Best of 3 Tournament Management System for Magic: The Gathering",
+  "main": "index.html",
+  "scripts": {
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:watch": "vitest --watch"
+  },
+  "keywords": [
+    "tournament",
+    "magic-the-gathering",
+    "mtg",
+    "best-of-3"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@vitest/ui": "^1.2.0",
+    "@vitest/coverage-v8": "^1.2.0",
+    "happy-dom": "^12.10.3",
+    "vitest": "^1.2.0"
+  }
+}

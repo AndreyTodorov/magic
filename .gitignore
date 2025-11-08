@@ -11,3 +11,20 @@
 .env
 .env.local
 .env.*.local
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Vitest
+vitest.config.js.timestamp-*
+
+# OS files
+Thumbs.db
+*.swp
+*.swo
+*~
