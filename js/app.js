@@ -8,6 +8,9 @@ class App {
     this.unsubscribeTournament = null;
     this.debounceTimeout = null;
     this.renderDebounceTimeout = null;
+    this.lastRenderedView = null;
+    this.pendingRenderFrame = null;
+    this.lastMatchUpdate = null; // Track which match was just updated
   }
 
   /**
@@ -56,17 +59,23 @@ class App {
     // Only render the new view when switching tabs for better performance
     uiManager.elements.tabSchedule?.addEventListener("click", () => {
       if (uiManager.switchView("schedule")) {
-        this.renderTournament();
+        // Force full render when switching views, clear last match update
+        this.lastMatchUpdate = null;
+        this.renderTournament(true);
       }
     });
     uiManager.elements.tabStandings?.addEventListener("click", () => {
       if (uiManager.switchView("standings")) {
-        this.renderTournament();
+        // Force full render when switching views, clear last match update
+        this.lastMatchUpdate = null;
+        this.renderTournament(true);
       }
     });
     uiManager.elements.tabMatches?.addEventListener("click", () => {
       if (uiManager.switchView("matches")) {
-        this.renderTournament();
+        // Force full render when switching views, clear last match update
+        this.lastMatchUpdate = null;
+        this.renderTournament(true);
       }
     });
 
@@ -467,26 +476,47 @@ class App {
         // Update tournament data
         tournamentManager.loadTournament(data);
 
-        // Debounce re-render for better mobile performance
-        // Prevents excessive re-renders when multiple rapid updates occur
-        clearTimeout(this.renderDebounceTimeout);
-        this.renderDebounceTimeout = setTimeout(() => {
+        // Use requestAnimationFrame for smoother updates on mobile
+        // This ensures updates happen on the next frame, avoiding jank
+        if (this.pendingRenderFrame) {
+          cancelAnimationFrame(this.pendingRenderFrame);
+        }
+
+        this.pendingRenderFrame = requestAnimationFrame(() => {
           this.renderTournament();
-        }, 100);
+          this.pendingRenderFrame = null;
+        });
       }
     );
   }
 
   /**
    * Render complete tournament view
-   * OPTIMIZED: Only renders the currently visible view
+   * OPTIMIZED: Only renders the currently visible view and uses incremental updates
    */
-  renderTournament() {
+  renderTournament(forceFullRender = false) {
     const { players, matches, matchesPerPlayer } = tournamentManager;
 
     // Only render the currently visible view for better mobile performance
     const currentView = uiManager.currentView;
 
+    // Try incremental update for matches view if only one match changed
+    if (!forceFullRender && currentView === "matches" && this.lastMatchUpdate !== null) {
+      const matchId = this.lastMatchUpdate;
+      const match = matches[matchId];
+      if (match && uiManager.updateSingleMatch(matchId, match, players)) {
+        // Successfully updated single match, skip full render
+        this.lastMatchUpdate = null;
+        // Still need to update progress bar
+        const progress = tournamentManager.getProgress();
+        uiManager.updateProgress(progress.completed, progress.total);
+        return;
+      }
+      // Fall through to full render if incremental update failed
+      this.lastMatchUpdate = null;
+    }
+
+    // Full render for view
     if (currentView === "schedule") {
       uiManager.renderSchedule(players, matches);
     } else if (currentView === "matches") {
@@ -532,6 +562,9 @@ class App {
     }
 
     if (!result.updated) return;
+
+    // Track which match was updated for incremental rendering
+    this.lastMatchUpdate = matchId;
 
     // Update Firebase
     try {

@@ -605,12 +605,36 @@ class UIManager {
   }
 
   /**
+   * Update a single match card (for performance on mobile)
+   * OPTIMIZED: Only updates the specific match that changed
+   */
+  updateSingleMatch(matchId, match, players) {
+    const container = this.elements.matchesContainer;
+    if (!container) return;
+
+    // Find existing match card
+    const existingCard = container.querySelector(`[data-match-id="${matchId}"]`);
+    if (!existingCard) {
+      // Card doesn't exist, do full render
+      return false;
+    }
+
+    // Create new card
+    const newCard = this.createMatchCard(match, players);
+
+    // Replace old card with new one
+    existingCard.replaceWith(newCard);
+    return true;
+  }
+
+  /**
    * Create match card element
    */
   createMatchCard(match, players) {
     const card = document.createElement("div");
     card.className = "match-card";
     card.setAttribute("role", "listitem");
+    card.setAttribute("data-match-id", match.id);
 
     if (match.winner !== null) {
       card.classList.add("completed");

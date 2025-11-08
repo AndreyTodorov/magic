@@ -1126,6 +1126,8 @@ body {
   padding: var(--spacing-md);
   transition: all var(--transition-fast);
   box-shadow: var(--shadow-md);
+  /* CSS containment for better paint performance */
+  contain: layout style paint;
 }
 
 .match-card:hover {
@@ -1613,9 +1615,11 @@ body {
     opacity: 1 !important;
   }
 
-  /* Simplify match card hover effects */
+  /* Simplify match card hover effects and optimize for mobile */
   .match-card {
     transition: none;
+    /* Disable will-change on mobile to save memory */
+    will-change: auto;
   }
 
   .match-card:hover {
@@ -1623,15 +1627,24 @@ body {
     box-shadow: var(--shadow-md);
   }
 
-  /* Simplify game result button transitions */
+  /* Simplify game result button transitions for better mobile performance */
   .game-result {
-    transition: background var(--transition-fast), color var(--transition-fast);
+    transition: none;
+    /* Instant feedback on mobile, no animations */
   }
 
   .game-result:hover:not(.disabled),
   .game-result:active:not(.disabled) {
     transform: none;
     box-shadow: 2px 2px 0px #000000;
+  }
+
+  /* Optimize view containers on mobile */
+  .schedule-grid,
+  .standings-table,
+  .matches-container {
+    /* Better scrolling performance on mobile */
+    -webkit-overflow-scrolling: touch;
   }
 }
 
