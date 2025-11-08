@@ -201,17 +201,17 @@ body {
 }
 
 .status-dot.connected {
-  background: #759e22;
+  background: #ffffff;
   animation: pulse 2s infinite;
 }
 
 .status-dot.disconnected {
-  background: #f21616;
+  background: #ffffff;
   animation: pulse 0.3s infinite;
 }
 
 .status-dot.local {
-  background: #907afe;
+  background: #ffffff;
 }
 
 @keyframes pulse {
