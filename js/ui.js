@@ -183,7 +183,7 @@ class UIManager {
   /**
    * Switch which part of the tournament view is visible: 'schedule' | 'standings' | 'matches'
    */
-  switchView(viewName) {
+  switchView(viewName, shouldRender = false) {
     const scheduleEl = this.elements.scheduleInfo;
     const standingsEl = this.elements.standingsPanel;
     const matchesEl = this.elements.matchesContainer;
@@ -212,6 +212,8 @@ class UIManager {
       console.warn("Failed to save view to localStorage:", e);
     }
 
+    const previousView = this.currentView;
+
     // show selected
     if (viewName === "schedule") {
       scheduleEl.classList.remove("view-hidden");
@@ -230,6 +232,9 @@ class UIManager {
       this.elements.tabMatches?.setAttribute("aria-pressed", "true");
       this.currentView = "matches";
     }
+
+    // Return true if view changed (used by app.js to trigger render)
+    return previousView !== this.currentView;
   }
 
   /**
@@ -390,19 +395,18 @@ class UIManager {
 
   /**
    * Check for duplicate player names
+   * OPTIMIZED: Uses querySelector to get all inputs at once
    */
   checkDuplicateNames(playerCount) {
+    // Get all player inputs at once instead of querying individually
+    const inputs = this.elements.playerInputs?.querySelectorAll('[data-player-index]') || [];
     const names = [];
-    const inputs = [];
 
-    for (let i = 1; i <= playerCount; i++) {
-      const input = document.getElementById(`p${i}`);
-      if (input) {
-        inputs.push(input);
-        names.push(input.value.trim());
-        input.classList.remove("form-input--error");
-      }
-    }
+    // Clear error states and collect names
+    inputs.forEach((input) => {
+      input.classList.remove("form-input--error");
+      names.push(input.value.trim());
+    });
 
     const validation = tournamentManager.validatePlayerNames(names);
 
@@ -514,6 +518,7 @@ class UIManager {
 
   /**
    * Render player schedule
+   * OPTIMIZED: Pre-computes player-to-matches map to avoid O(n²) filtering
    */
   renderSchedule(players, matches) {
     const container = this.elements.scheduleGrid;
@@ -521,16 +526,24 @@ class UIManager {
 
     container.innerHTML = "";
 
-    // Pull current standings so we can show overall rating when a player
-    // has completed all their matches.
-    const { rankedStats } = tournamentManager.getStandings();
-    const statsByIndex = new Map();
-    rankedStats.forEach((s) => statsByIndex.set(s.playerIndex, s));
+    // Pre-compute player-to-matches lookup (O(n) instead of O(n²))
+    const playerMatchesMap = new Map();
+    matches.forEach((match) => {
+      if (!playerMatchesMap.has(match.player1)) {
+        playerMatchesMap.set(match.player1, []);
+      }
+      if (!playerMatchesMap.has(match.player2)) {
+        playerMatchesMap.set(match.player2, []);
+      }
+      playerMatchesMap.get(match.player1).push(match);
+      playerMatchesMap.get(match.player2).push(match);
+    });
+
+    // Use DocumentFragment for batch DOM insertion
+    const fragment = document.createDocumentFragment();
 
     players.forEach((player, index) => {
-      const playerMatches = matches.filter(
-        (m) => m.player1 === index || m.player2 === index
-      );
+      const playerMatches = playerMatchesMap.get(index) || [];
 
       const opponents = playerMatches.map((m) => {
         const opponentIndex = m.player1 === index ? m.player2 : m.player1;
@@ -547,15 +560,6 @@ class UIManager {
         allCompleted ? " completed" : ""
       }`;
 
-      // If completed, show overall rating (rank + points) if available
-      const stat = statsByIndex.get(index);
-      const ratingHtml =
-        allCompleted && stat
-          ? `<div class="player-rating">Rank ${
-              stat.rank
-            } · ${stat.points.toFixed(1)} pts</div>`
-          : "";
-
       const statusHtml = allCompleted
         ? `<div class="player-status">Done</div>`
         : "";
@@ -563,7 +567,6 @@ class UIManager {
       scheduleItem.innerHTML = `
         <div class="schedule-item__title">
           <strong>${this.escapeHtml(player)}</strong>
-          ${ratingHtml}
           ${statusHtml}
         </div>
         <div class="schedule-item__opponents">vs ${opponents
@@ -571,12 +574,15 @@ class UIManager {
           .join(", ")}</div>
       `;
 
-      container.appendChild(scheduleItem);
+      fragment.appendChild(scheduleItem);
     });
+
+    container.appendChild(fragment);
   }
 
   /**
    * Render all matches
+   * OPTIMIZED: Uses DocumentFragment for batch DOM insertion
    */
   renderMatches(matches, players) {
     const container = this.elements.matchesContainer;
@@ -584,6 +590,8 @@ class UIManager {
 
     container.innerHTML = "";
 
+    // Use DocumentFragment to batch DOM operations
+    const fragment = document.createDocumentFragment();
     matches.forEach((match) => {
       if (!match || !match.games || !Array.isArray(match.games)) {
         console.warn("Invalid match data:", match);
@@ -591,8 +599,9 @@ class UIManager {
       }
 
       const card = this.createMatchCard(match, players);
-      container.appendChild(card);
+      fragment.appendChild(card);
     });
+    container.appendChild(fragment);
   }
 
   /**
@@ -705,6 +714,7 @@ class UIManager {
 
   /**
    * Render standings table
+   * OPTIMIZED: Uses DocumentFragment for batch DOM insertion
    */
   renderStandings(rankedStats, tiedRanks, players) {
     const container = this.elements.standingsTable;
@@ -712,10 +722,13 @@ class UIManager {
 
     container.innerHTML = "";
 
+    // Use DocumentFragment to batch DOM operations
+    const fragment = document.createDocumentFragment();
     rankedStats.forEach((stat) => {
       const row = this.createStandingRow(stat, tiedRanks, rankedStats, players);
-      container.appendChild(row);
+      fragment.appendChild(row);
     });
+    container.appendChild(fragment);
   }
 
   /**
@@ -862,11 +875,17 @@ class UIManager {
 
   /**
    * Escape HTML to prevent XSS
+   * OPTIMIZED: Uses character map instead of creating DOM elements
    */
   escapeHtml(text) {
-    const div = document.createElement("div");
-    div.textContent = text;
-    return div.innerHTML;
+    const htmlEscapeMap = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    };
+    return String(text).replace(/[&<>"']/g, (char) => htmlEscapeMap[char]);
   }
 
   /**

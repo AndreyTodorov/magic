@@ -11,6 +11,9 @@ class TournamentManager {
     this.matchesPerPlayer = 3;
     this.currentTournamentCode = null;
     this.isCreator = false;
+    // Cache for standings calculations (improves mobile performance)
+    this.standingsCache = null;
+    this.standingsCacheHash = null;
   }
 
   /**
@@ -21,6 +24,8 @@ class TournamentManager {
     this.matches = [];
     this.currentTournamentCode = null;
     this.isCreator = false;
+    this.standingsCache = null;
+    this.standingsCacheHash = null;
   }
 
   /**
@@ -418,12 +423,37 @@ class TournamentManager {
   }
 
   /**
+   * Generate a hash of match results for cache validation
+   */
+  getMatchesHash() {
+    // Simple hash based on match results - if results haven't changed, cache is valid
+    return this.matches
+      .map((m) => `${m.id}:${m.games.join(",")},${m.winner}`)
+      .join("|");
+  }
+
+  /**
    * Get complete standings with rankings
+   * OPTIMIZED: Uses caching to avoid recalculating unchanged standings
    */
   getStandings() {
+    const currentHash = this.getMatchesHash();
+
+    // Return cached standings if data hasn't changed
+    if (this.standingsCacheHash === currentHash && this.standingsCache) {
+      return this.standingsCache;
+    }
+
+    // Calculate fresh standings
     const stats = this.calculatePlayerStats();
     const sortedStats = this.rankPlayers(stats);
-    return this.assignRanks(sortedStats);
+    const result = this.assignRanks(sortedStats);
+
+    // Cache the result
+    this.standingsCache = result;
+    this.standingsCacheHash = currentHash;
+
+    return result;
   }
 
   /**
