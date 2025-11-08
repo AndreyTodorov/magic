@@ -740,7 +740,7 @@ class UIManager {
    * Render standings table
    * OPTIMIZED: Uses DocumentFragment for batch DOM insertion
    */
-  renderStandings(rankedStats, tiedRanks, players) {
+  renderStandings(rankedStats, tiedRanks, players, isComplete = false) {
     const container = this.elements.standingsTable;
     if (!container) return;
 
@@ -749,7 +749,7 @@ class UIManager {
     // Use DocumentFragment to batch DOM operations
     const fragment = document.createDocumentFragment();
     rankedStats.forEach((stat) => {
-      const row = this.createStandingRow(stat, tiedRanks, rankedStats, players);
+      const row = this.createStandingRow(stat, tiedRanks, rankedStats, players, isComplete);
       fragment.appendChild(row);
     });
     container.appendChild(fragment);
@@ -758,7 +758,7 @@ class UIManager {
   /**
    * Create standing row element
    */
-  createStandingRow(stat, tiedRanks, rankedStats, players) {
+  createStandingRow(stat, tiedRanks, rankedStats, players, isComplete = false) {
     const row = document.createElement("div");
     row.className = "standing-row";
     row.setAttribute("role", "button");
@@ -786,9 +786,12 @@ class UIManager {
 
     let rankClass = "";
     let tiedIndicator = isTied ? " tied-indicator" : "";
-    if (stat.rank === 1) rankClass = "gold";
-    else if (stat.rank === 2) rankClass = "silver";
-    else if (stat.rank === 3) rankClass = "bronze";
+    // Only show medal classes when tournament is complete
+    if (isComplete) {
+      if (stat.rank === 1) rankClass = "gold";
+      else if (stat.rank === 2) rankClass = "silver";
+      else if (stat.rank === 3) rankClass = "bronze";
+    }
 
     const beatenList = this.createOpponentList(
       stat.opponents.beaten,

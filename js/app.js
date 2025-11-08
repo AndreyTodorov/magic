@@ -538,17 +538,19 @@ class App {
     }
 
     // Full render for view
+    const progress = tournamentManager.getProgress();
+    const isComplete = progress.completed === progress.total && progress.total > 0;
+
     if (currentView === "schedule") {
       uiManager.renderSchedule(players, matches);
     } else if (currentView === "matches") {
       uiManager.renderMatches(matches, players);
     } else if (currentView === "standings") {
       const { rankedStats, tiedRanks } = tournamentManager.getStandings();
-      uiManager.renderStandings(rankedStats, tiedRanks, players);
+      uiManager.renderStandings(rankedStats, tiedRanks, players, isComplete);
     }
 
     // Update progress (lightweight operation)
-    const progress = tournamentManager.getProgress();
     // Auto-collapse the code display once any matches have been completed.
     // If the user manually collapsed/expanded the code display, respect
     // their choice unless we need to force (for example, when at least one
