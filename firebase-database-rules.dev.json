@@ -3,7 +3,13 @@
     "tournaments": {
       "$tournamentId": {
         ".read": true,
-        ".write": "auth != null"
+        ".write": "auth != null && !data.exists()",
+        "matches": {
+          ".write": true
+        },
+        "members": {
+          ".write": "auth != null"
+        }
       }
     }
   }

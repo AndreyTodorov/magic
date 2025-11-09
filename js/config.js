@@ -86,6 +86,10 @@ const AUTH_CONFIG = {
     MODE: 'email',
 
     // Whether to require login for joining tournaments
+    // Note: Login is ALWAYS required to CREATE tournaments
+    // Unauthenticated users can:
+    //   - View tournaments (read access)
+    //   - Update match scores (if REQUIRE_LOGIN_TO_JOIN is false)
     REQUIRE_LOGIN_TO_JOIN: false,  // Set true if you want login required to join
 };
 
