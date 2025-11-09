@@ -4,6 +4,20 @@
 
 This document explains the Firebase Realtime Database security rules for Magic Mikes Tournament.
 
+## Key Permission Summary
+
+**What REQUIRES authentication (login):**
+- ✅ Creating new tournaments
+- ✅ Joining tournaments (becoming a member)
+- ✅ Modifying tournament settings (players, matchesPerPlayer)
+
+**What DOESN'T require authentication:**
+- ✅ Viewing tournaments (public read access)
+- ✅ Updating match scores (public write to matches)
+
+**Why allow unauthenticated score updates?**
+This design allows spectators, friends, or players without accounts to help record match results during a tournament. The creator can share the tournament code, and anyone can contribute by updating scores - perfect for casual tournaments where not everyone wants to create an account.
+
 ## Rule Files
 
 - **`firebase-database-rules.json`** - Production rules (secure, validates data)
@@ -21,7 +35,13 @@ Use during development and testing:
     "tournaments": {
       "$tournamentId": {
         ".read": true,
-        ".write": "auth != null"
+        ".write": "auth != null && !data.exists()",
+        "matches": {
+          ".write": true
+        },
+        "members": {
+          ".write": "auth != null"
+        }
       }
     }
   }
@@ -30,7 +50,9 @@ Use during development and testing:
 
 **What it does:**
 - ✅ Anyone can **read** tournaments (public tournaments)
-- ✅ Only **authenticated users** can create/update tournaments
+- ✅ Only **authenticated users** can **create** new tournaments
+- ✅ **Anyone** can update match scores (no auth required)
+- ✅ Only **authenticated users** can join tournaments
 - ⚠️ Minimal validation (for faster development)
 
 **How to apply:**
@@ -42,36 +64,33 @@ Use during development and testing:
 
 ## Production Rules (Secure)
 
-Use in production for security and data validation:
-
-```json
-{
-  "rules": {
-    "tournaments": {
-      "$tournamentId": {
-        ".read": true,
-        ".write": "auth != null && (
-          !data.exists() ||
-          data.child('creator').val() === auth.uid ||
-          data.child('members').child(auth.uid).exists()
-        )",
-        // ... full validation rules
-      }
-    }
-  }
-}
-```
+Use in production for security and data validation.
 
 **Security features:**
 
 ### 1. Read Access
 - ✅ **Public read** - Anyone can view tournaments (needed for Join feature)
 
-### 2. Write Access
-- ✅ **Must be authenticated** - Only logged-in users can write
-- ✅ **Creator can update** - Tournament creator has full access
-- ✅ **Members can update** - Joined members can update matches
-- ❌ **Others blocked** - Non-members cannot modify tournaments
+### 2. Write Access - Granular Permissions
+
+**Creating Tournaments:**
+- ✅ **Must be authenticated** - Only logged-in users can create new tournaments
+- ❌ **Unauthenticated blocked** - Anonymous users cannot create tournaments
+
+**Updating Match Scores:**
+- ✅ **Public write access** - Anyone can update match results (authenticated or not)
+- ✅ **Data validation** - Match data must conform to expected structure
+- 🎯 **Use case** - Allows spectators or players without accounts to record scores
+
+**Other Fields (players, creator, matchesPerPlayer):**
+- ✅ **Creator only** - Only tournament creator can modify
+- ✅ **Members can edit** - Joined members have limited edit access
+- ❌ **Others blocked** - Non-members cannot modify tournament settings
+
+**Joining Tournaments:**
+- ✅ **Must be authenticated** - Only logged-in users can join
+- ✅ **Self-registration** - Users can add themselves to members
+- ✅ **Creator control** - Creator can add/remove any member
 
 ### 3. Data Validation
 
@@ -134,45 +153,81 @@ Use in production for security and data validation:
 
 ## Testing Rules
 
-### Test Read Access (Anyone)
+### Test Read Access (Anyone - No Auth Required)
 ```javascript
 // Should work without authentication
 firebase.database().ref('tournaments/ABC12345').once('value');
+// ✅ Works - tournaments are publicly readable
 ```
 
-### Test Write Access (Authenticated Only)
+### Test Creating Tournament (Requires Auth)
 ```javascript
-// Should fail if not logged in
-firebase.database().ref('tournaments/NEW123').set({ ... });
+// Should FAIL if not logged in
+firebase.database().ref('tournaments/NEW123').set({
+  players: ['Player 1'],
+  matches: [...],
+  creator: 'some-uid'
+});
+// ❌ Fails - must be authenticated to create tournaments
 
-// Should work after login
+// Should WORK after login
 firebase.auth().signInWithEmailAndPassword(email, password)
   .then(() => {
-    firebase.database().ref('tournaments/NEW123').set({ ... });
+    firebase.database().ref('tournaments/NEW123').set({
+      players: ['Player 1'],
+      matches: [...],
+      creator: firebase.auth().currentUser.uid
+    });
+    // ✅ Works - authenticated user can create
   });
 ```
 
-### Test Creator Access
+### Test Match Updates (No Auth Required)
 ```javascript
-// Creator can update their tournament
-const tournamentRef = firebase.database().ref('tournaments/ABC12345');
-tournamentRef.update({ someField: 'newValue' }); // ✅ Works
-```
-
-### Test Member Access
-```javascript
-// Member can update matches
+// IMPORTANT: Anyone can update match scores without logging in
 const matchRef = firebase.database()
   .ref('tournaments/ABC12345/matches/0');
-matchRef.update({ completed: true }); // ✅ Works
+
+// Update match results without authentication
+matchRef.update({
+  games: [0, 1, 0],
+  completed: true
+});
+// ✅ Works - match updates are public
 ```
 
-### Test Non-Member Access
+### Test Tournament Settings (Requires Auth + Membership)
 ```javascript
-// Non-member cannot update
-const tournamentRef = firebase.database()
-  .ref('tournaments/SOMEONE_ELSES_TOURNAMENT');
-tournamentRef.update({ players: ['hacker'] }); // ❌ Fails
+// Non-member cannot update tournament settings
+firebase.database().ref('tournaments/ABC12345/players')
+  .set(['Hacker Player']);
+// ❌ Fails - must be creator or member
+
+// Creator can update settings
+firebase.auth().signInWithEmailAndPassword(creatorEmail, password)
+  .then(() => {
+    firebase.database().ref('tournaments/ABC12345/players')
+      .set(['Updated Player']);
+    // ✅ Works - creator has full access
+  });
+```
+
+### Test Joining Tournament (Requires Auth)
+```javascript
+// Cannot join without authentication
+firebase.database()
+  .ref('tournaments/ABC12345/members/some-uid')
+  .set(true);
+// ❌ Fails - must be authenticated
+
+// Can join after login
+firebase.auth().signInWithEmailAndPassword(email, password)
+  .then(() => {
+    firebase.database()
+      .ref(`tournaments/ABC12345/members/${firebase.auth().currentUser.uid}`)
+      .set(true);
+    // ✅ Works - authenticated users can join
+  });
 ```
 
 ---

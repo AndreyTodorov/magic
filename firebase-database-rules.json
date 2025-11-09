@@ -4,19 +4,20 @@
       "$tournamentId": {
         ".read": true,
 
-        ".write": "auth != null && (
-          !data.exists() ||
-          data.child('creator').val() === auth.uid ||
-          data.child('members').child(auth.uid).exists()
-        )",
+        ".write": "auth != null && !data.exists()",
 
         ".validate": "newData.hasChildren(['players', 'matches', 'matchesPerPlayer', 'creator'])",
 
         "players": {
+          ".write": "auth != null && (
+            data.parent().child('creator').val() === auth.uid ||
+            data.parent().child('members').child(auth.uid).exists()
+          )",
           ".validate": "newData.isString() || (newData.hasChildren() && newData.val() !== null)"
         },
 
         "matches": {
+          ".write": true,
           ".validate": "newData.hasChildren()",
           "$matchId": {
             ".validate": "newData.hasChildren(['player1', 'player2', 'games', 'completed'])",
@@ -39,22 +40,29 @@
         },
 
         "matchesPerPlayer": {
+          ".write": "auth != null && (
+            data.parent().child('creator').val() === auth.uid ||
+            data.parent().child('members').child(auth.uid).exists()
+          )",
           ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 20"
         },
 
         "creator": {
-          ".validate": "newData.val() === auth.uid || data.val() === newData.val()"
+          ".write": "auth != null && !data.exists()",
+          ".validate": "newData.val() === auth.uid"
         },
 
         "members": {
           ".read": true,
+          ".write": "auth != null",
           "$uid": {
             ".validate": "newData.isBoolean() && ($uid === auth.uid || root.child('tournaments').child($tournamentId).child('creator').val() === auth.uid)"
           }
         },
 
         "createdAt": {
-          ".validate": "newData.isNumber() && (data.val() === newData.val() || !data.exists())"
+          ".write": "auth != null && !data.exists()",
+          ".validate": "newData.isNumber()"
         },
 
         "$other": {
