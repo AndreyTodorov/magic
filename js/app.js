@@ -398,6 +398,12 @@ class App {
     uiManager.elements.gamesPerPlayer.textContent =
       tournamentManager.matchesPerPlayer;
 
+    // Hide auth section when in tournament (whether logged in or not)
+    const authSection = document.getElementById('authSection');
+    if (authSection) {
+      authSection.style.display = 'none';
+    }
+
     // Show guest indicator if not logged in
     const viewingStatus = document.getElementById('viewingStatus');
     if (viewingStatus) {
@@ -694,6 +700,12 @@ class App {
     // Reset UI
     uiManager.resetToInitialState();
 
+    // Show auth section if not logged in
+    const authSection = document.getElementById('authSection');
+    if (authSection && !authManager.isSignedIn()) {
+      authSection.style.display = 'block';
+    }
+
     logger.info("App", "Left tournament");
   }
 
@@ -883,10 +895,12 @@ class App {
     const userInfo = document.getElementById('userInfo');
     const modeSelector = document.getElementById('modeSelector');
     const createBtn = document.querySelector('[data-mode="create"]');
+    const inTournament = tournamentManager.currentTournamentCode !== null;
 
     if (user) {
       // User is logged in
-      if (authSection) authSection.style.display = 'none';
+      // Only hide auth section if not in tournament (tournament hides it separately)
+      if (authSection && !inTournament) authSection.style.display = 'none';
       if (userInfo) userInfo.style.display = 'flex';
       if (modeSelector) modeSelector.style.display = 'flex';
 
@@ -903,7 +917,8 @@ class App {
       }
     } else {
       // User is logged out
-      if (authSection) authSection.style.display = 'block';
+      // Only show auth section if not in a tournament
+      if (authSection && !inTournament) authSection.style.display = 'block';
       if (userInfo) userInfo.style.display = 'none';
 
       // Show mode selector but disable create button
