@@ -420,19 +420,7 @@
 
     <!-- Application Scripts -->
     <!-- Load local config first if it exists (gitignored for development) -->
-    <script>
-      // Optionally load config.local.js if it exists (for local development)
-      // This prevents 404 errors in production where the file doesn't exist
-      (function() {
-        var script = document.createElement('script');
-        script.src = 'js/config.local.js';
-        script.onerror = function() {
-          // Silently continue if config.local.js doesn't exist
-          console.log('config.local.js not found - using default config (this is normal in production)');
-        };
-        document.head.appendChild(script);
-      })();
-    </script>
+    <script src="js/config.local.js" onerror="console.log('config.local.js not found - using default config (this is normal in production)')"></script>
     <script src="js/logger.js"></script>
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
