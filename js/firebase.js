@@ -49,16 +49,8 @@ class FirebaseManager {
    * DISABLED for development - enable in production for security
    */
   initializeAppCheck() {
-    // Temporarily disabled - uncomment when you have a valid App Check site key
-    /*
-    try {
-      const appCheck = firebase.appCheck();
-      appCheck.activate(APPCHECK_SITE_KEY, true); // true = auto-refresh
-      console.log("✓ App Check activated");
-    } catch (error) {
-      console.warn("App Check activation failed:", error);
-    }
-    */
+    // App Check SDK is not loaded in development mode
+    // To enable: uncomment App Check script in index.html and provide valid site key
     console.log("⚠ App Check is disabled (development mode)");
   }
 
