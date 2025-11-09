@@ -922,8 +922,9 @@ class App {
         userName.textContent = authManager.getDisplayName();
       }
 
-      // Enable create tournament
+      // Show and enable create tournament button
       if (createBtn) {
+        createBtn.style.display = 'block';
         createBtn.disabled = false;
         createBtn.title = '';
       }
@@ -936,10 +937,9 @@ class App {
       // Only show mode selector if not in tournament
       if (modeSelector && !inTournament) modeSelector.style.display = 'flex';
 
-      // Disable create tournament
+      // Hide create tournament button when not logged in
       if (createBtn) {
-        createBtn.disabled = true;
-        createBtn.title = 'Please login to create tournaments';
+        createBtn.style.display = 'none';
       }
     }
   }
