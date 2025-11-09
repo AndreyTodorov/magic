@@ -1,0 +1,66 @@
+{
+  "rules": {
+    "tournaments": {
+      "$tournamentId": {
+        ".read": true,
+
+        ".write": "auth != null && (
+          !data.exists() ||
+          data.child('creator').val() === auth.uid ||
+          data.child('members').child(auth.uid).exists()
+        )",
+
+        ".validate": "newData.hasChildren(['players', 'matches', 'matchesPerPlayer', 'creator'])",
+
+        "players": {
+          ".validate": "newData.isString() || (newData.hasChildren() && newData.val() !== null)"
+        },
+
+        "matches": {
+          ".validate": "newData.hasChildren()",
+          "$matchId": {
+            ".validate": "newData.hasChildren(['player1', 'player2', 'games', 'completed'])",
+            "player1": {
+              ".validate": "newData.isNumber()"
+            },
+            "player2": {
+              ".validate": "newData.isNumber()"
+            },
+            "games": {
+              ".validate": "newData.hasChildren()",
+              "$gameIndex": {
+                ".validate": "newData.val() === null || newData.isNumber()"
+              }
+            },
+            "completed": {
+              ".validate": "newData.isBoolean()"
+            }
+          }
+        },
+
+        "matchesPerPlayer": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 20"
+        },
+
+        "creator": {
+          ".validate": "newData.val() === auth.uid || data.val() === newData.val()"
+        },
+
+        "members": {
+          ".read": true,
+          "$uid": {
+            ".validate": "newData.isBoolean() && ($uid === auth.uid || root.child('tournaments').child($tournamentId).child('creator').val() === auth.uid)"
+          }
+        },
+
+        "createdAt": {
+          ".validate": "newData.isNumber() && (data.val() === newData.val() || !data.exists())"
+        },
+
+        "$other": {
+          ".validate": false
+        }
+      }
+    }
+  }
+}

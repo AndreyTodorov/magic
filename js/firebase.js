@@ -46,12 +46,27 @@ class FirebaseManager {
 
   /**
    * Initialize Firebase App Check
-   * DISABLED for development - enable in production for security
+   * Automatically enabled in production, disabled in development
    */
   initializeAppCheck() {
-    // App Check SDK is not loaded in development mode
-    // To enable: uncomment App Check script in index.html and provide valid site key
-    console.log("⚠ App Check is disabled (development mode)");
+    if (!APPCHECK_CONFIG.ENABLED) {
+      console.log(`⚠ App Check disabled in ${ENVIRONMENT} mode`);
+      return;
+    }
+
+    try {
+      // Check if App Check SDK is loaded
+      if (!firebase.appCheck) {
+        console.warn('⚠ App Check SDK not loaded. Add script to index.html for production.');
+        return;
+      }
+
+      const appCheck = firebase.appCheck();
+      appCheck.activate(APPCHECK_SITE_KEY, true); // true = auto-refresh
+      console.log('✓ App Check activated');
+    } catch (error) {
+      console.error('App Check activation failed:', error);
+    }
   }
 
   /**
