@@ -50,6 +50,36 @@ class App {
    * Setup all event listeners
    */
   setupEventListeners() {
+    // Auth tab switching
+    document.querySelectorAll('.auth-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => this.handleAuthTabSwitch(e));
+    });
+
+    // Login form
+    document.getElementById('loginForm')?.addEventListener('submit', (e) =>
+      this.handleLogin(e)
+    );
+
+    // Signup form
+    document.getElementById('signupForm')?.addEventListener('submit', (e) =>
+      this.handleSignup(e)
+    );
+
+    // Logout button
+    document.getElementById('logoutBtn')?.addEventListener('click', () =>
+      this.handleLogout()
+    );
+
+    // Forgot password
+    document.getElementById('forgotPasswordBtn')?.addEventListener('click', () =>
+      this.handleForgotPassword()
+    );
+
+    // Listen to auth state changes
+    authManager.onAuthStateChange((user) => {
+      this.handleAuthStateChange(user);
+    });
+
     // Mode selection
     document.querySelectorAll(".mode-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => this.handleModeSelection(e));
@@ -700,6 +730,162 @@ class App {
     } catch (error) {
       console.error("Error rejoining tournament:", error);
       this.clearTournamentSession();
+    }
+  }
+
+  /**
+   * Handle auth tab switching (Login/Signup)
+   */
+  handleAuthTabSwitch(event) {
+    const mode = event.target.dataset.authMode;
+    if (!mode) return;
+
+    document.querySelectorAll('.auth-tab').forEach(tab => {
+      tab.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+
+    if (mode === 'login') {
+      loginForm.style.display = 'block';
+      signupForm.style.display = 'none';
+    } else {
+      loginForm.style.display = 'none';
+      signupForm.style.display = 'block';
+    }
+  }
+
+  /**
+   * Handle login
+   */
+  async handleLogin(event) {
+    event.preventDefault();
+
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    const loginBtn = document.getElementById('loginBtn');
+
+    uiManager.setButtonLoading(loginBtn, true, '🔄 Logging in...');
+    uiManager.clearError('loginError');
+
+    try {
+      const result = await authManager.signIn(email, password);
+
+      if (result.success) {
+        logger.info('App', 'User logged in successfully');
+        // Auth state change handler will update UI
+      } else {
+        uiManager.showError('loginError', result.error);
+      }
+    } finally {
+      uiManager.setButtonLoading(loginBtn, false);
+    }
+  }
+
+  /**
+   * Handle signup
+   */
+  async handleSignup(event) {
+    event.preventDefault();
+
+    const name = document.getElementById('signupName').value;
+    const email = document.getElementById('signupEmail').value;
+    const password = document.getElementById('signupPassword').value;
+    const signupBtn = document.getElementById('signupBtn');
+
+    uiManager.setButtonLoading(signupBtn, true, '🔄 Creating account...');
+    uiManager.clearError('signupError');
+
+    try {
+      const result = await authManager.signUp(email, password, name);
+
+      if (result.success) {
+        logger.info('App', 'User signed up successfully');
+        // Auth state change handler will update UI
+      } else {
+        uiManager.showError('signupError', result.error);
+      }
+    } finally {
+      uiManager.setButtonLoading(signupBtn, false);
+    }
+  }
+
+  /**
+   * Handle logout
+   */
+  async handleLogout() {
+    if (!confirm('Are you sure you want to logout?')) {
+      return;
+    }
+
+    // Leave current tournament if any
+    if (tournamentManager.currentTournamentCode) {
+      this.leaveTournament();
+    }
+
+    const result = await authManager.signOut();
+    if (result.success) {
+      logger.info('App', 'User logged out');
+    }
+  }
+
+  /**
+   * Handle forgot password
+   */
+  async handleForgotPassword() {
+    const email = prompt('Enter your email address:');
+    if (!email) return;
+
+    const result = await authManager.resetPassword(email);
+
+    if (result.success) {
+      alert('Password reset email sent! Check your inbox.');
+    } else {
+      alert('Error: ' + result.error);
+    }
+  }
+
+  /**
+   * Handle auth state changes
+   */
+  handleAuthStateChange(user) {
+    const authSection = document.getElementById('authSection');
+    const userInfo = document.getElementById('userInfo');
+    const modeSelector = document.getElementById('modeSelector');
+    const createBtn = document.querySelector('[data-mode="create"]');
+
+    if (user) {
+      // User is logged in
+      if (authSection) authSection.style.display = 'none';
+      if (userInfo) userInfo.style.display = 'flex';
+      if (modeSelector) modeSelector.style.display = 'flex';
+
+      // Update user display name
+      const userName = document.getElementById('userName');
+      if (userName) {
+        userName.textContent = authManager.getDisplayName();
+      }
+
+      // Enable create tournament
+      if (createBtn) {
+        createBtn.disabled = false;
+        createBtn.title = '';
+      }
+    } else {
+      // User is logged out
+      if (authSection) authSection.style.display = 'block';
+      if (userInfo) userInfo.style.display = 'none';
+
+      // Show mode selector but disable create button
+      if (modeSelector) modeSelector.style.display = 'flex';
+
+      // Disable create tournament
+      if (createBtn) {
+        createBtn.disabled = true;
+        createBtn.title = 'Please login to create tournaments';
+      }
     }
   }
 }

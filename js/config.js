@@ -48,6 +48,17 @@ const DATABASE_RULES = `
 `;
 
 /**
+ * Authentication Configuration
+ */
+const AUTH_CONFIG = {
+    // Set to 'email' for email/password, 'anonymous' for anonymous auth
+    MODE: 'email',
+
+    // Whether to require login for joining tournaments
+    REQUIRE_LOGIN_TO_JOIN: false,  // Set true if you want login required to join
+};
+
+/**
  * Session Configuration
  */
 const SESSION_CONFIG = {

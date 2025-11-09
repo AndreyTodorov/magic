@@ -58,26 +58,27 @@ class FirebaseManager {
   }
 
   /**
-   * Setup anonymous authentication
+   * Setup authentication based on AUTH_CONFIG
    */
   async setupAuthentication() {
-    return new Promise((resolve) => {
-      this.authReadyPromise = resolve;
+    // Initialize auth manager
+    await authManager.initialize(this.auth);
 
-      // Sign in anonymously
-      this.auth
-        .signInAnonymously()
-        .catch((err) => console.warn("Anonymous sign-in failed:", err));
+    // If anonymous mode, sign in anonymously
+    if (AUTH_CONFIG.MODE === 'anonymous') {
+      try {
+        await this.auth.signInAnonymously();
+      } catch (err) {
+        console.warn("Anonymous sign-in failed:", err);
+      }
+    }
 
-      // Listen for auth state changes
-      this.auth.onAuthStateChanged((user) => {
-        this.currentUser = user;
-        if (user) {
-          console.log("✓ User authenticated:", user.uid);
-          resolve(user);
-        }
-      });
+    // Update currentUser when auth state changes
+    authManager.onAuthStateChange((user) => {
+      this.currentUser = user;
     });
+
+    return authManager.authReadyPromise;
   }
 
   /**
