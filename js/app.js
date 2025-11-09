@@ -35,10 +35,15 @@ class App {
     // Initialize UI state
     this.initializeUIState();
 
-    // Ensure mode selector is visible on startup (UIManager relies on
-    // the 'active' class to show/hide sections). This makes behavior
-    // consistent between localStorage (standalone) and Firebase modes.
-    uiManager.showSection("modeSelector");
+    // Initially hide mode selector until we know auth state
+    // The auth state change handler will show it when appropriate
+    const modeSelector = document.getElementById("modeSelector");
+    if (modeSelector) {
+      modeSelector.style.display = "none";
+    }
+
+    // Manually trigger auth state handler to set initial UI state
+    this.handleAuthStateChange(authManager.currentUser);
 
     // Attempt to rejoin tournament
     await this.attemptRejoin();
@@ -204,6 +209,13 @@ class App {
     uiManager.renderPlayerInputs(playerCount);
     // Restore or apply previously selected sub-view (matches/schedule/standings)
     uiManager.switchView(uiManager.currentView || "matches");
+
+    // Show auth section by default if not logged in
+    // This ensures the login form is visible on initial load
+    const authSection = document.getElementById('authSection');
+    if (authSection && !authManager.isSignedIn()) {
+      authSection.style.display = 'block';
+    }
   }
 
   /**
