@@ -85,12 +85,21 @@ const AUTH_CONFIG = {
     // Set to 'email' for email/password, 'anonymous' for anonymous auth
     MODE: 'email',
 
-    // Whether to require login for joining tournaments
-    // Note: Login is ALWAYS required to CREATE tournaments
+    // Authentication Requirements:
+    // ✅ Login REQUIRED to CREATE tournaments
+    // ❌ Login NOT required to VIEW tournaments
+    // ❌ Login NOT required to UPDATE match scores
+    //
     // Unauthenticated users can:
-    //   - View tournaments (read access)
-    //   - Update match scores (if REQUIRE_LOGIN_TO_JOIN is false)
-    REQUIRE_LOGIN_TO_JOIN: false,  // Set true if you want login required to join
+    //   - View any tournament by entering its code
+    //   - Update match scores in real-time
+    //   - See live standings and schedules
+    //
+    // Authenticated users additionally can:
+    //   - Create new tournaments
+    //   - Be listed as tournament members
+    //   - Have their activity tracked
+    REQUIRE_LOGIN_TO_JOIN: false,  // Currently not enforced - joining works without auth
 };
 
 /**

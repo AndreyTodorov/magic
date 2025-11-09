@@ -373,20 +373,36 @@ class App {
       throw new Error("Tournament not found. Please check the code.");
     }
 
-    // Join tournament
-    await firebaseManager.joinTournament(code);
-
-    // Load tournament data
+    // Load tournament data (works for everyone, auth not required)
     const tournamentData = await firebaseManager.getTournamentData(code);
     tournamentManager.loadTournament(tournamentData);
     tournamentManager.currentTournamentCode = code;
     tournamentManager.isCreator = false;
+
+    // Only add to members list if user is authenticated
+    // Unauthenticated users can view and update scores without being members
+    if (authManager.isSignedIn()) {
+      try {
+        await firebaseManager.joinTournament(code);
+        logger.info("App", `Joined as member: ${code}`);
+      } catch (error) {
+        logger.warn("App", "Could not join as member (continuing as viewer)", error);
+      }
+    } else {
+      logger.info("App", `Viewing tournament as guest: ${code}`);
+    }
 
     // Update UI
     uiManager.showSection("tournamentSection");
     uiManager.displayTournamentCode(code);
     uiManager.elements.gamesPerPlayer.textContent =
       tournamentManager.matchesPerPlayer;
+
+    // Show guest indicator if not logged in
+    const viewingStatus = document.getElementById('viewingStatus');
+    if (viewingStatus) {
+      viewingStatus.style.display = authManager.isSignedIn() ? 'none' : 'flex';
+    }
 
     // Start listening to updates
     this.startTournamentListener(code);
