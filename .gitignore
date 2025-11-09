@@ -12,6 +12,9 @@
 .env.local
 .env.*.local
 
+# Local Firebase configuration (contains secrets)
+js/config.local.js
+
 # Test coverage
 coverage/
 .nyc_output/

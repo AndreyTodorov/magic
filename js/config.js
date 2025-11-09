@@ -1,16 +1,17 @@
 /**
  * FIREBASE CONFIGURATION
  *
- * Setup Instructions:
- * 1. Go to https://console.firebase.google.com/
- * 2. Create a new project
- * 3. Enable Realtime Database
- * 4. Set database rules (see DATABASE_RULES below)
- * 5. Get your config from Project Settings > General
- * 6. Replace the values below with your Firebase project credentials
+ * Setup Instructions for Local Development:
+ * 1. Copy js/config.local.js.template to js/config.local.js
+ * 2. Edit config.local.js with your actual Firebase credentials
+ * 3. The local config will override these placeholder values
+ *
+ * For Production:
+ * Replace these values with your production Firebase credentials
  */
 
-const FIREBASE_CONFIG = {
+// Default configuration (placeholders for production deployment)
+let FIREBASE_CONFIG = {
     apiKey: "FIREBASE_API_KEY",
     authDomain: "FIREBASE_AUTH_DOMAIN",
     databaseURL: "FIREBASE_DATABASE_URL",
@@ -24,7 +25,37 @@ const FIREBASE_CONFIG = {
  * Firebase App Check Site Key
  * Get this from Firebase Console > App Check
  */
-const APPCHECK_SITE_KEY = "APP_CHECK_SITE_KEY";
+let APPCHECK_SITE_KEY = "APP_CHECK_SITE_KEY";
+
+/**
+ * Environment Detection
+ * Automatically detects if running in development or production
+ */
+let ENVIRONMENT = 'production';
+
+// Detect localhost/development
+if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+        ENVIRONMENT = 'development';
+    }
+}
+
+// Override with local config if it exists (for local development)
+if (typeof FIREBASE_CONFIG_OVERRIDE !== 'undefined') {
+    FIREBASE_CONFIG = FIREBASE_CONFIG_OVERRIDE;
+    console.log('✓ Using local Firebase configuration');
+}
+
+if (typeof APPCHECK_SITE_KEY_OVERRIDE !== 'undefined') {
+    APPCHECK_SITE_KEY = APPCHECK_SITE_KEY_OVERRIDE;
+}
+
+if (typeof ENVIRONMENT_OVERRIDE !== 'undefined') {
+    ENVIRONMENT = ENVIRONMENT_OVERRIDE;
+}
+
+console.log(`🌍 Environment: ${ENVIRONMENT}`);
 
 /**
  * Recommended Database Rules
@@ -56,6 +87,18 @@ const AUTH_CONFIG = {
 
     // Whether to require login for joining tournaments
     REQUIRE_LOGIN_TO_JOIN: false,  // Set true if you want login required to join
+};
+
+/**
+ * App Check Configuration
+ */
+const APPCHECK_CONFIG = {
+    // Enable App Check in production for security
+    ENABLED: ENVIRONMENT === 'production',
+
+    // Whether to enforce App Check (reject requests without valid tokens)
+    // Set to false during initial deployment, then enable after testing
+    ENFORCE: false,
 };
 
 /**

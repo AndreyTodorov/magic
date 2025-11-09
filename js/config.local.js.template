@@ -1,0 +1,27 @@
+/**
+ * LOCAL CONFIGURATION TEMPLATE
+ *
+ * SETUP INSTRUCTIONS:
+ * 1. Copy this file to `config.local.js` (remove .template extension)
+ * 2. Replace the placeholder values with your actual Firebase credentials
+ * 3. The config.local.js file is gitignored and won't be committed
+ *
+ * This file overrides values in config.js for local development.
+ */
+
+// Override Firebase configuration with your actual credentials
+const FIREBASE_CONFIG_OVERRIDE = {
+    apiKey: "YOUR_ACTUAL_API_KEY",
+    authDomain: "your-project.firebaseapp.com",
+    databaseURL: "https://your-project-default-rtdb.firebaseio.com",
+    projectId: "your-project-id",
+    storageBucket: "your-project.appspot.com",
+    messagingSenderId: "123456789012",
+    appId: "1:123456789012:web:abcdef123456"
+};
+
+// Optional: Override App Check site key (get from Firebase Console > App Check)
+const APPCHECK_SITE_KEY_OVERRIDE = "6LeXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+
+// Environment setting: 'development' or 'production'
+const ENVIRONMENT_OVERRIDE = 'development';
