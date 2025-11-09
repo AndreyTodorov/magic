@@ -35,6 +35,88 @@
         <h1 class="app-title">Magic Mikes</h1>
       </header>
 
+      <!-- Auth Section (shown when not logged in) -->
+      <section class="section section--padded" id="authSection">
+        <div class="auth-container">
+          <div class="auth-tabs">
+            <button class="auth-tab active" data-auth-mode="login">Login</button>
+            <button class="auth-tab" data-auth-mode="signup">Sign Up</button>
+          </div>
+
+          <!-- Login Form -->
+          <form id="loginForm" class="auth-form">
+            <div class="form-group">
+              <label for="loginEmail" class="form-label">Email:</label>
+              <input
+                type="email"
+                id="loginEmail"
+                class="form-input"
+                placeholder="your@email.com"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="loginPassword" class="form-label">Password:</label>
+              <input
+                type="password"
+                id="loginPassword"
+                class="form-input"
+                placeholder="Password"
+                required
+              />
+            </div>
+            <button type="submit" class="btn" id="loginBtn">Login</button>
+            <button type="button" class="btn btn--text" id="forgotPasswordBtn">
+              Forgot Password?
+            </button>
+            <div id="loginError" role="alert" aria-live="polite"></div>
+          </form>
+
+          <!-- Sign Up Form -->
+          <form id="signupForm" class="auth-form" style="display: none;">
+            <div class="form-group">
+              <label for="signupName" class="form-label">Display Name:</label>
+              <input
+                type="text"
+                id="signupName"
+                class="form-input"
+                placeholder="Your Name"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="signupEmail" class="form-label">Email:</label>
+              <input
+                type="email"
+                id="signupEmail"
+                class="form-input"
+                placeholder="your@email.com"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="signupPassword" class="form-label">Password:</label>
+              <input
+                type="password"
+                id="signupPassword"
+                class="form-input"
+                placeholder="Min. 6 characters"
+                minlength="6"
+                required
+              />
+            </div>
+            <button type="submit" class="btn" id="signupBtn">Create Account</button>
+            <div id="signupError" role="alert" aria-live="polite"></div>
+          </form>
+        </div>
+      </section>
+
+      <!-- User Info (shown when logged in) -->
+      <div class="user-info" id="userInfo" style="display: none;">
+        <span>👤 <span id="userName"></span></span>
+        <button class="btn btn--text btn--small" id="logoutBtn">Logout</button>
+      </div>
+
       <!-- Mode Selection -->
       <nav class="mode-selector" id="modeSelector">
         <button
@@ -336,6 +418,7 @@
     <!-- Application Scripts -->
     <script src="js/logger.js"></script>
     <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/firebase.js"></script>
     <script src="js/tournament.js"></script>
     <script src="js/ui.js"></script>
