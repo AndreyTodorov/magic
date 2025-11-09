@@ -398,10 +398,14 @@ class App {
     uiManager.elements.gamesPerPlayer.textContent =
       tournamentManager.matchesPerPlayer;
 
-    // Hide auth section when in tournament (whether logged in or not)
+    // Hide auth section and mode selector when in tournament
     const authSection = document.getElementById('authSection');
+    const modeSelector = document.getElementById('modeSelector');
     if (authSection) {
       authSection.style.display = 'none';
+    }
+    if (modeSelector) {
+      modeSelector.style.display = 'none';
     }
 
     // Show guest indicator if not logged in
@@ -700,10 +704,16 @@ class App {
     // Reset UI
     uiManager.resetToInitialState();
 
-    // Show auth section if not logged in
+    // Show auth section and mode selector after leaving
     const authSection = document.getElementById('authSection');
+    const modeSelector = document.getElementById('modeSelector');
+
     if (authSection && !authManager.isSignedIn()) {
       authSection.style.display = 'block';
+    }
+
+    if (modeSelector) {
+      modeSelector.style.display = 'flex';
     }
 
     logger.info("App", "Left tournament");
@@ -902,7 +912,9 @@ class App {
       // Only hide auth section if not in tournament (tournament hides it separately)
       if (authSection && !inTournament) authSection.style.display = 'none';
       if (userInfo) userInfo.style.display = 'flex';
-      if (modeSelector) modeSelector.style.display = 'flex';
+
+      // Only show mode selector if not in tournament
+      if (modeSelector && !inTournament) modeSelector.style.display = 'flex';
 
       // Update user display name
       const userName = document.getElementById('userName');
@@ -921,8 +933,8 @@ class App {
       if (authSection && !inTournament) authSection.style.display = 'block';
       if (userInfo) userInfo.style.display = 'none';
 
-      // Show mode selector but disable create button
-      if (modeSelector) modeSelector.style.display = 'flex';
+      // Only show mode selector if not in tournament
+      if (modeSelector && !inTournament) modeSelector.style.display = 'flex';
 
       // Disable create tournament
       if (createBtn) {
