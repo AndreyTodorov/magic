@@ -977,9 +977,20 @@ class UIManager {
         return;
       }
 
-      // Skip placeholder matches that haven't been populated yet
-      // (both players are null - means previous round not complete)
-      if (match.isPlaceholder && match.player1 === null && match.player2 === null) {
+      // Skip matches that aren't ready to be displayed:
+      // 1. Placeholder matches that haven't been fully populated
+      // 2. Matches where either player is null (TBD), unless it's a BYE
+      if (match.isPlaceholder) {
+        return;
+      }
+
+      // Skip if player1 is missing (should never happen)
+      if (match.player1 === null) {
+        return;
+      }
+
+      // Skip if player2 is missing, unless it's a BYE match
+      if (match.player2 === null && !match.isBye) {
         return;
       }
 
