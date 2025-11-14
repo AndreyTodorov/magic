@@ -1635,18 +1635,41 @@ class UIManager {
     const recommendedCounts = format.getRecommendedPlayerCounts();
     playerCountSelect.innerHTML = "";
 
-    // Generate options from minPlayers to maxPlayers (capped at 20 for UI)
-    const maxDisplay = Math.min(format.maxPlayers, 20);
-    for (let i = format.minPlayers; i <= maxDisplay; i++) {
+    // For elimination formats (power of 2 only), only show valid options
+    const isElimination = format.formatType === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+                          format.formatType === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION;
+
+    let playerOptions = [];
+    if (isElimination) {
+      // Only show power-of-2 counts: 2, 4, 8, 16, 32, 64
+      playerOptions = recommendedCounts.filter(n => n <= 20);
+      if (playerOptions.length === 0) {
+        // Fallback: generate power of 2 sequence
+        for (let pow = 1; pow <= 64; pow *= 2) {
+          if (pow >= format.minPlayers && pow <= Math.min(format.maxPlayers, 20)) {
+            playerOptions.push(pow);
+          }
+        }
+      }
+    } else {
+      // For other formats, show all counts from minPlayers to maxPlayers
+      const maxDisplay = Math.min(format.maxPlayers, 20);
+      for (let i = format.minPlayers; i <= maxDisplay; i++) {
+        playerOptions.push(i);
+      }
+    }
+
+    // Create option elements
+    playerOptions.forEach(count => {
       const option = document.createElement("option");
-      option.value = i;
+      option.value = count;
 
       // Add visual indicator for recommended counts
-      const isRecommended = recommendedCounts.includes(i);
-      option.textContent = `${i} Player${i !== 1 ? "s" : ""}${isRecommended ? " ⭐" : ""}`;
+      const isRecommended = recommendedCounts.includes(count);
+      option.textContent = `${count} Player${count !== 1 ? "s" : ""}${isRecommended ? " ⭐" : ""}`;
 
       // Try to keep current selection if valid
-      if (i === currentValue && i >= format.minPlayers && i <= format.maxPlayers) {
+      if (count === currentValue) {
         option.selected = true;
       }
       // Otherwise select a recommended count if available
@@ -1655,15 +1678,14 @@ class UIManager {
       }
 
       playerCountSelect.appendChild(option);
-    }
+    });
 
-    // If no option is selected, select the first recommended count or middle value
+    // If no option is selected, select the first recommended count or first option
     if (!playerCountSelect.value) {
-      if (recommendedCounts.length > 0) {
+      if (recommendedCounts.length > 0 && playerOptions.includes(recommendedCounts[0])) {
         playerCountSelect.value = recommendedCounts[0];
-      } else {
-        const midPoint = Math.floor((format.minPlayers + Math.min(format.maxPlayers, 20)) / 2);
-        playerCountSelect.value = midPoint;
+      } else if (playerOptions.length > 0) {
+        playerCountSelect.value = playerOptions[0];
       }
     }
 

@@ -31,37 +31,39 @@ The test suite simulates complete tournaments across all formats with various pl
 
 ### What Gets Tested
 
-#### Round Robin (3 scenarios)
-- ✓ 4 players, 3 matches each
-- ✓ 7 players, 3 matches each
-- ✓ 8 players, 2 matches each
+#### Round Robin (6 scenarios)
+- ✓ 4 players, 1 match each (minimal)
+- ✓ 4 players, 3 matches each (standard)
+- ✓ 6 players, 2 matches each (even, moderate)
+- ✓ 7 players, 2 matches each (odd, moderate)
+- ✓ 8 players, 1 match each (many players, few matches)
+- ✓ 8 players, 3 matches each (many players, many matches)
 
 **Validates:**
 - Each player gets exactly N matches
 - Total match count is correct
 - Standings calculation works
 - Match distribution is balanced
+- Works with both even and odd player counts
 
-#### Single Elimination (6 scenarios)
+#### Single Elimination (5 scenarios - POWER OF 2 ONLY)
 - ✓ 2 players (minimum)
-- ✓ 4 players (power of 2)
-- ✓ 5 players (non-power of 2, 3 BYEs)
-- ✓ 8 players (power of 2)
-- ✓ 13 players (non-power of 2, 3 BYEs)
-- ✓ 16 players (power of 2)
+- ✓ 4 players (small tournament)
+- ✓ 8 players (medium tournament)
+- ✓ 16 players (large tournament)
+- ✓ 32 players (very large tournament)
 
 **Validates:**
 - Bracket structure is correct
-- BYEs are properly distributed
 - Winner advancement works through all rounds
 - Exactly one champion emerges
 - Round count matches expected (log2 of bracket size)
+- **NOTE:** BYEs are no longer supported - only power-of-2 player counts allowed
 
-#### Double Elimination (4 scenarios)
-- ✓ 3 players (minimum)
-- ✓ 4 players (power of 2)
-- ✓ 6 players (non-power of 2)
-- ✓ 8 players (power of 2)
+#### Double Elimination (3 scenarios - POWER OF 2 ONLY)
+- ✓ 4 players (minimum)
+- ✓ 8 players (medium tournament)
+- ✓ 16 players (large tournament)
 
 **Validates:**
 - Winners bracket structure
@@ -69,12 +71,17 @@ The test suite simulates complete tournaments across all formats with various pl
 - Split advancement (winners/losers)
 - Correct match feeding (feedsIntoWin, feedsIntoLoss)
 - Tournament completes without infinite loops
+- **NOTE:** BYEs are no longer supported - only power-of-2 player counts allowed
 
-#### Swiss Tournament (4 scenarios)
-- ✓ 4 players, 3 rounds (even)
+#### Swiss Tournament (8 scenarios)
+- ✓ 4 players, 2 rounds (minimal)
+- ✓ 4 players, 3 rounds (small)
+- ✓ 6 players, 3 rounds (even, moderate)
 - ✓ 7 players, 3 rounds (odd, BYE each round)
-- ✓ 8 players, 4 rounds (even)
-- ✓ 16 players, 5 rounds (larger tournament)
+- ✓ 8 players, 3 rounds (even)
+- ✓ 8 players, 4 rounds (even, more rounds)
+- ✓ 12 players, 4 rounds (medium tournament)
+- ✓ 16 players, 5 rounds (large tournament)
 
 **Validates:**
 - Round 1 pairing generation
@@ -83,11 +90,15 @@ The test suite simulates complete tournaments across all formats with various pl
 - No repeat pairings (where possible)
 - Standings-based pairing (swiss algorithm)
 - All rounds complete successfully
+- Different round counts work correctly
 
-#### Group Stage + Playoffs (3 scenarios)
-- ✓ 8 players: 2 groups of 4, top 2 advance
-- ✓ 12 players: 3 groups of 4, top 2 advance
-- ✓ 16 players: 4 groups of 4, top 2 advance
+#### Group Stage + Playoffs (6 scenarios)
+- ✓ 8 players: 2 groups of 4, top 2 advance (4-player playoff)
+- ✓ 8 players: 2 groups of 4, top 1 advance (2-player playoff)
+- ✓ 12 players: 3 groups of 4, top 2 advance (6-player playoff)
+- ✓ 12 players: 4 groups of 3, top 1 advance (4-player playoff)
+- ✓ 16 players: 4 groups of 4, top 2 advance (8-player playoff)
+- ✓ 16 players: 4 groups of 4, top 1 advance (4-player playoff)
 
 **Validates:**
 - Group assignments are balanced
@@ -96,6 +107,7 @@ The test suite simulates complete tournaments across all formats with various pl
 - Playoff bracket population
 - Top players advance correctly
 - Playoff bracket completes
+- Different advancement configurations work (top 1 vs top 2)
 
 ## Test Output
 

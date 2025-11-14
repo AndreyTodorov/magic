@@ -728,14 +728,16 @@ class SingleEliminationFormat extends TournamentFormatBase {
       return baseValidation;
     }
 
-    // Check if power of 2 - if not, add helpful warning
-    const isPowerOf2 = (numPlayers & (numPlayers - 1)) === 0;
+    // MUST be power of 2 (no BYEs allowed)
+    const isPowerOf2 = numPlayers > 0 && (numPlayers & (numPlayers - 1)) === 0;
     if (!isPowerOf2) {
-      const nextPower = this.nextPowerOf2(numPlayers);
-      const numByes = nextPower - numPlayers;
+      const recommended = this.getRecommendedPlayerCounts()
+        .filter(n => n >= numPlayers && n <= 64)
+        .slice(0, 3)
+        .join(', ');
       return {
-        isValid: true,
-        warning: `${numByes} player${numByes > 1 ? 's' : ''} will receive a BYE in Round 1 (bracket sized for ${nextPower} players). Recommended: ${this.getRecommendedPlayerCounts().filter(n => n >= numPlayers && n <= 64).slice(0, 3).join(', ')}`
+        isValid: false,
+        error: `Single Elimination requires exactly 2, 4, 8, 16, 32, or 64 players (power of 2). Recommended: ${recommended}`
       };
     }
 
@@ -1085,7 +1087,7 @@ class DoubleEliminationFormat extends TournamentFormatBase {
     this.formatType = TOURNAMENT_FORMATS.DOUBLE_ELIMINATION;
     this.formatName = 'Double Elimination';
     this.description = 'Losers get a second chance in the losers bracket';
-    this.minPlayers = 3;
+    this.minPlayers = 4;
     this.maxPlayers = 64;
   }
 
@@ -1100,14 +1102,16 @@ class DoubleEliminationFormat extends TournamentFormatBase {
       return baseValidation;
     }
 
-    // Check if power of 2 - if not, add helpful warning
-    const isPowerOf2 = (numPlayers & (numPlayers - 1)) === 0;
+    // MUST be power of 2 (no BYEs allowed)
+    const isPowerOf2 = numPlayers > 0 && (numPlayers & (numPlayers - 1)) === 0;
     if (!isPowerOf2) {
-      const nextPower = this.nextPowerOf2(numPlayers);
-      const numByes = nextPower - numPlayers;
+      const recommended = this.getRecommendedPlayerCounts()
+        .filter(n => n >= numPlayers && n <= 32)
+        .slice(0, 3)
+        .join(', ');
       return {
-        isValid: true,
-        warning: `${numByes} player${numByes > 1 ? 's' : ''} will receive a BYE in Round 1 (bracket sized for ${nextPower} players). Recommended: ${this.getRecommendedPlayerCounts().filter(n => n >= numPlayers && n <= 32).slice(0, 3).join(', ')}`
+        isValid: false,
+        error: `Double Elimination requires exactly 4, 8, 16, or 32 players (power of 2). Recommended: ${recommended}`
       };
     }
 
@@ -1126,8 +1130,8 @@ class DoubleEliminationFormat extends TournamentFormatBase {
   }
 
   validateConfig(config, numPlayers) {
-    if (numPlayers < 3) {
-      return { isValid: false, error: 'At least 3 players required for double elimination' };
+    if (numPlayers < 4) {
+      return { isValid: false, error: 'At least 4 players required for double elimination' };
     }
     return { isValid: true };
   }

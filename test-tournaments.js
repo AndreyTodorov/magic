@@ -387,42 +387,50 @@ class TournamentTester {
     // Round Robin tests
     this.log('\n\n📋 ROUND ROBIN TESTS');
     this.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    this.testRoundRobin(4, 3);  // 4*3=12 (even)
-    this.testRoundRobin(7, 2);  // 7*2=14 (even) - changed from 3
-    this.testRoundRobin(8, 3);  // 8*3=24 (even) - changed from 2
+    this.testRoundRobin(4, 1);  // Minimal matches
+    this.testRoundRobin(4, 3);  // Standard matches
+    this.testRoundRobin(6, 2);  // Even players, moderate matches
+    this.testRoundRobin(7, 2);  // Odd players, moderate matches
+    this.testRoundRobin(8, 1);  // Many players, few matches
+    this.testRoundRobin(8, 3);  // Many players, many matches
 
-    // Single Elimination tests
+    // Single Elimination tests (power-of-2 only)
     this.log('\n\n🏆 SINGLE ELIMINATION TESTS');
     this.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     this.testSingleElimination(2);   // Minimum
-    this.testSingleElimination(4);   // Power of 2
-    this.testSingleElimination(5);   // Non-power of 2 (3 BYEs)
-    this.testSingleElimination(8);   // Power of 2
-    this.testSingleElimination(13);  // Non-power of 2 (3 BYEs)
-    this.testSingleElimination(16);  // Power of 2
+    this.testSingleElimination(4);   // Small tournament
+    this.testSingleElimination(8);   // Medium tournament
+    this.testSingleElimination(16);  // Large tournament
+    this.testSingleElimination(32);  // Very large tournament
 
-    // Double Elimination tests
+    // Double Elimination tests (power-of-2 only)
     this.log('\n\n♻️  DOUBLE ELIMINATION TESTS');
     this.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    this.testDoubleElimination(3);   // Minimum
-    this.testDoubleElimination(4);   // Power of 2
-    this.testDoubleElimination(6);   // Non-power of 2
-    this.testDoubleElimination(8);   // Power of 2
+    this.testDoubleElimination(4);   // Minimum
+    this.testDoubleElimination(8);   // Medium tournament
+    this.testDoubleElimination(16);  // Large tournament
 
     // Swiss tests
     this.log('\n\n🔄 SWISS TOURNAMENT TESTS');
     this.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    this.testSwiss(4, 3);    // Even players
+    this.testSwiss(4, 2);    // Minimal: 4 players, 2 rounds
+    this.testSwiss(4, 3);    // Small: 4 players, 3 rounds
+    this.testSwiss(6, 3);    // Even players, moderate rounds
     this.testSwiss(7, 3);    // Odd players (BYE each round)
-    this.testSwiss(8, 4);    // Even players
-    this.testSwiss(16, 5);   // Larger tournament
+    this.testSwiss(8, 3);    // Even players, 3 rounds
+    this.testSwiss(8, 4);    // Even players, 4 rounds
+    this.testSwiss(12, 4);   // Medium tournament
+    this.testSwiss(16, 5);   // Large tournament
 
     // Group Stage tests
     this.log('\n\n📦 GROUP STAGE TESTS');
     this.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    this.testGroupStage(8, 2, 2);    // 2 groups of 4, top 2 advance
-    this.testGroupStage(12, 3, 2);   // 3 groups of 4, top 2 advance
-    this.testGroupStage(16, 4, 2);   // 4 groups of 4, top 2 advance
+    this.testGroupStage(8, 2, 2);    // 2 groups of 4, top 2 advance (4-player playoff)
+    this.testGroupStage(8, 2, 1);    // 2 groups of 4, top 1 advance (2-player playoff)
+    this.testGroupStage(12, 3, 2);   // 3 groups of 4, top 2 advance (6-player playoff)
+    this.testGroupStage(12, 4, 1);   // 4 groups of 3, top 1 advance (4-player playoff)
+    this.testGroupStage(16, 4, 2);   // 4 groups of 4, top 2 advance (8-player playoff)
+    this.testGroupStage(16, 4, 1);   // 4 groups of 4, top 1 advance (4-player playoff)
 
     const endTime = Date.now();
     const duration = ((endTime - startTime) / 1000).toFixed(2);
