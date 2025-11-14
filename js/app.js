@@ -773,8 +773,19 @@ class App {
 
     if (!result.updated) return;
 
-    // Track which match was updated for incremental rendering
-    this.lastMatchUpdate = matchId;
+    // For elimination brackets, if match now has a winner (completed),
+    // force full render to show newly populated next-round matches
+    const isElimination =
+      tournamentManager.format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+      tournamentManager.format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION;
+
+    if (isElimination && result.match && result.match.winner !== null) {
+      // Match completed in elimination bracket - force full render
+      this.lastMatchUpdate = null;
+    } else {
+      // Track which match was updated for incremental rendering
+      this.lastMatchUpdate = matchId;
+    }
 
     // Update Firebase with all matches (includes bracket advancements)
     try {

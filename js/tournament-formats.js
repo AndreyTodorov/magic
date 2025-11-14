@@ -1215,6 +1215,9 @@ class DoubleEliminationFormat extends TournamentFormatBase {
       });
     }
 
+    // Set up feedsIntoWin and feedsIntoLoss relationships
+    this.setupDoubleEliminationFeeds(matches, winnerRounds);
+
     return matches;
   }
 
@@ -1313,6 +1316,67 @@ class DoubleEliminationFormat extends TournamentFormatBase {
     }
 
     return matches;
+  }
+
+  /**
+   * Set up feedsIntoWin and feedsIntoLoss relationships for double elimination
+   */
+  setupDoubleEliminationFeeds(matches, winnerRounds) {
+    // Organize matches by bracket and round
+    const winnersMatches = {};
+    const losersMatches = {};
+
+    matches.forEach(match => {
+      if (match.bracket === 'winners') {
+        if (!winnersMatches[match.round]) winnersMatches[match.round] = [];
+        winnersMatches[match.round].push(match);
+      } else if (match.bracket === 'losers') {
+        if (!losersMatches[match.round]) losersMatches[match.round] = [];
+        losersMatches[match.round].push(match);
+      }
+    });
+
+    // Set up winners bracket feeds
+    for (let round = 1; round < winnerRounds; round++) {
+      const currentRound = winnersMatches[round] || [];
+      const nextRound = winnersMatches[round + 1] || [];
+
+      for (let i = 0; i < currentRound.length; i++) {
+        const match = currentRound[i];
+
+        // Winners advance to next round in winners bracket
+        const nextMatchIndex = Math.floor(i / 2);
+        if (nextRound[nextMatchIndex]) {
+          match.feedsIntoWin = nextRound[nextMatchIndex].id;
+        }
+
+        // Losers drop to losers bracket
+        // WB R1 losers go to LB R1
+        // WB R2 losers go to LB R2 or R3 depending on structure
+        const loserRound = round === 1 ? 1 : (round - 1) * 2;
+        if (losersMatches[loserRound] && losersMatches[loserRound][i]) {
+          match.feedsIntoLoss = losersMatches[loserRound][i].id;
+        }
+      }
+    }
+
+    // Set up losers bracket internal feeds
+    const loserRounds = Object.keys(losersMatches).map(Number).sort((a, b) => a - b);
+    for (let i = 0; i < loserRounds.length - 1; i++) {
+      const round = loserRounds[i];
+      const currentRound = losersMatches[round];
+      const nextRound = losersMatches[loserRounds[i + 1]];
+
+      if (!currentRound || !nextRound) continue;
+
+      for (let j = 0; j < currentRound.length; j++) {
+        const match = currentRound[j];
+        const nextMatchIndex = Math.floor(j / 2);
+        if (nextRound[nextMatchIndex]) {
+          match.feedsIntoWin = nextRound[nextMatchIndex].id;
+        }
+      }
+    }
   }
 
   /**
