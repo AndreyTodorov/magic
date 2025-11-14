@@ -1225,7 +1225,7 @@ class TournamentManager {
     const firstRoundMatches = playoffMatches.filter((m) => m.round === 1);
     for (let i = 0; i < firstRoundMatches.length && i * 2 < seededPlayers.length; i++) {
       firstRoundMatches[i].player1 = seededPlayers[i * 2];
-      firstRoundMatches[i].player2 = seededPlayers[i * 2 + 1] || null;
+      firstRoundMatches[i].player2 = seededPlayers[i * 2 + 1] !== undefined ? seededPlayers[i * 2 + 1] : null;
       firstRoundMatches[i].isPlaceholder = false;
       if (seededPlayers[i * 2 + 1] === undefined) {
         firstRoundMatches[i].isBye = true;
