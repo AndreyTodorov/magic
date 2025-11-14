@@ -1422,7 +1422,11 @@ class DoubleEliminationFormat extends TournamentFormatBase {
       stat.points = stat.wins * 3;
       // Quality score = sum of beaten opponents' wins
       stat.qualityScore = stat.opponents.beaten.reduce((sum, oppIdx) => {
-        return sum + stats[oppIdx].wins;
+        // Safety check: ensure opponent index is valid
+        if (oppIdx !== null && oppIdx !== undefined && stats[oppIdx]) {
+          return sum + stats[oppIdx].wins;
+        }
+        return sum;
       }, 0);
     });
 
@@ -1695,7 +1699,11 @@ class GroupStageFormat extends TournamentFormatBase {
     // Calculate quality scores
     stats.forEach((stat) => {
       stat.qualityScore = stat.opponents.beaten.reduce((sum, oppIdx) => {
-        return sum + stats[oppIdx].wins;
+        // Safety check: ensure opponent index is valid
+        if (oppIdx !== null && oppIdx !== undefined && stats[oppIdx]) {
+          return sum + stats[oppIdx].wins;
+        }
+        return sum;
       }, 0);
     });
 
@@ -1765,7 +1773,11 @@ class GroupStageFormat extends TournamentFormatBase {
     stats.forEach((stat) => {
       stat.points = stat.wins * 3;
       stat.qualityScore = stat.opponents.beaten.reduce((sum, oppIdx) => {
-        return sum + stats[oppIdx].wins;
+        // Safety check: ensure opponent index is valid
+        if (oppIdx !== null && oppIdx !== undefined && stats[oppIdx]) {
+          return sum + stats[oppIdx].wins;
+        }
+        return sum;
       }, 0);
     });
 
