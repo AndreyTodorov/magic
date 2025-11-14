@@ -593,8 +593,10 @@ class SwissFormat extends TournamentFormatBase {
       gamesLost: 0,
       matchesPlayed: 0,
       points: 0,
-      opponents: [],
+      opponents: { beaten: [], lostTo: [] },
+      allOpponents: [], // For OMW calculation
       byes: 0,
+      qualityScore: 0,
     }));
 
     // Calculate basic stats
@@ -615,9 +617,9 @@ class SwissFormat extends TournamentFormatBase {
       const p1 = match.player1;
       const p2 = match.player2;
 
-      // Track opponents
-      stats[p1].opponents.push(p2);
-      stats[p2].opponents.push(p1);
+      // Track all opponents (for OMW calculation)
+      stats[p1].allOpponents.push(p2);
+      stats[p2].allOpponents.push(p1);
 
       // Count games
       if (match.games) {
@@ -637,10 +639,14 @@ class SwissFormat extends TournamentFormatBase {
         stats[p1].wins++;
         stats[p2].losses++;
         stats[p1].points += 3;
+        stats[p1].opponents.beaten.push(p2);
+        stats[p2].opponents.lostTo.push(p1);
       } else if (match.winner === 2) {
         stats[p2].wins++;
         stats[p1].losses++;
         stats[p2].points += 3;
+        stats[p2].opponents.beaten.push(p1);
+        stats[p1].opponents.lostTo.push(p2);
       }
 
       stats[p1].matchesPlayed++;
@@ -652,12 +658,13 @@ class SwissFormat extends TournamentFormatBase {
       // Opponent Match Win % (OMW)
       let opponentWins = 0;
       let opponentMatches = 0;
-      stat.opponents.forEach((oppIndex) => {
+      stat.allOpponents.forEach((oppIndex) => {
         const opp = stats[oppIndex];
         opponentWins += opp.wins;
         opponentMatches += opp.matchesPlayed;
       });
       stat.omw = opponentMatches > 0 ? opponentWins / opponentMatches : 0;
+      stat.qualityScore = opponentWins; // Use opponent wins as quality score
 
       // Game Win %
       const totalGames = stat.gamesWon + stat.gamesLost;
@@ -952,6 +959,9 @@ class SingleEliminationFormat extends TournamentFormatBase {
       roundEliminated: null, // Which round they were eliminated (null = still in)
       finalPosition: null, // 1st, 2nd, 3rd-4th, 5th-8th, etc.
       points: 0,
+      matchesPlayed: 0,
+      opponents: { beaten: [], lostTo: [] },
+      qualityScore: 0,
     }));
 
     // Track which round each player was eliminated
@@ -959,6 +969,7 @@ class SingleEliminationFormat extends TournamentFormatBase {
       if (!match || match.isPlaceholder) return;
       if (match.isBye) {
         stats[match.player1].wins++;
+        stats[match.player1].matchesPlayed++;
         return;
       }
       if (match.winner === null) return;
@@ -985,6 +996,12 @@ class SingleEliminationFormat extends TournamentFormatBase {
 
       stats[winner].wins++;
       stats[loser].losses++;
+      stats[winner].matchesPlayed++;
+      stats[loser].matchesPlayed++;
+
+      // Track opponents
+      stats[winner].opponents.beaten.push(loser);
+      stats[loser].opponents.lostTo.push(winner);
 
       // Mark elimination round for loser
       if (stats[loser].roundEliminated === null) {
@@ -1006,6 +1023,9 @@ class SingleEliminationFormat extends TournamentFormatBase {
         const playersInRound = Math.pow(2, maxRound - stat.roundEliminated + 1);
         stat.finalPosition = playersInRound / 2 + 1; // e.g., eliminated in semis = 3rd-4th
       }
+
+      // Calculate points (wins only for elimination)
+      stat.points = stat.wins * 3;
     });
 
     return stats;
@@ -1290,6 +1310,9 @@ class DoubleEliminationFormat extends TournamentFormatBase {
       eliminationRound: null,
       finalPosition: null,
       points: 0,
+      matchesPlayed: 0,
+      opponents: { beaten: [], lostTo: [] },
+      qualityScore: 0,
     }));
 
     // Track losses and calculate basic stats
@@ -1321,11 +1344,26 @@ class DoubleEliminationFormat extends TournamentFormatBase {
 
       stats[winner].wins++;
       stats[loser].losses++;
+      stats[winner].matchesPlayed++;
+      stats[loser].matchesPlayed++;
+
+      // Track opponents
+      stats[winner].opponents.beaten.push(loser);
+      stats[loser].opponents.lostTo.push(winner);
 
       // In double elim, losing twice means elimination
       if (stats[loser].losses >= 2 && stats[loser].eliminationRound === null) {
         stats[loser].eliminationRound = match.round;
       }
+    });
+
+    // Calculate points and quality score
+    stats.forEach((stat) => {
+      stat.points = stat.wins * 3;
+      // Quality score = sum of beaten opponents' wins
+      stat.qualityScore = stat.opponents.beaten.reduce((sum, oppIdx) => {
+        return sum + stats[oppIdx].wins;
+      }, 0);
     });
 
     return stats;
@@ -1542,6 +1580,8 @@ class GroupStageFormat extends TournamentFormatBase {
       points: 0,
       group: null,
       matchesPlayed: 0,
+      opponents: { beaten: [], lostTo: [] },
+      qualityScore: 0,
     }));
 
     // Get group matches only
@@ -1578,14 +1618,25 @@ class GroupStageFormat extends TournamentFormatBase {
         stats[p1].wins++;
         stats[p2].losses++;
         stats[p1].points += 3;
+        stats[p1].opponents.beaten.push(p2);
+        stats[p2].opponents.lostTo.push(p1);
       } else if (match.winner === 2) {
         stats[p2].wins++;
         stats[p1].losses++;
         stats[p2].points += 3;
+        stats[p2].opponents.beaten.push(p1);
+        stats[p1].opponents.lostTo.push(p2);
       }
 
       stats[p1].matchesPlayed++;
       stats[p2].matchesPlayed++;
+    });
+
+    // Calculate quality scores
+    stats.forEach((stat) => {
+      stat.qualityScore = stat.opponents.beaten.reduce((sum, oppIdx) => {
+        return sum + stats[oppIdx].wins;
+      }, 0);
     });
 
     return stats;
@@ -1604,6 +1655,9 @@ class GroupStageFormat extends TournamentFormatBase {
       gamesLost: 0,
       roundEliminated: null,
       points: 0,
+      matchesPlayed: 0,
+      opponents: { beaten: [], lostTo: [] },
+      qualityScore: 0,
     }));
 
     const playoffMatches = matches.filter((m) => m.stage === 'playoffs');
@@ -1635,10 +1689,24 @@ class GroupStageFormat extends TournamentFormatBase {
 
       stats[winner].wins++;
       stats[loser].losses++;
+      stats[winner].matchesPlayed++;
+      stats[loser].matchesPlayed++;
+
+      // Track opponents
+      stats[winner].opponents.beaten.push(loser);
+      stats[loser].opponents.lostTo.push(winner);
 
       if (stats[loser].roundEliminated === null) {
         stats[loser].roundEliminated = match.round;
       }
+    });
+
+    // Calculate quality scores and points
+    stats.forEach((stat) => {
+      stat.points = stat.wins * 3;
+      stat.qualityScore = stat.opponents.beaten.reduce((sum, oppIdx) => {
+        return sum + stats[oppIdx].wins;
+      }, 0);
     });
 
     return stats;
