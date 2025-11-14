@@ -1532,6 +1532,26 @@ body {
   box-shadow: 2px 2px 0px #000000;
 }
 
+.badge-bye {
+  background: var(--color-accent-green);
+}
+
+.player-row.tbd {
+  opacity: 0.6;
+}
+
+.tbd-text {
+  font-size: 0.85em;
+  color: #666;
+  font-style: italic;
+}
+
+.bye-text {
+  font-size: 0.9em;
+  color: var(--color-accent-green);
+  font-weight: 600;
+}
+
 .match-score-display {
   text-align: center;
   font-size: clamp(1.3rem, 4vw, 1.6rem);

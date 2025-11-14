@@ -614,6 +614,12 @@ class UIManager {
         return;
       }
 
+      // Skip placeholder matches that haven't been populated yet
+      // (both players are null - means previous round not complete)
+      if (match.isPlaceholder && match.player1 === null && match.player2 === null) {
+        return;
+      }
+
       const card = this.createMatchCard(match, players);
       fragment.appendChild(card);
     });
@@ -656,8 +662,26 @@ class UIManager {
       card.classList.add("completed");
     }
 
-    const p1Name = players[match.player1];
-    const p2Name = players[match.player2];
+    // Handle BYE matches
+    if (match.isBye) {
+      const p1Name = players[match.player1];
+      card.innerHTML = `
+        <div class="match-card__header">
+          <div class="match-number">${match.bracketPosition || `Match ${match.id + 1}`}</div>
+          <div class="badge badge-bye">BYE</div>
+        </div>
+        <div class="match-players">
+          <div class="player-row winner">
+            <div class="player-name">${this.escapeHtml(p1Name)}</div>
+            <div class="bye-text">Advances (BYE)</div>
+          </div>
+        </div>
+      `;
+      return card;
+    }
+
+    const p1Name = players[match.player1] || "TBD";
+    const p2Name = players[match.player2] || "TBD";
     const p1Wins = match.games.filter((g) => g === 1).length;
     const p2Wins = match.games.filter((g) => g === 2).length;
 
@@ -669,9 +693,12 @@ class UIManager {
       )} wins!</div>`;
     }
 
+    // Use bracket position if available (for elimination formats), otherwise use match number
+    const matchLabel = match.bracketPosition || `Match ${match.id + 1}`;
+
     card.innerHTML = `
       <div class="match-card__header">
-        <div class="match-number">Match ${match.id + 1}</div>
+        <div class="match-number">${matchLabel}</div>
         <div class="badge">Best of 3</div>
       </div>
 
@@ -693,14 +720,15 @@ class UIManager {
    */
   createPlayerRow(match, playerName, playerNum, players) {
     const isWinner = match.winner === playerNum;
+    const isTBD = playerName === "TBD";
 
     return `
-      <div class="player-row ${isWinner ? "winner" : ""}">
+      <div class="player-row ${isWinner ? "winner" : ""} ${isTBD ? "tbd" : ""}">
         <div class="player-name">${this.escapeHtml(playerName)}</div>
         <div class="game-score">
-          ${[0, 1, 2]
+          ${!isTBD ? [0, 1, 2]
             .map((gameNum) => this.createGameResult(match, gameNum, playerNum))
-            .join("")}
+            .join("") : '<span class="tbd-text">Pending previous round</span>'}
         </div>
       </div>
     `;
