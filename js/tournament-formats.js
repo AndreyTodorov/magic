@@ -1659,12 +1659,15 @@ class GroupStageFormat extends TournamentFormatBase {
     const playoffBracketSize = this.nextPowerOf2(playoffSpots);
     const playoffRounds = Math.log2(playoffBracketSize);
 
+    const playoffRoundMatches = {}; // Track match IDs by round for feedsInto setup
+
     for (let round = 1; round <= playoffRounds; round++) {
+      playoffRoundMatches[round] = [];
       const matchesInRound = Math.pow(2, playoffRounds - round);
 
       for (let i = 0; i < matchesInRound; i++) {
         matches.push({
-          id: matchId++,
+          id: matchId,
           stage: 'playoffs',
           round: round,
           bracketPosition: `Playoff-R${round}-M${i + 1}`,
@@ -1673,8 +1676,23 @@ class GroupStageFormat extends TournamentFormatBase {
           games: [null, null, null],
           winner: null,
           isPlaceholder: true,
+          feedsInto: null, // Will set after creating all matches
         });
+        playoffRoundMatches[round].push(matchId);
+        matchId++;
       }
+    }
+
+    // Set up feedsInto relationships for playoff bracket
+    for (let round = 1; round < playoffRounds; round++) {
+      const currentRoundMatches = playoffRoundMatches[round];
+      const nextRoundMatches = playoffRoundMatches[round + 1];
+
+      currentRoundMatches.forEach((currentMatchId, index) => {
+        const match = matches.find(m => m.id === currentMatchId);
+        const nextMatchIndex = Math.floor(index / 2);
+        match.feedsInto = nextRoundMatches[nextMatchIndex];
+      });
     }
 
     return matches;
