@@ -496,7 +496,7 @@ class App {
       uiManager.elements.matchesPerPlayer.value
     );
 
-    // Generate matches
+    // Generate matches (using default round-robin format for now)
     tournamentManager.createTournament(playerNames, matchesPerPlayer);
 
     // Generate unique code
@@ -504,12 +504,15 @@ class App {
     tournamentManager.currentTournamentCode = code;
     tournamentManager.isCreator = true;
 
-    // Save to Firebase
+    // Save to Firebase with format data
     const matchesObject = tournamentManager.getMatchesForFirebase();
     await firebaseManager.createTournament(code, {
       players: playerNames,
       matches: matchesObject,
       matchesPerPlayer: matchesPerPlayer,
+      format: tournamentManager.format,
+      formatConfig: tournamentManager.formatConfig,
+      currentStage: tournamentManager.currentStage,
     });
 
     // Update UI
