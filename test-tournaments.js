@@ -387,9 +387,9 @@ class TournamentTester {
     // Round Robin tests
     this.log('\n\n📋 ROUND ROBIN TESTS');
     this.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    this.testRoundRobin(4, 3);
-    this.testRoundRobin(7, 3);
-    this.testRoundRobin(8, 2);
+    this.testRoundRobin(4, 3);  // 4*3=12 (even)
+    this.testRoundRobin(7, 2);  // 7*2=14 (even) - changed from 3
+    this.testRoundRobin(8, 3);  // 8*3=24 (even) - changed from 2
 
     // Single Elimination tests
     this.log('\n\n🏆 SINGLE ELIMINATION TESTS');
