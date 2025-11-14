@@ -963,7 +963,7 @@ class UIManager {
    * Render all matches
    * OPTIMIZED: Uses DocumentFragment for batch DOM insertion
    */
-  renderMatches(matches, players) {
+  renderMatches(matches, players, currentStage = null) {
     const container = this.elements.matchesContainer;
     if (!container) return;
 
@@ -974,6 +974,11 @@ class UIManager {
     matches.forEach((match) => {
       if (!match || !match.games || !Array.isArray(match.games)) {
         console.warn("Invalid match data:", match);
+        return;
+      }
+
+      // For multi-stage formats (Group Stage + Playoffs), only show matches from current stage
+      if (currentStage && match.stage && match.stage !== currentStage) {
         return;
       }
 

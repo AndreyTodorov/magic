@@ -1049,6 +1049,214 @@ class TournamentTester {
   }
 
   /**
+   * Comprehensive Group Stage + Playoffs Test
+   * Tests visibility issues and stage progression
+   */
+  testGroupStagePlayoffsComplete() {
+    this.log(`\n=== Testing Group Stage + Playoffs COMPLETE Playthrough ===`);
+
+    try {
+      const manager = new TournamentManager();
+      const players = Array.from({ length: 8 }, (_, i) => `Player ${i + 1}`);
+
+      // Create tournament: 2 groups of 4, top 2 advance to 4-player playoffs
+      manager.createTournament(players, 0, TOURNAMENT_FORMATS.GROUP_STAGE);
+
+      const totalMatches = manager.matches.length;
+      this.log(`✓ Created ${totalMatches} total match slots`);
+
+      // Filter matches by stage
+      const groupMatches = manager.matches.filter(m => m.stage === 'groups');
+      const playoffMatches = manager.matches.filter(m => m.stage === 'playoffs');
+
+      this.log(`✓ Group matches: ${groupMatches.length}`);
+      this.log(`✓ Playoff matches: ${playoffMatches.length}`);
+
+      // Should start in groups stage
+      if (manager.currentStage !== 'groups') {
+        this.log(`ERROR: Should start in 'groups' stage, found '${manager.currentStage}'`, 'error');
+      } else {
+        this.log(`✓ Started in 'groups' stage`);
+      }
+
+      // TEST 1: In groups stage, only group matches should be visible
+      // Simulate UI filtering: only show matches from current stage
+      const currentStageInGroups = manager.currentStage || 'groups';
+      const visibleInGroups = manager.matches.filter(m =>
+        (!m.stage || m.stage === currentStageInGroups) &&
+        !m.isPlaceholder &&
+        m.player1 !== null &&
+        (m.player2 !== null || m.isBye)
+      );
+
+      const visibleGroupMatches = visibleInGroups.filter(m => m.stage === 'groups' || !m.stage);
+      const visiblePlayoffMatches = visibleInGroups.filter(m => m.stage === 'playoffs');
+
+      if (visiblePlayoffMatches.length > 0) {
+        this.log(`ERROR: In groups stage, ${visiblePlayoffMatches.length} playoff matches are visible (should be 0)`, 'error');
+      } else {
+        this.log(`✓ In groups stage: 0 playoff matches visible`);
+      }
+
+      if (visibleGroupMatches.length !== groupMatches.length) {
+        this.log(`ERROR: In groups stage, ${visibleGroupMatches.length} group matches visible, expected ${groupMatches.length}`, 'error');
+      } else {
+        this.log(`✓ In groups stage: All ${groupMatches.length} group matches visible`);
+      }
+
+      // Play all group matches
+      this.log(`\n--- Playing Group Stage ---`);
+      let completedGroups = 0;
+      groupMatches.forEach(match => {
+        this.playMatch(match);
+        manager.advanceWinnerToNextMatch(match);
+        completedGroups++;
+      });
+      this.log(`✓ Completed ${completedGroups} group matches`);
+
+      // Advance to playoffs
+      const advanceResult = manager.advanceToPlayoffs();
+      this.log(`  Advanced ${advanceResult.advancingPlayers?.length || 0} players to playoffs: ${JSON.stringify(advanceResult.advancingPlayers || [])}`);
+
+      if (manager.currentStage !== 'playoffs') {
+        this.log(`ERROR: After advancing, should be in 'playoffs' stage, found '${manager.currentStage}'`, 'error');
+      } else {
+        this.log(`✓ Advanced to 'playoffs' stage`);
+      }
+
+      // Debug: Show playoff match state after seeding
+      playoffMatches.forEach(m => {
+        const p1 = m.player1 !== null ? `P${m.player1 + 1}(idx:${m.player1})` : 'TBD';
+        const p2 = m.player2 !== null ? `P${m.player2 + 1}(idx:${m.player2})` : 'TBD';
+        this.log(`  Playoff M${m.id} [R${m.round}]: ${p1} vs ${p2} [${m.isPlaceholder ? 'PH' : 'ACTIVE'}] feedsInto:${m.feedsInto}`);
+      });
+
+      // Verify all advancing players were seeded
+      const seededPlayerIndices = new Set();
+      playoffMatches.filter(m => m.round === 1).forEach(m => {
+        if (m.player1 !== null) seededPlayerIndices.add(m.player1);
+        if (m.player2 !== null) seededPlayerIndices.add(m.player2);
+      });
+
+      const missingPlayers = advanceResult.advancingPlayers.filter(p => !seededPlayerIndices.has(p));
+      if (missingPlayers.length > 0) {
+        this.log(`ERROR: ${missingPlayers.length} advancing players were not seeded in playoffs: ${JSON.stringify(missingPlayers)}`, 'error');
+      } else {
+        this.log(`✓ All ${advanceResult.advancingPlayers.length} advancing players seeded in playoffs`);
+      }
+
+      // TEST 2: In playoffs stage, only playoff matches should be visible (not group matches)
+      this.log(`\n--- Testing Playoff Stage Visibility ---`);
+      const currentStageInPlayoffs = manager.currentStage || 'playoffs';
+      const visibleInPlayoffs = manager.matches.filter(m =>
+        (!m.stage || m.stage === currentStageInPlayoffs) &&
+        !m.isPlaceholder &&
+        m.player1 !== null &&
+        (m.player2 !== null || m.isBye)
+      );
+
+      const visibleGroupInPlayoffs = visibleInPlayoffs.filter(m => m.stage === 'groups');
+      const visiblePlayoffInPlayoffs = visibleInPlayoffs.filter(m => m.stage === 'playoffs' || !m.stage);
+
+      if (visibleGroupInPlayoffs.length > 0) {
+        this.log(`ERROR: In playoffs stage, ${visibleGroupInPlayoffs.length} GROUP matches are visible (should be 0)`, 'error');
+      } else {
+        this.log(`✓ In playoffs stage: 0 group matches visible`);
+      }
+
+      if (visiblePlayoffInPlayoffs.length === 0) {
+        this.log(`ERROR: In playoffs stage, 0 playoff matches visible (should have Round 1 visible)`, 'error');
+      } else {
+        this.log(`✓ In playoffs stage: ${visiblePlayoffInPlayoffs.length} playoff matches visible`);
+      }
+
+      // Play playoff matches and check visibility after each round
+      this.log(`\n--- Playing Playoffs ---`);
+      let playoffRound = 1;
+      let completedPlayoffs = 0;
+      let safeguard = 0;
+
+      while (safeguard < 20) {
+        // Find next playable playoff match
+        const playableMatch = manager.matches.find(m =>
+          m.stage === 'playoffs' &&
+          !m.isPlaceholder &&
+          m.winner === null &&
+          m.player1 !== null &&
+          m.player2 !== null &&
+          !m.isBye
+        );
+
+        if (!playableMatch) {
+          break;
+        }
+
+        const currentRound = playableMatch.round;
+        this.log(`  Playing Playoff R${currentRound} M${playableMatch.id}: ${players[playableMatch.player1]} vs ${players[playableMatch.player2]}`);
+
+        this.playMatch(playableMatch);
+        manager.advanceWinnerToNextMatch(playableMatch);
+        completedPlayoffs++;
+
+        // Check if this completed a round
+        const roundMatches = manager.matches.filter(m =>
+          m.stage === 'playoffs' && m.round === currentRound && !m.isPlaceholder
+        );
+        const allRoundComplete = roundMatches.every(m => m.winner !== null);
+
+        if (allRoundComplete && currentRound < Math.log2(playoffMatches.length + 1)) {
+          // Check if next round is visible
+          const nextRoundMatches = manager.matches.filter(m =>
+            m.stage === 'playoffs' &&
+            m.round === currentRound + 1 &&
+            !m.isPlaceholder &&
+            m.player1 !== null &&
+            m.player2 !== null
+          );
+
+          if (nextRoundMatches.length === 0) {
+            this.log(`  ERROR: After completing Playoff R${currentRound}, next round (R${currentRound + 1}) is NOT visible`, 'error');
+          } else {
+            this.log(`  ✓ After completing Playoff R${currentRound}, next round (R${currentRound + 1}) is visible (${nextRoundMatches.length} matches)`);
+          }
+        }
+
+        safeguard++;
+      }
+
+      this.log(`✓ Completed ${completedPlayoffs} playoff matches`);
+
+      // Verify champion
+      const standings = manager.getStandings();
+      const champions = standings.rankedStats.filter(s => s.rank === 1);
+
+      if (champions.length !== 1) {
+        this.log(`ERROR: Should have exactly 1 champion, found ${champions.length}`, 'error');
+      } else {
+        this.log(`✓ Exactly 1 champion: ${champions[0].player}`);
+      }
+
+      // Verify total matches completed
+      const totalCompleted = completedGroups + completedPlayoffs;
+      const expectedPlayoffMatches = playoffMatches.length;
+
+      if (completedPlayoffs < expectedPlayoffMatches) {
+        this.log(`ERROR: Completed only ${completedPlayoffs} playoff matches, expected ${expectedPlayoffMatches}`, 'error');
+      } else {
+        this.log(`✓ All playoff matches completed`);
+      }
+
+      this.log(`✓ Total matches completed: ${totalCompleted} (${completedGroups} groups + ${completedPlayoffs} playoffs)`);
+
+      return true;
+    } catch (error) {
+      this.log(`Group Stage + Playoffs complete test failed: ${error.message}`, 'error');
+      console.error(error);
+      return false;
+    }
+  }
+
+  /**
    * Run all tests
    */
   runAllTests() {
@@ -1110,6 +1318,7 @@ class TournamentTester {
     this.testSwissRoundVisibility();
     this.testDoubleEliminationRoundVisibility();
     this.testDoubleEliminationComplete();
+    this.testGroupStagePlayoffsComplete();
 
     const endTime = Date.now();
     const duration = ((endTime - startTime) / 1000).toFixed(2);

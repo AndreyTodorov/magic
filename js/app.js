@@ -710,7 +710,7 @@ class App {
         tournamentManager.currentStage
       );
     } else if (currentView === "matches") {
-      uiManager.renderMatches(matches, players);
+      uiManager.renderMatches(matches, players, tournamentManager.currentStage);
     } else if (currentView === "standings") {
       const { rankedStats, tiedRanks } = tournamentManager.getStandings();
       uiManager.renderStandings(
@@ -813,6 +813,14 @@ class App {
 
     if (isElimination) {
       return true;
+    }
+
+    // Group Stage + Playoffs: Force render in playoffs stage (single elimination bracket)
+    if (tournamentManager.format === TOURNAMENT_FORMATS.GROUP_STAGE) {
+      if (match.stage === 'playoffs') {
+        // Playoffs use single elimination, always force render
+        return true;
+      }
     }
 
     // Swiss: Force render if this completes a round (next round might be generated)
