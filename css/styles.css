@@ -951,6 +951,35 @@ body {
   letter-spacing: 0.02em;
 }
 
+/* === TOURNAMENT INFO === */
+.tournament-info {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin: var(--spacing-md) 0;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tournament-info__badge {
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: var(--color-bg-tertiary);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.tournament-info__badge--format {
+  background: var(--color-bg-pink);
+}
+
+.tournament-info__badge--stage {
+  background: var(--color-bg-cyan);
+}
+
 /* === SCHEDULE === */
 .schedule-info {
   background: var(--color-bg-tertiary);
