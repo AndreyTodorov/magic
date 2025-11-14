@@ -1156,8 +1156,9 @@ class DoubleEliminationFormat extends TournamentFormatBase {
     const bracketSize = this.nextPowerOf2(numPlayers);
     const winnerRounds = Math.log2(bracketSize);
 
-    // Double elim losers bracket has (2 * rounds - 1) rounds
-    const loserRounds = 2 * winnerRounds - 1;
+    // Double elim losers bracket has 2*(winners_rounds - 1) rounds
+    // (excludes the grand final which is separate)
+    const loserRounds = 2 * (winnerRounds - 1);
 
     // Seed players
     const seeding = this.seedPlayers(numPlayers, config.seedingMethod);
@@ -1344,30 +1345,32 @@ class DoubleEliminationFormat extends TournamentFormatBase {
     });
 
     // Set up winners bracket feeds
-    for (let round = 1; round < winnerRounds; round++) {
+    for (let round = 1; round <= winnerRounds; round++) {
       const currentRound = winnersMatches[round] || [];
       const nextRound = winnersMatches[round + 1] || [];
 
       for (let i = 0; i < currentRound.length; i++) {
         const match = currentRound[i];
 
-        // Winners advance to next round in winners bracket
+        // Winners advance to next round in winners bracket (if there is a next round)
         const nextMatchIndex = Math.floor(i / 2);
         if (nextRound[nextMatchIndex]) {
           match.feedsIntoWin = nextRound[nextMatchIndex].id;
         }
 
         // Losers drop to losers bracket
-        // WR1 losers go to LR1 (first round of losers)
-        // WR2+ losers go to odd losers rounds (LR3, LR5, etc.) to merge with LR winners
+        // WR1 losers go to LR1 (first round of losers) with 2:1 mapping
+        // WR2+ losers go to even losers rounds (LR2, LR4, etc.) with 1:1 mapping for merge rounds
         let loserRound;
+        let loserMatchIndex;
+
         if (round === 1) {
           loserRound = 1;  // WR1 → LR1
+          loserMatchIndex = Math.floor(i / 2);  // 2:1 mapping (4 WB matches → 2 LB matches)
         } else {
-          loserRound = (round - 1) * 2 + 1;  // WR2 → LR3, WR3 → LR5, etc.
+          loserRound = 2 * (round - 1);  // WR2 → LR2, WR3 → LR4, etc.
+          loserMatchIndex = i;  // 1:1 mapping for merge rounds
         }
-
-        const loserMatchIndex = Math.floor(i / 2);
 
         if (losersMatches[loserRound] && losersMatches[loserRound][loserMatchIndex]) {
           match.feedsIntoLoss = losersMatches[loserRound][loserMatchIndex].id;
@@ -1386,10 +1389,39 @@ class DoubleEliminationFormat extends TournamentFormatBase {
 
       for (let j = 0; j < currentRound.length; j++) {
         const match = currentRound[j];
-        const nextMatchIndex = Math.floor(j / 2);
+
+        // Determine mapping type:
+        // - If next round has same number of matches: 1:1 mapping (merge rounds)
+        // - If next round has fewer matches: 2:1 mapping (consolidation rounds)
+        let nextMatchIndex;
+        if (nextRound.length === currentRound.length) {
+          // 1:1 mapping for merge rounds (e.g., LR1→LR2 where LR2 receives both LR1 winners and WR2 losers)
+          nextMatchIndex = j;
+        } else {
+          // 2:1 mapping for consolidation rounds (e.g., LR2→LR3)
+          nextMatchIndex = Math.floor(j / 2);
+        }
+
         if (nextRound[nextMatchIndex]) {
           match.feedsIntoWin = nextRound[nextMatchIndex].id;
         }
+      }
+    }
+
+    // Connect winners bracket final and losers bracket final to grand finals
+    const grandFinal = matches.find(m => m.bracket === 'grand-finals' && !m.isConditional);
+    if (grandFinal) {
+      // Winners bracket final (last round)
+      const winnersFinal = winnersMatches[winnerRounds];
+      if (winnersFinal && winnersFinal.length === 1) {
+        winnersFinal[0].feedsIntoWin = grandFinal.id;
+      }
+
+      // Losers bracket final (last round)
+      const finalLoserRound = Math.max(...loserRounds);
+      const losersFinal = losersMatches[finalLoserRound];
+      if (losersFinal && losersFinal.length === 1) {
+        losersFinal[0].feedsIntoWin = grandFinal.id;
       }
     }
   }
