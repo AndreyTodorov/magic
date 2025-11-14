@@ -773,14 +773,11 @@ class App {
 
     if (!result.updated) return;
 
-    // For elimination brackets, if match now has a winner (completed),
-    // force full render to show newly populated next-round matches
-    const isElimination =
-      tournamentManager.format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
-      tournamentManager.format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION;
+    // Determine if we need to force full render for newly generated matches
+    const needsFullRender = this.shouldForceFullRender(result.match);
 
-    if (isElimination && result.match && result.match.winner !== null) {
-      // Match completed in elimination bracket - force full render
+    if (needsFullRender) {
+      // Force full render to show newly populated matches
       this.lastMatchUpdate = null;
     } else {
       // Track which match was updated for incremental rendering
@@ -798,6 +795,41 @@ class App {
       logger.error("App", "Failed to update matches", error);
       uiManager.showAlert("Error updating match. Please try again.", "error");
     }
+  }
+
+  /**
+   * Determine if we should force a full render after a match update
+   */
+  shouldForceFullRender(match) {
+    if (!match || match.winner === null) {
+      return false; // Match not completed, no need for full render
+    }
+
+    // Elimination brackets: Always force render when match completes
+    // (to show newly populated next-round matches)
+    const isElimination =
+      tournamentManager.format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+      tournamentManager.format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION;
+
+    if (isElimination) {
+      return true;
+    }
+
+    // Swiss: Force render if this completes a round (next round might be generated)
+    if (tournamentManager.format === TOURNAMENT_FORMATS.SWISS) {
+      const currentRound = match.round;
+      const roundMatches = tournamentManager.matches.filter(
+        (m) => m.round === currentRound && !m.isPlaceholder
+      );
+      const allRoundComplete = roundMatches.every((m) => m.winner !== null);
+
+      if (allRoundComplete) {
+        // Round is complete, next round might be auto-generated
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**

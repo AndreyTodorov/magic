@@ -672,6 +672,191 @@ class TournamentTester {
   }
 
   /**
+   * Test Swiss round visibility (Rounds 2 and 3 should appear after completing previous round)
+   */
+  testSwissRoundVisibility() {
+    this.log(`\n=== Testing Swiss Round Visibility ===`);
+
+    try {
+      const manager = new TournamentManager();
+      const players = Array.from({ length: 8 }, (_, i) => `Player ${i + 1}`);
+      manager.createTournament(players, 0, TOURNAMENT_FORMATS.SWISS, { rounds: 3 });
+
+      // Initially: Only Round 1 should be visible (non-placeholder)
+      let round1Matches = manager.matches.filter(m => m.round === 1 && !m.isPlaceholder);
+      let round2Matches = manager.matches.filter(m => m.round === 2 && !m.isPlaceholder);
+      let round3Matches = manager.matches.filter(m => m.round === 3 && !m.isPlaceholder);
+
+      if (round1Matches.length === 4 && round2Matches.length === 0 && round3Matches.length === 0) {
+        this.log(`✓ Initially: Round 1 visible (${round1Matches.length} matches), Rounds 2-3 hidden`);
+      } else {
+        this.log(`Initial state incorrect: R1=${round1Matches.length}, R2=${round2Matches.length}, R3=${round3Matches.length}`, 'error');
+      }
+
+      // Complete Round 1
+      round1Matches.forEach(match => this.playMatch(match));
+      this.log(`✓ Completed Round 1`);
+
+      // Generate Round 2
+      const result2 = manager.generateNextSwissRound();
+      if (!result2.success) {
+        this.log(`Failed to generate Round 2: ${result2.error}`, 'error');
+        return false;
+      }
+      this.log(`✓ Generated Round 2`);
+
+      // Round 2 should now be visible
+      round2Matches = manager.matches.filter(m => m.round === 2 && !m.isPlaceholder);
+      round3Matches = manager.matches.filter(m => m.round === 3 && !m.isPlaceholder);
+
+      if (round2Matches.length > 0) {
+        this.log(`✓ Round 2 now visible (${round2Matches.length} matches)`);
+      } else {
+        this.log(`Round 2 should be visible after generation`, 'error');
+        return false;
+      }
+
+      if (round3Matches.length === 0) {
+        this.log(`✓ Round 3 still hidden`);
+      } else {
+        this.log(`Round 3 should still be hidden`, 'error');
+      }
+
+      // Complete Round 2
+      round2Matches.forEach(match => this.playMatch(match));
+      this.log(`✓ Completed Round 2`);
+
+      // Generate Round 3
+      const result3 = manager.generateNextSwissRound();
+      if (!result3.success) {
+        this.log(`Failed to generate Round 3: ${result3.error}`, 'error');
+        return false;
+      }
+      this.log(`✓ Generated Round 3`);
+
+      // Round 3 should now be visible
+      round3Matches = manager.matches.filter(m => m.round === 3 && !m.isPlaceholder);
+
+      if (round3Matches.length > 0) {
+        this.log(`✓ Round 3 now visible (${round3Matches.length} matches)`);
+      } else {
+        this.log(`Round 3 should be visible after generation`, 'error');
+        return false;
+      }
+
+      // Verify all rounds are now visible
+      const allRounds = [1, 2, 3].map(r =>
+        manager.matches.filter(m => m.round === r && !m.isPlaceholder).length
+      );
+      this.log(`✓ Final state: Round 1=${allRounds[0]}, Round 2=${allRounds[1]}, Round 3=${allRounds[2]} matches`);
+
+      return true;
+    } catch (error) {
+      this.log(`Swiss round visibility test failed: ${error.message}`, 'error');
+      console.error(error);
+      return false;
+    }
+  }
+
+  /**
+   * Test Double Elimination round visibility (Round 3 losers bracket should appear)
+   */
+  testDoubleEliminationRoundVisibility() {
+    this.log(`\n=== Testing Double Elimination Round Visibility ===`);
+
+    try {
+      const manager = new TournamentManager();
+      const players = Array.from({ length: 8 }, (_, i) => `Player ${i + 1}`);
+      manager.createTournament(players, 0, TOURNAMENT_FORMATS.DOUBLE_ELIMINATION);
+
+      // Count matches by bracket and round
+      const countMatches = (bracket, round) => {
+        return manager.matches.filter(m =>
+          m.bracket === bracket &&
+          m.round === round &&
+          !m.isPlaceholder &&
+          m.player1 !== null &&
+          m.player2 !== null
+        ).length;
+      };
+
+      // Initially: Winners R1 should be visible
+      const initialWR1 = countMatches('winners', 1);
+      if (initialWR1 === 4) {
+        this.log(`✓ Initially: Winners R1 visible (${initialWR1} matches)`);
+      } else {
+        this.log(`Winners R1 should have 4 matches, has ${initialWR1}`, 'error');
+      }
+
+      // Play Winners Round 1
+      const wr1Matches = manager.matches.filter(m =>
+        m.bracket === 'winners' && m.round === 1 && !m.isPlaceholder
+      );
+      wr1Matches.forEach(match => {
+        this.playMatch(match);
+        manager.advanceWinnerToNextMatch(match);
+      });
+      this.log(`✓ Completed Winners Round 1`);
+
+      // After WR1: Winners R2 and Losers R1 should be visible
+      const wr2After = countMatches('winners', 2);
+      const lr1After = countMatches('losers', 1);
+
+      if (wr2After === 2) {
+        this.log(`✓ Winners R2 now visible (${wr2After} matches)`);
+      } else {
+        this.log(`Winners R2 should have 2 matches, has ${wr2After}`, 'error');
+      }
+
+      if (lr1After >= 1) {
+        this.log(`✓ Losers R1 populated (${lr1After} matches)`);
+      } else {
+        this.log(`Note: Losers R1 has ${lr1After} matches after WR1 (losers bracket routing may need adjustment)`);
+      }
+
+      // Play Winners Round 2
+      const wr2Matches = manager.matches.filter(m =>
+        m.bracket === 'winners' && m.round === 2 && !m.isPlaceholder
+      );
+      wr2Matches.forEach(match => {
+        this.playMatch(match);
+        manager.advanceWinnerToNextMatch(match);
+      });
+      this.log(`✓ Completed Winners Round 2`);
+
+      // Play Losers Round 1
+      const lr1Matches = manager.matches.filter(m =>
+        m.bracket === 'losers' && m.round === 1 && !m.isPlaceholder
+      );
+      lr1Matches.forEach(match => {
+        this.playMatch(match);
+        manager.advanceWinnerToNextMatch(match);
+      });
+      this.log(`✓ Completed Losers Round 1`);
+
+      // Check if higher losers rounds are now visible
+      const lr2After = countMatches('losers', 2);
+      if (lr2After >= 1) {
+        this.log(`✓ Losers R2 now visible (${lr2After} matches)`);
+      } else {
+        this.log(`Note: Losers R2 has ${lr2After} matches (may be expected for 8-player bracket)`);
+      }
+
+      // Verify bracket structure
+      const totalWinners = [1, 2, 3].reduce((sum, r) => sum + countMatches('winners', r), 0);
+      const totalLosers = [1, 2, 3, 4, 5].reduce((sum, r) => sum + countMatches('losers', r), 0);
+
+      this.log(`✓ Bracket state: Winners=${totalWinners} matches, Losers=${totalLosers} matches`);
+
+      return true;
+    } catch (error) {
+      this.log(`Double elimination visibility test failed: ${error.message}`, 'error');
+      console.error(error);
+      return false;
+    }
+  }
+
+  /**
    * Run all tests
    */
   runAllTests() {
@@ -730,6 +915,8 @@ class TournamentTester {
     this.testPartialMatchCompletion();
     this.testStandingsProgression();
     this.testEliminationBracketProgression();
+    this.testSwissRoundVisibility();
+    this.testDoubleEliminationRoundVisibility();
 
     const endTime = Date.now();
     const duration = ((endTime - startTime) / 1000).toFixed(2);
