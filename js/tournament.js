@@ -792,42 +792,71 @@ class TournamentManager {
     const winnerIndex = match.winner === 1 ? match.player1 : match.player2;
     const loserIndex = match.winner === 1 ? match.player2 : match.player1;
 
-    // Advance winner to winners bracket next match
+    // Advance winner (to winners bracket or within losers bracket)
     if (match.feedsIntoWin || match.feedsIntoWin === 0) {
-      const nextWinnersMatch = this.matches.find((m) => m.id === match.feedsIntoWin);
-      if (nextWinnersMatch) {
-        // Find position in next match
-        const feedingMatches = this.matches.filter((m) => m.feedsIntoWin === match.feedsIntoWin);
-        const index = feedingMatches.findIndex((m) => m.id === match.id);
+      const nextMatch = this.matches.find((m) => m.id === match.feedsIntoWin);
+      if (nextMatch) {
+        // In merge rounds, multiple sources feed into same match:
+        // - Winners from previous losers rounds feed via feedsIntoWin
+        // - Losers from winners bracket feed via feedsIntoLoss
+        // To avoid conflicts, assign based on how many matches feed via each type
+        const feedingViaWin = this.matches.filter((m) => m.feedsIntoWin === match.feedsIntoWin);
+        const feedingViaLoss = this.matches.filter((m) => m.feedsIntoLoss === match.feedsIntoWin);
 
-        if (index === 0) {
-          nextWinnersMatch.player1 = winnerIndex;
-        } else if (index === 1) {
-          nextWinnersMatch.player2 = winnerIndex;
+        if (feedingViaLoss.length > 0) {
+          // This is a merge round - assign feedsIntoWin to player1, feedsIntoLoss to player2
+          const index = feedingViaWin.findIndex((m) => m.id === match.id);
+          if (index === 0) {
+            nextMatch.player1 = winnerIndex;
+          } else if (index === 1) {
+            nextMatch.player2 = winnerIndex;
+          }
+        } else {
+          // Regular advancement - use standard position logic
+          const index = feedingViaWin.findIndex((m) => m.id === match.id);
+          if (index === 0) {
+            nextMatch.player1 = winnerIndex;
+          } else if (index === 1) {
+            nextMatch.player2 = winnerIndex;
+          }
         }
 
-        if (nextWinnersMatch.player1 !== null && nextWinnersMatch.player2 !== null) {
-          nextWinnersMatch.isPlaceholder = false;
+        if (nextMatch.player1 !== null && nextMatch.player2 !== null) {
+          nextMatch.isPlaceholder = false;
         }
       }
     }
 
     // Advance loser to losers bracket
     if (match.feedsIntoLoss || match.feedsIntoLoss === 0) {
-      const nextLosersMatch = this.matches.find((m) => m.id === match.feedsIntoLoss);
-      if (nextLosersMatch) {
-        // Find position in next match
-        const feedingMatches = this.matches.filter((m) => m.feedsIntoLoss === match.feedsIntoLoss);
-        const index = feedingMatches.findIndex((m) => m.id === match.id);
+      const nextMatch = this.matches.find((m) => m.id === match.feedsIntoLoss);
+      if (nextMatch) {
+        // In merge rounds, losers from winners bracket should go to player2
+        // (player1 is reserved for winners from previous losers round)
+        const feedingViaWin = this.matches.filter((m) => m.feedsIntoWin === match.feedsIntoLoss);
+        const feedingViaLoss = this.matches.filter((m) => m.feedsIntoLoss === match.feedsIntoLoss);
 
-        if (index === 0) {
-          nextLosersMatch.player1 = loserIndex;
-        } else if (index === 1) {
-          nextLosersMatch.player2 = loserIndex;
+        if (feedingViaWin.length > 0) {
+          // This is a merge round - assign to player2 (player1 is for feedsIntoWin)
+          const index = feedingViaLoss.findIndex((m) => m.id === match.id);
+          if (index === 0) {
+            nextMatch.player2 = loserIndex;
+          } else if (index === 1) {
+            // If there are multiple losers feeding in, this shouldn't happen in standard bracket
+            nextMatch.player1 = loserIndex;
+          }
+        } else {
+          // Regular losers bracket advancement - use standard position logic
+          const index = feedingViaLoss.findIndex((m) => m.id === match.id);
+          if (index === 0) {
+            nextMatch.player1 = loserIndex;
+          } else if (index === 1) {
+            nextMatch.player2 = loserIndex;
+          }
         }
 
-        if (nextLosersMatch.player1 !== null && nextLosersMatch.player2 !== null) {
-          nextLosersMatch.isPlaceholder = false;
+        if (nextMatch.player1 !== null && nextMatch.player2 !== null) {
+          nextMatch.isPlaceholder = false;
         }
       }
     }

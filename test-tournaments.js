@@ -903,6 +903,152 @@ class TournamentTester {
   }
 
   /**
+   * Comprehensive Double Elimination Complete Test
+   * This test ensures the entire tournament can be played to completion
+   */
+  testDoubleEliminationComplete() {
+    this.log(`\n=== Testing Double Elimination COMPLETE Playthrough ===`);
+
+    try {
+      const manager = new TournamentManager();
+      const players = Array.from({ length: 8 }, (_, i) => `Player ${i + 1}`);
+      manager.createTournament(players, 0, TOURNAMENT_FORMATS.DOUBLE_ELIMINATION);
+
+      const totalMatches = manager.matches.length;
+      this.log(`✓ Created ${totalMatches} total match slots`);
+
+      // DEBUG: Print bracket structure
+      this.log(`\n--- Bracket Structure ---`);
+      const winnersBracket = manager.matches.filter(m => m.bracket === 'winners');
+      const losersBracket = manager.matches.filter(m => m.bracket === 'losers');
+
+      this.log(`Winners Bracket (${winnersBracket.length} matches):`);
+      winnersBracket.forEach(m => {
+        const p1 = m.player1 !== null ? `P${m.player1 + 1}` : 'TBD';
+        const p2 = m.player2 !== null ? `P${m.player2 + 1}` : 'TBD';
+        this.log(`  M${m.id} [R${m.round}]: ${p1} vs ${p2} → Win:M${m.feedsIntoWin} Loss:M${m.feedsIntoLoss} [${m.isPlaceholder ? 'PH' : 'ACTIVE'}]`);
+      });
+
+      this.log(`\nLosers Bracket (${losersBracket.length} matches):`);
+      losersBracket.forEach(m => {
+        const p1 = m.player1 !== null ? `P${m.player1 + 1}` : 'TBD';
+        const p2 = m.player2 !== null ? `P${m.player2 + 1}` : 'TBD';
+        this.log(`  M${m.id} [R${m.round}]: ${p1} vs ${p2} → Win:M${m.feedsIntoWin} Loss:${m.feedsIntoLoss} [${m.isPlaceholder ? 'PH' : 'ACTIVE'}]`);
+      });
+      this.log(`--- End Structure ---\n`);
+
+      // Expected match counts for 8 players
+      const expectedWinnersMatches = 7;  // 4 + 2 + 1
+      const expectedLosersMatches = 6;   // Proper losers bracket
+      const expectedTotal = expectedWinnersMatches + expectedLosersMatches; // 13 (+ grand finals)
+
+      // Play through entire tournament
+      let completedMatches = 0;
+      let safeguard = 0;
+      const maxIterations = 100;
+
+      while (safeguard < maxIterations) {
+        // Find next playable match
+        const playableMatch = manager.matches.find(m =>
+          !m.isPlaceholder &&
+          m.winner === null &&
+          m.player1 !== null &&
+          m.player2 !== null &&
+          !m.isBye
+        );
+
+        if (!playableMatch) {
+          // No more playable matches
+          break;
+        }
+
+        // Play the match
+        this.playMatch(playableMatch);
+        const winnerIdx = playableMatch.winner === 1 ? playableMatch.player1 : playableMatch.player2;
+        const loserIdx = playableMatch.winner === 1 ? playableMatch.player2 : playableMatch.player1;
+
+        this.log(`  Played M${playableMatch.id} [${playableMatch.bracket} R${playableMatch.round}]: Winner=P${winnerIdx+1}, Loser=P${loserIdx+1} → feedsIntoWin:M${playableMatch.feedsIntoWin}, feedsIntoLoss:M${playableMatch.feedsIntoLoss}`);
+
+        manager.advanceWinnerToNextMatch(playableMatch);
+        completedMatches++;
+        safeguard++;
+      }
+
+      this.log(`✓ Completed ${completedMatches} matches`);
+
+      // Check for stuck state - matches with both players assigned but not completed
+      const unplayedButPopulated = manager.matches.filter(m =>
+        !m.isPlaceholder &&
+        m.winner === null &&
+        (m.player1 !== null || m.player2 !== null)
+      );
+
+      if (unplayedButPopulated.length > 0) {
+        this.log(`ERROR: ${unplayedButPopulated.length} matches remain unplayed!`, 'error');
+        unplayedButPopulated.forEach((m, i) => {
+          const p1 = m.player1 !== null ? players[m.player1] : 'TBD';
+          const p2 = m.player2 !== null ? players[m.player2] : 'TBD';
+          this.log(`  Unplayed match ${i + 1}: ${m.bracket} R${m.round} M${m.id} - ${p1} vs ${p2}`, 'error');
+          this.log(`    feedsIntoWin: ${m.feedsIntoWin}, feedsIntoLoss: ${m.feedsIntoLoss}`, 'error');
+        });
+      }
+
+      // Also check for placeholder matches that should have been populated
+      const placeholdersWithPlayers = manager.matches.filter(m =>
+        m.isPlaceholder &&
+        (m.player1 !== null || m.player2 !== null)
+      );
+
+      if (placeholdersWithPlayers.length > 0) {
+        this.log(`ERROR: ${placeholdersWithPlayers.length} placeholder matches have players!`, 'error');
+        placeholdersWithPlayers.forEach((m, i) => {
+          const p1 = m.player1 !== null ? players[m.player1] : 'NULL';
+          const p2 = m.player2 !== null ? players[m.player2] : 'NULL';
+          this.log(`  Placeholder with players ${i + 1}: ${m.bracket} R${m.round} M${m.id} - ${p1} vs ${p2}`, 'error');
+        });
+      }
+
+      // Verify champion
+      const standings = manager.getStandings();
+      const champions = standings.rankedStats.filter(s => s.rank === 1);
+
+      if (champions.length !== 1) {
+        this.log(`ERROR: Should have exactly 1 champion, found ${champions.length}`, 'error');
+      } else {
+        this.log(`✓ Exactly 1 champion: ${champions[0].player}`);
+      }
+
+      // Verify match count
+      if (completedMatches < expectedTotal - 2) {
+        this.log(`ERROR: Completed only ${completedMatches} matches, expected at least ${expectedTotal - 2}`, 'error');
+      } else {
+        this.log(`✓ Match count acceptable (${completedMatches}/${expectedTotal} expected)`);
+      }
+
+      // Verify all players played multiple matches
+      const playerMatchCounts = standings.rankedStats.map(s => ({
+        player: s.player,
+        matches: s.wins + s.losses
+      }));
+
+      const minMatches = Math.min(...playerMatchCounts.map(p => p.matches));
+      const maxMatches = Math.max(...playerMatchCounts.map(p => p.matches));
+
+      this.log(`✓ Match range per player: ${minMatches}-${maxMatches} matches`);
+
+      if (minMatches < 2) {
+        this.log(`WARNING: Some players played fewer than 2 matches (should get second chance)`, 'warning');
+      }
+
+      return true;
+    } catch (error) {
+      this.log(`Double Elimination complete test failed: ${error.message}`, 'error');
+      console.error(error);
+      return false;
+    }
+  }
+
+  /**
    * Run all tests
    */
   runAllTests() {
@@ -963,6 +1109,7 @@ class TournamentTester {
     this.testEliminationBracketProgression();
     this.testSwissRoundVisibility();
     this.testDoubleEliminationRoundVisibility();
+    this.testDoubleEliminationComplete();
 
     const endTime = Date.now();
     const duration = ((endTime - startTime) / 1000).toFixed(2);
