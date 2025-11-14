@@ -1679,8 +1679,22 @@ class UIManager {
           playerOptions.push(i);
         }
       }
+    } else if (format.formatType === TOURNAMENT_FORMATS.SWISS) {
+      // For Swiss, show even numbers (to avoid BYEs) and some key odd numbers
+      // Show options up to 32 players
+      const maxDisplay = Math.min(format.maxPlayers, 32);
+      for (let i = format.minPlayers; i <= maxDisplay; i++) {
+        // Include even numbers (preferred - no BYEs)
+        if (i % 2 === 0) {
+          playerOptions.push(i);
+        }
+        // Also include key odd numbers: 5, 7, 9, 11, 13, 15, etc. (smaller odd numbers)
+        else if (i <= 15 || recommendedCounts.includes(i)) {
+          playerOptions.push(i);
+        }
+      }
     } else {
-      // For other formats (Round Robin, Swiss), show all counts from minPlayers to maxPlayers
+      // For other formats (Round Robin), show all counts from minPlayers to maxPlayers
       const maxDisplay = Math.min(format.maxPlayers, 20);
       for (let i = format.minPlayers; i <= maxDisplay; i++) {
         playerOptions.push(i);
