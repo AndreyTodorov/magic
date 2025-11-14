@@ -166,12 +166,30 @@
         </form>
       </section>
 
+      <!-- Format Selection Section -->
+      <section
+        class="section section--padded"
+        id="formatSelectionSection"
+        aria-labelledby="formatSelectionTitle"
+      >
+        <h2 class="section-title" id="formatSelectionTitle">Choose Tournament Format</h2>
+        <div class="format-grid" id="formatGrid">
+          <!-- Format cards will be dynamically generated -->
+        </div>
+        <button class="btn btn--text" id="backToModeBtn">← Back</button>
+      </section>
+
       <!-- Create Tournament Section -->
       <section
         class="section section--padded"
         id="createSection"
         aria-labelledby="createTitle"
       >
+        <div class="format-header">
+          <button class="btn btn--text btn--small" id="backToFormatBtn">← Change Format</button>
+          <h3 class="format-title" id="selectedFormatTitle"></h3>
+        </div>
+
         <!-- Player Count Selector -->
         <div class="form-group text-center">
           <label for="playerCount" class="form-label">Number of Players:</label>
@@ -193,8 +211,11 @@
           </select>
         </div>
 
-        <!-- Matches Per Player Selector -->
-        <div class="matches-selector">
+        <!-- Format-specific configuration container -->
+        <div id="formatConfigContainer"></div>
+
+        <!-- Matches Per Player Selector (for Round Robin) -->
+        <div class="matches-selector" id="matchesPerPlayerContainer">
           <label for="matchesPerPlayer" class="form-label"
             >Matches Per Player:</label
           >

@@ -184,6 +184,31 @@ class App {
       }
     });
 
+    // Format selection (event delegation)
+    document.addEventListener("click", (e) => {
+      // Format card click
+      if (e.target.closest(".format-card")) {
+        const card = e.target.closest(".format-card");
+        const formatType = card.dataset.formatType;
+        this.handleFormatSelection(formatType);
+      }
+    });
+
+    // Back to mode selector from format selection
+    uiManager.elements.backToModeBtn?.addEventListener("click", () => {
+      uiManager.showSection("modeSelector");
+      // Clear mode button selection
+      document.querySelectorAll(".mode-btn").forEach((btn) => {
+        btn.classList.remove("active");
+      });
+    });
+
+    // Back to format selection from create section
+    uiManager.elements.backToFormatBtn?.addEventListener("click", () => {
+      uiManager.renderFormatCards();
+      uiManager.showSection(["modeSelector", "formatSelectionSection"]);
+    });
+
     // Game result buttons (event delegation for security)
     document.addEventListener("click", (e) => {
       if (e.target.matches(".game-result") && !e.target.disabled) {
@@ -233,10 +258,27 @@ class App {
 
     // Show appropriate section
     if (mode === "create") {
-      uiManager.showSection(["modeSelector", "createSection"]);
+      // Show format selection instead of going directly to create
+      uiManager.renderFormatCards();
+      uiManager.showSection(["modeSelector", "formatSelectionSection"]);
     } else if (mode === "join") {
       uiManager.showSection(["modeSelector", "joinSection"]);
     }
+  }
+
+  /**
+   * Handle format selection
+   */
+  handleFormatSelection(formatType) {
+    // Set selected format in UI manager
+    uiManager.setSelectedFormat(formatType);
+
+    // Show create section
+    uiManager.showSection(["modeSelector", "createSection"]);
+
+    // Update player count change to refresh format config
+    const playerCount = parseInt(uiManager.elements.playerCount.value);
+    this.handlePlayerCountChange();
   }
 
   /**
@@ -244,6 +286,13 @@ class App {
    */
   handlePlayerCountChange() {
     const playerCount = parseInt(uiManager.elements.playerCount.value);
+
+    // Update format config if format is selected
+    if (uiManager.selectedFormat) {
+      const format = tournamentFormats.factory.create(uiManager.selectedFormat);
+      uiManager.renderFormatConfig(format);
+    }
+
     const matchesPerPlayer =
       uiManager.updateMatchesPerPlayerOptions(playerCount);
     tournamentManager.playerCount = playerCount;
@@ -492,12 +541,22 @@ class App {
    * Create new tournament
    */
   async createTournament(playerNames) {
+    // Get selected format and config from UI
+    const selectedFormat = uiManager.selectedFormat || APP_CONFIG.FORMATS.DEFAULT;
+    const formatConfig = uiManager.getFormatConfig();
+
+    // For round-robin backward compatibility
     const matchesPerPlayer = parseInt(
       uiManager.elements.matchesPerPlayer.value
-    );
+    ) || formatConfig.matchesPerPlayer || 3;
 
-    // Generate matches (using default round-robin format for now)
-    tournamentManager.createTournament(playerNames, matchesPerPlayer);
+    // Generate matches using selected format
+    tournamentManager.createTournament(
+      playerNames,
+      matchesPerPlayer,
+      selectedFormat,
+      formatConfig
+    );
 
     // Generate unique code
     const code = TournamentManager.generateTournamentCode();
