@@ -523,16 +523,24 @@ class TournamentManager {
         if (b.points !== a.points) return b.points - a.points;
 
         // Secondary: Opponent Match Win %
-        if (Math.abs(b.omw - a.omw) > 0.001) return b.omw - a.omw;
+        const aOmw = a.omw || 0;
+        const bOmw = b.omw || 0;
+        if (Math.abs(bOmw - aOmw) > 0.001) return bOmw - aOmw;
 
         // Tertiary: Game Win %
-        if (Math.abs(b.gwp - a.gwp) > 0.001) return b.gwp - a.gwp;
+        const aGwp = a.gwp || 0;
+        const bGwp = b.gwp || 0;
+        if (Math.abs(bGwp - aGwp) > 0.001) return bGwp - aGwp;
 
         // Quaternary: Opponent Game Win %
-        if (Math.abs(b.ogw - a.ogw) > 0.001) return b.ogw - a.ogw;
+        const aOgw = a.ogw || 0;
+        const bOgw = b.ogw || 0;
+        if (Math.abs(bOgw - aOgw) > 0.001) return bOgw - aOgw;
 
-        // Final: Total games won
-        return b.gamesWon - a.gamesWon;
+        // Final: Total games won (with safety check)
+        const aGamesWon = a.gamesWon || 0;
+        const bGamesWon = b.gamesWon || 0;
+        return bGamesWon - aGamesWon;
       });
     }
 
@@ -558,15 +566,19 @@ class TournamentManager {
         return bWinPct - aWinPct;
       }
 
-      // Quaternary: Game differential
-      const aGameDiff = a.gamesWon - a.gamesLost;
-      const bGameDiff = b.gamesWon - b.gamesLost;
+      // Quaternary: Game differential (with safety checks)
+      const aGamesWon = a.gamesWon || 0;
+      const aGamesLost = a.gamesLost || 0;
+      const bGamesWon = b.gamesWon || 0;
+      const bGamesLost = b.gamesLost || 0;
+      const aGameDiff = aGamesWon - aGamesLost;
+      const bGameDiff = bGamesWon - bGamesLost;
       if (bGameDiff !== aGameDiff) {
         return bGameDiff - aGameDiff;
       }
 
       // Final: Total games won
-      return b.gamesWon - a.gamesWon;
+      return bGamesWon - aGamesWon;
     });
   }
 
