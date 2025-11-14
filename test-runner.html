@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tournament Tests - Magic Mikes</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: #1a1a1a;
+      color: #00ff00;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: #0d0d0d;
+      padding: 30px;
+      border: 2px solid #00ff00;
+      border-radius: 8px;
+    }
+
+    h1 {
+      color: #00ff00;
+      margin-bottom: 20px;
+      font-size: 24px;
+      text-align: center;
+      border-bottom: 2px solid #00ff00;
+      padding-bottom: 10px;
+    }
+
+    button {
+      background: #00ff00;
+      color: #000;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 4px;
+      margin: 20px auto;
+      display: block;
+      font-family: 'Courier New', monospace;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      background: #00cc00;
+      transform: scale(1.05);
+    }
+
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #output {
+      background: #000;
+      border: 1px solid #00ff00;
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 4px;
+      min-height: 400px;
+      max-height: 600px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 13px;
+    }
+
+    .error {
+      color: #ff0000;
+    }
+
+    .warning {
+      color: #ffaa00;
+    }
+
+    .info {
+      color: #00ff00;
+    }
+
+    .summary {
+      margin-top: 20px;
+      padding: 20px;
+      background: #1a3a1a;
+      border: 2px solid #00ff00;
+      border-radius: 4px;
+    }
+
+    .summary h2 {
+      color: #00ff00;
+      margin-bottom: 10px;
+    }
+
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+    }
+
+    .stat-label {
+      color: #aaa;
+    }
+
+    .stat-value {
+      color: #00ff00;
+      font-weight: bold;
+    }
+
+    .stat-value.error {
+      color: #ff0000;
+    }
+
+    .stat-value.warning {
+      color: #ffaa00;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #00ff00;
+      font-size: 16px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #00ff00;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎮 MAGIC MIKES TOURNAMENT - FUNCTIONAL TESTS 🎮</h1>
+
+    <button id="runTests" onclick="runTests()">▶️  RUN ALL TESTS</button>
+
+    <div id="loading" style="display: none;" class="loading">
+      <div class="spinner"></div>
+      Running tests...
+    </div>
+
+    <div id="summary" style="display: none;" class="summary">
+      <h2>Test Results</h2>
+      <div class="stat">
+        <span class="stat-label">Duration:</span>
+        <span class="stat-value" id="duration">-</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Errors:</span>
+        <span class="stat-value" id="errorCount">-</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Warnings:</span>
+        <span class="stat-value" id="warningCount">-</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Status:</span>
+        <span class="stat-value" id="status">-</span>
+      </div>
+    </div>
+
+    <div id="output"></div>
+  </div>
+
+  <!-- Load dependencies in correct order -->
+  <script src="js/config.js"></script>
+  <script src="js/logger.js"></script>
+  <script src="js/tournament-formats.js"></script>
+  <script src="js/tournament.js"></script>
+  <script src="test-tournaments.js"></script>
+
+  <script>
+    const outputDiv = document.getElementById('output');
+    const loadingDiv = document.getElementById('loading');
+    const summaryDiv = document.getElementById('summary');
+    const runButton = document.getElementById('runTests');
+
+    // Override console.log to capture output
+    const originalLog = console.log;
+    console.log = function(...args) {
+      originalLog.apply(console, args);
+
+      const message = args.join(' ');
+      const div = document.createElement('div');
+
+      // Color code based on log level
+      if (message.includes('[ERROR]')) {
+        div.className = 'error';
+      } else if (message.includes('[WARNING]')) {
+        div.className = 'warning';
+      } else {
+        div.className = 'info';
+      }
+
+      div.textContent = message;
+      outputDiv.appendChild(div);
+
+      // Auto-scroll to bottom
+      outputDiv.scrollTop = outputDiv.scrollHeight;
+    };
+
+    async function runTests() {
+      // Clear previous output
+      outputDiv.innerHTML = '';
+      summaryDiv.style.display = 'none';
+      loadingDiv.style.display = 'block';
+      runButton.disabled = true;
+
+      // Small delay to let UI update
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      try {
+        const tester = new TournamentTester();
+        const results = tester.runAllTests();
+
+        // Update summary
+        document.getElementById('duration').textContent = results.duration + 's';
+
+        const errorCountEl = document.getElementById('errorCount');
+        errorCountEl.textContent = results.errors.length;
+        errorCountEl.className = results.errors.length > 0 ? 'stat-value error' : 'stat-value';
+
+        const warningCountEl = document.getElementById('warningCount');
+        warningCountEl.textContent = results.warnings.length;
+        warningCountEl.className = results.warnings.length > 0 ? 'stat-value warning' : 'stat-value';
+
+        const statusEl = document.getElementById('status');
+        if (results.passed) {
+          statusEl.textContent = '✅ ALL PASSED';
+          statusEl.className = 'stat-value';
+        } else {
+          statusEl.textContent = '❌ FAILED';
+          statusEl.className = 'stat-value error';
+        }
+
+        summaryDiv.style.display = 'block';
+
+      } catch (error) {
+        console.log('\n❌ FATAL ERROR:', error.message);
+        console.error(error);
+      } finally {
+        loadingDiv.style.display = 'none';
+        runButton.disabled = false;
+      }
+    }
+
+    // Show ready message
+    console.log('Test runner loaded. Click "RUN ALL TESTS" to begin.');
+  </script>
+</body>
+</html>

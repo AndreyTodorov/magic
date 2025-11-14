@@ -660,7 +660,10 @@ class UIManager {
           return m.winner !== null && m.winner !== (isPlayer1 ? 1 : 2);
         });
 
-        if (lost && m.bracket === 'losers') {
+        // Check if this loss was in losers bracket (means elimination in double elim)
+        const inLosersBracket = roundMatches.some((m) => m.bracket === 'losers');
+
+        if (lost && inLosersBracket) {
           isEliminated = true;
         }
       }
