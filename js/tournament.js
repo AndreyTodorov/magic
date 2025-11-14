@@ -719,9 +719,16 @@ class TournamentManager {
    * Advance winner to next match in elimination brackets
    */
   advanceWinnerToNextMatch(match) {
-    // Only for elimination formats with feedsInto property
-    if (!match.feedsInto && match.feedsInto !== 0) return;
     if (match.winner === null) return;
+
+    // Handle Double Elimination (feedsIntoWin and feedsIntoLoss)
+    if (match.feedsIntoWin !== undefined || match.feedsIntoLoss !== undefined) {
+      this.advanceDoubleEliminationMatch(match);
+      return;
+    }
+
+    // Handle Single Elimination (feedsInto)
+    if (!match.feedsInto && match.feedsInto !== 0) return;
 
     // Get the next match
     const nextMatch = this.matches.find((m) => m.id === match.feedsInto);
@@ -753,10 +760,64 @@ class TournamentManager {
   }
 
   /**
+   * Advance players in double elimination format
+   */
+  advanceDoubleEliminationMatch(match) {
+    const winnerIndex = match.winner === 1 ? match.player1 : match.player2;
+    const loserIndex = match.winner === 1 ? match.player2 : match.player1;
+
+    // Advance winner to winners bracket next match
+    if (match.feedsIntoWin || match.feedsIntoWin === 0) {
+      const nextWinnersMatch = this.matches.find((m) => m.id === match.feedsIntoWin);
+      if (nextWinnersMatch) {
+        // Find position in next match
+        const feedingMatches = this.matches.filter((m) => m.feedsIntoWin === match.feedsIntoWin);
+        const index = feedingMatches.findIndex((m) => m.id === match.id);
+
+        if (index === 0) {
+          nextWinnersMatch.player1 = winnerIndex;
+        } else if (index === 1) {
+          nextWinnersMatch.player2 = winnerIndex;
+        }
+
+        if (nextWinnersMatch.player1 !== null && nextWinnersMatch.player2 !== null) {
+          nextWinnersMatch.isPlaceholder = false;
+        }
+      }
+    }
+
+    // Advance loser to losers bracket
+    if (match.feedsIntoLoss || match.feedsIntoLoss === 0) {
+      const nextLosersMatch = this.matches.find((m) => m.id === match.feedsIntoLoss);
+      if (nextLosersMatch) {
+        // Find position in next match
+        const feedingMatches = this.matches.filter((m) => m.feedsIntoLoss === match.feedsIntoLoss);
+        const index = feedingMatches.findIndex((m) => m.id === match.id);
+
+        if (index === 0) {
+          nextLosersMatch.player1 = loserIndex;
+        } else if (index === 1) {
+          nextLosersMatch.player2 = loserIndex;
+        }
+
+        if (nextLosersMatch.player1 !== null && nextLosersMatch.player2 !== null) {
+          nextLosersMatch.isPlaceholder = false;
+        }
+      }
+    }
+  }
+
+  /**
    * Clear advancement when a match result is changed/cleared
    */
   clearAdvancementFromMatch(match) {
-    // Only for elimination formats with feedsInto property
+    // Handle Double Elimination
+    if (match.feedsIntoWin !== undefined || match.feedsIntoLoss !== undefined) {
+      this.clearDoubleEliminationAdvancement(match);
+      return;
+    }
+
+    // Handle Single Elimination
     if (!match.feedsInto && match.feedsInto !== 0) return;
 
     // Get the next match
@@ -779,6 +840,49 @@ class TournamentManager {
       // Also clear the match result
       nextMatch.winner = null;
       nextMatch.games = [null, null, null];
+    }
+  }
+
+  /**
+   * Clear double elimination advancements
+   */
+  clearDoubleEliminationAdvancement(match) {
+    const potentialPlayers = [match.player1, match.player2];
+
+    // Clear from winners bracket next match
+    if (match.feedsIntoWin || match.feedsIntoWin === 0) {
+      const nextWinnersMatch = this.matches.find((m) => m.id === match.feedsIntoWin);
+      if (nextWinnersMatch) {
+        if (potentialPlayers.includes(nextWinnersMatch.player1)) {
+          nextWinnersMatch.player1 = null;
+        }
+        if (potentialPlayers.includes(nextWinnersMatch.player2)) {
+          nextWinnersMatch.player2 = null;
+        }
+        if (nextWinnersMatch.player1 === null || nextWinnersMatch.player2 === null) {
+          nextWinnersMatch.isPlaceholder = true;
+          nextWinnersMatch.winner = null;
+          nextWinnersMatch.games = [null, null, null];
+        }
+      }
+    }
+
+    // Clear from losers bracket next match
+    if (match.feedsIntoLoss || match.feedsIntoLoss === 0) {
+      const nextLosersMatch = this.matches.find((m) => m.id === match.feedsIntoLoss);
+      if (nextLosersMatch) {
+        if (potentialPlayers.includes(nextLosersMatch.player1)) {
+          nextLosersMatch.player1 = null;
+        }
+        if (potentialPlayers.includes(nextLosersMatch.player2)) {
+          nextLosersMatch.player2 = null;
+        }
+        if (nextLosersMatch.player1 === null || nextLosersMatch.player2 === null) {
+          nextLosersMatch.isPlaceholder = true;
+          nextLosersMatch.winner = null;
+          nextLosersMatch.games = [null, null, null];
+        }
+      }
     }
   }
 
