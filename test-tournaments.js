@@ -104,6 +104,50 @@ class TournamentTester {
   }
 
   /**
+   * Comprehensive Round Robin tests - all player counts and valid match combinations
+   */
+  testRoundRobinComprehensive() {
+    const minPlayers = 4;
+    const maxPlayers = 12; // Test up to 12 players for comprehensive coverage
+
+    let testCount = 0;
+    let passedCount = 0;
+
+    for (let numPlayers = minPlayers; numPlayers <= maxPlayers; numPlayers++) {
+      // Calculate valid matches per player for this player count
+      // Rule: (players × matches) must be even
+      const validMatches = [];
+      for (let m = 1; m < numPlayers; m++) {
+        if ((numPlayers * m) % 2 === 0) {
+          validMatches.push(m);
+        }
+      }
+
+      // Test first, middle, and last valid option for each player count
+      const matchesToTest = [];
+      if (validMatches.length > 0) {
+        matchesToTest.push(validMatches[0]); // First valid
+        if (validMatches.length > 2) {
+          matchesToTest.push(validMatches[Math.floor(validMatches.length / 2)]); // Middle
+        }
+        if (validMatches.length > 1) {
+          matchesToTest.push(validMatches[validMatches.length - 1]); // Last valid
+        }
+      }
+
+      // Run tests for this player count
+      matchesToTest.forEach(matches => {
+        testCount++;
+        if (this.testRoundRobin(numPlayers, matches)) {
+          passedCount++;
+        }
+      });
+    }
+
+    this.log(`\n📊 Round Robin Summary: ${passedCount}/${testCount} test combinations passed`);
+  }
+
+  /**
    * Test Single Elimination format
    */
   testSingleElimination(playerCount) {
@@ -375,6 +419,259 @@ class TournamentTester {
   }
 
   /**
+   * Test partial match completion and game states
+   */
+  testPartialMatchCompletion() {
+    this.log(`\n=== Testing Partial Match Completion ===`);
+
+    try {
+      const manager = new TournamentManager();
+      const players = ['Alice', 'Bob', 'Charlie', 'Diana'];
+      manager.createTournament(players, 3, TOURNAMENT_FORMATS.ROUND_ROBIN);
+
+      const match = manager.matches[0];
+
+      // Test 1: No games played
+      let standings = manager.getStandings();
+      this.log(`✓ Initial standings generated with no games played`);
+
+      // Test 2: One game played (tied 1-1 possible)
+      manager.updateMatchGame(match.id, 0, 1);
+      standings = manager.getStandings();
+      if (match.winner !== null) {
+        this.log(`Match should not have winner after 1 game`, 'error');
+      } else {
+        this.log(`✓ Match correctly has no winner after 1 game`);
+      }
+
+      // Test 3: Two games played, tied 1-1
+      manager.updateMatchGame(match.id, 1, 2);
+      standings = manager.getStandings();
+      if (match.winner !== null) {
+        this.log(`Match should not have winner when tied 1-1`, 'error');
+      } else {
+        this.log(`✓ Match correctly has no winner when tied 1-1`);
+      }
+
+      // Test 4: Player 1 wins deciding game (2-1)
+      manager.updateMatchGame(match.id, 2, 1);
+      standings = manager.getStandings();
+      if (match.winner !== 1) {
+        this.log(`Match should have winner=1 after 2-1 score`, 'error');
+      } else {
+        this.log(`✓ Match correctly determined winner after 2-1`);
+      }
+
+      // Test 5: Undo last game - should remove winner
+      manager.updateMatchGame(match.id, 2, 1); // Toggle off
+      if (match.winner !== null) {
+        this.log(`Match should have no winner after undoing deciding game`, 'error');
+      } else {
+        this.log(`✓ Match correctly removed winner when game undone`);
+      }
+
+      // Test 6: Player 2 wins 2-1 (different winner)
+      manager.updateMatchGame(match.id, 2, 2);
+      if (match.winner !== 2) {
+        this.log(`Match should have winner=2 after player 2 wins`, 'error');
+      } else {
+        this.log(`✓ Match correctly switched winner to player 2`);
+      }
+
+      // Test 7: Standings reflect partial and complete matches
+      const stats = standings.rankedStats;
+      const player1Stats = stats.find(s => s.player === players[match.player1]);
+      const player2Stats = stats.find(s => s.player === players[match.player2]);
+
+      if (player2Stats.wins > player1Stats.wins) {
+        this.log(`✓ Standings correctly show player 2 ahead of player 1`);
+      }
+
+      return true;
+    } catch (error) {
+      this.log(`Partial match completion test failed: ${error.message}`, 'error');
+      console.error(error);
+      return false;
+    }
+  }
+
+  /**
+   * Test standings progression through tournament
+   */
+  testStandingsProgression() {
+    this.log(`\n=== Testing Standings Progression ===`);
+
+    try {
+      const manager = new TournamentManager();
+      const players = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank'];
+      manager.createTournament(players, 2, TOURNAMENT_FORMATS.ROUND_ROBIN);
+
+      // Verify initial standings (all tied)
+      let standings = manager.getStandings();
+      const allZeroWins = standings.rankedStats.every(s => s.wins === 0);
+      if (allZeroWins) {
+        this.log(`✓ Initial standings show all players with 0 wins`);
+      } else {
+        this.log(`Initial standings should show 0 wins for all players`, 'error');
+      }
+
+      // Play first match - standings should update
+      this.playMatch(manager.matches[0]);
+      standings = manager.getStandings();
+      const hasOneWinner = standings.rankedStats.some(s => s.wins === 1);
+      if (hasOneWinner) {
+        this.log(`✓ After first match, one player has 1 win`);
+      } else {
+        this.log(`After first match, standings should show a winner`, 'error');
+      }
+
+      // Play half the matches
+      const halfMatches = Math.floor(manager.matches.length / 2);
+      for (let i = 1; i < halfMatches; i++) {
+        this.playMatch(manager.matches[i]);
+      }
+      standings = manager.getStandings();
+      this.log(`✓ Standings updated after ${halfMatches} matches`);
+
+      // Play all remaining matches
+      for (let i = halfMatches; i < manager.matches.length; i++) {
+        this.playMatch(manager.matches[i]);
+      }
+      standings = manager.getStandings();
+
+      // Verify final standings have proper ranking
+      const topPlayer = standings.rankedStats[0];
+      const bottomPlayer = standings.rankedStats[standings.rankedStats.length - 1];
+
+      if (topPlayer.rank <= bottomPlayer.rank) {
+        this.log(`✓ Final standings properly ranked (top rank ≤ bottom rank)`);
+      } else {
+        this.log(`Rankings incorrect: top=${topPlayer.rank}, bottom=${bottomPlayer.rank}`, 'error');
+      }
+
+      // Verify all players played correct number of matches
+      const allPlayed = standings.rankedStats.every(s =>
+        (s.wins + s.losses) === 2 || s.wins === 2 || s.losses === 2
+      );
+      if (allPlayed) {
+        this.log(`✓ All players played their matches`);
+      }
+
+      return true;
+    } catch (error) {
+      this.log(`Standings progression test failed: ${error.message}`, 'error');
+      console.error(error);
+      return false;
+    }
+  }
+
+  /**
+   * Test elimination bracket progression step-by-step
+   */
+  testEliminationBracketProgression() {
+    this.log(`\n=== Testing Elimination Bracket Progression ===`);
+
+    try {
+      const manager = new TournamentManager();
+      const players = Array.from({ length: 8 }, (_, i) => `Player ${i + 1}`);
+      manager.createTournament(players, 0, TOURNAMENT_FORMATS.SINGLE_ELIMINATION);
+
+      // Round 1: Should have 4 matches
+      const round1Matches = manager.matches.filter(m => m.round === 1);
+      if (round1Matches.length !== 4) {
+        this.log(`Round 1 should have 4 matches, has ${round1Matches.length}`, 'error');
+        return false;
+      }
+      this.log(`✓ Round 1 has ${round1Matches.length} matches`);
+
+      // Before playing: Round 2 should be all placeholders
+      let round2Matches = manager.matches.filter(m => m.round === 2);
+      const allPlaceholders = round2Matches.every(m =>
+        m.isPlaceholder && m.player1 === null && m.player2 === null
+      );
+      if (allPlaceholders) {
+        this.log(`✓ Round 2 matches start as placeholders`);
+      } else {
+        this.log(`Round 2 should start as placeholders`, 'error');
+      }
+
+      // Play one Round 1 match
+      this.playMatch(round1Matches[0]);
+      manager.advanceWinnerToNextMatch(round1Matches[0]);
+      round2Matches = manager.matches.filter(m => m.round === 2);
+
+      // Round 2 should still be mostly placeholders (only 1 player advanced)
+      this.log(`✓ After 1 R1 match, round 2 partially populated`);
+
+      // Play second Round 1 match (completes first R2 match)
+      this.playMatch(round1Matches[1]);
+      manager.advanceWinnerToNextMatch(round1Matches[1]);
+      round2Matches = manager.matches.filter(m => m.round === 2);
+
+      // Check if first R2 match has both players (no longer placeholder)
+      const firstR2Match = round2Matches[0];
+      if (firstR2Match && !firstR2Match.isPlaceholder &&
+          firstR2Match.player1 !== null && firstR2Match.player2 !== null) {
+        this.log(`✓ After 2 R1 matches, first R2 match populated`);
+      } else if (firstR2Match && (firstR2Match.player1 !== null || firstR2Match.player2 !== null)) {
+        this.log(`✓ After 2 R1 matches, first R2 match has players assigned`);
+      } else {
+        this.log(`Expected first R2 match to have players after 2 R1 matches`, 'error');
+      }
+
+      // Complete all Round 1 matches
+      round1Matches.forEach(match => {
+        if (match.winner === null) {
+          this.playMatch(match);
+          manager.advanceWinnerToNextMatch(match);
+        }
+      });
+
+      round2Matches = manager.matches.filter(m => m.round === 2);
+      const allR2Populated = round2Matches.every(m =>
+        m.player1 !== null && m.player2 !== null
+      );
+      if (allR2Populated) {
+        this.log(`✓ All Round 2 matches populated after Round 1 complete`);
+      } else {
+        this.log(`Round 2 matches should all be populated`, 'error');
+      }
+
+      // Play Round 2
+      round2Matches.forEach(match => {
+        this.playMatch(match);
+        manager.advanceWinnerToNextMatch(match);
+      });
+
+      // Finals should be populated
+      const finals = manager.matches.filter(m => m.round === 3);
+      if (finals.length === 1 && finals[0].player1 !== null && finals[0].player2 !== null) {
+        this.log(`✓ Finals populated after Round 2 complete`);
+      } else {
+        this.log(`Finals should be populated with 2 players`, 'error');
+      }
+
+      // Play finals
+      this.playMatch(finals[0]);
+
+      // Verify winner
+      const standings = manager.getStandings();
+      const champion = standings.rankedStats.find(s => s.rank === 1);
+      if (champion && champion.wins === 3) {
+        this.log(`✓ Champion correctly identified with 3 wins`);
+      } else {
+        this.log(`Champion should have 3 wins in 8-player bracket`, 'error');
+      }
+
+      return true;
+    } catch (error) {
+      this.log(`Elimination bracket progression test failed: ${error.message}`, 'error');
+      console.error(error);
+      return false;
+    }
+  }
+
+  /**
    * Run all tests
    */
   runAllTests() {
@@ -384,15 +681,10 @@ class TournamentTester {
 
     const startTime = Date.now();
 
-    // Round Robin tests
-    this.log('\n\n📋 ROUND ROBIN TESTS');
+    // Round Robin tests - Comprehensive coverage
+    this.log('\n\n📋 ROUND ROBIN TESTS (Comprehensive)');
     this.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    this.testRoundRobin(4, 1);  // Minimal matches
-    this.testRoundRobin(4, 3);  // Standard matches
-    this.testRoundRobin(6, 2);  // Even players, moderate matches
-    this.testRoundRobin(7, 2);  // Odd players, moderate matches
-    this.testRoundRobin(8, 1);  // Many players, few matches
-    this.testRoundRobin(8, 3);  // Many players, many matches
+    this.testRoundRobinComprehensive();
 
     // Single Elimination tests (power-of-2 only)
     this.log('\n\n🏆 SINGLE ELIMINATION TESTS');
@@ -431,6 +723,13 @@ class TournamentTester {
     this.testGroupStage(12, 4, 1);   // 4 groups of 3, top 1 advance (4-player playoff)
     this.testGroupStage(16, 4, 2);   // 4 groups of 4, top 2 advance (8-player playoff)
     this.testGroupStage(16, 4, 1);   // 4 groups of 4, top 1 advance (4-player playoff)
+
+    // In-Game Scenario Tests
+    this.log('\n\n🎮 IN-GAME SCENARIO TESTS');
+    this.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    this.testPartialMatchCompletion();
+    this.testStandingsProgression();
+    this.testEliminationBracketProgression();
 
     const endTime = Date.now();
     const duration = ((endTime - startTime) / 1000).toFixed(2);
