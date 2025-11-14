@@ -1283,18 +1283,17 @@ class DoubleEliminationFormat extends TournamentFormatBase {
 
   /**
    * Generate losers bracket with proper match count
-   * For N players, losers bracket needs approximately N-2 matches
+   * For 8 players: LR1=2, LR2=2, LR3=2, LR4=1, LR5=1 (6 matches)
    */
   generateLosersBracket(numPlayers, numRounds, startMatchId) {
     const matches = [];
     let matchId = startMatchId;
 
-    // Losers bracket R1: Receives half the players (losers from WB R1)
-    // They pair up, so we need numPlayers/4 matches
-    let playersInRound = Math.floor(numPlayers / 4);
+    // Start with losers from WR1 pairing up
+    let matchesInRound = Math.floor(numPlayers / 4);
 
-    for (let round = 1; round <= numRounds && playersInRound >= 1; round++) {
-      for (let i = 0; i < playersInRound; i++) {
+    for (let round = 1; round <= numRounds && matchesInRound >= 1; round++) {
+      for (let i = 0; i < matchesInRound; i++) {
         matches.push({
           id: matchId++,
           round: round,
@@ -1310,15 +1309,17 @@ class DoubleEliminationFormat extends TournamentFormatBase {
         });
       }
 
-      // Losers bracket progression:
-      // Odd rounds: Winners from previous round advance (same number of matches)
-      // Even rounds: Winners from LB + Losers from WB merge (number may change)
-      // Simplified: decrease by half every 2 rounds
-      if (round % 2 === 0) {
-        playersInRound = Math.floor(playersInRound / 2);
+      // Losers bracket pattern:
+      // - Even rounds (LR2, LR4, ...): Winners from previous round (halve)
+      // - Odd rounds after R1 (LR3, LR5, ...): Merge LR winners + WB losers (maintain count)
+      if (round === 1) {
+        // LR2 = same count as LR1 (receives winners from LR1 + losers from WR2)
+        // Don't change count yet
+      } else if (round % 2 === 0) {
+        // Even rounds: halve the count (advancing winners only)
+        matchesInRound = Math.ceil(matchesInRound / 2);
       }
-      // For odd rounds after R1, we merge with losers from winners bracket
-      // So maintain the count or adjust based on expected merges
+      // Odd rounds (after 1): maintain count for merging
     }
 
     return matches;
@@ -1357,9 +1358,15 @@ class DoubleEliminationFormat extends TournamentFormatBase {
         }
 
         // Losers drop to losers bracket
-        // Multiple winners bracket matches feed into each losers bracket match
-        // e.g., WR1 matches 0&1 → LR1 match 0, WR1 matches 2&3 → LR1 match 1
-        const loserRound = round === 1 ? 1 : (round - 1) * 2;
+        // WR1 losers go to LR1 (first round of losers)
+        // WR2+ losers go to odd losers rounds (LR3, LR5, etc.) to merge with LR winners
+        let loserRound;
+        if (round === 1) {
+          loserRound = 1;  // WR1 → LR1
+        } else {
+          loserRound = (round - 1) * 2 + 1;  // WR2 → LR3, WR3 → LR5, etc.
+        }
+
         const loserMatchIndex = Math.floor(i / 2);
 
         if (losersMatches[loserRound] && losersMatches[loserRound][loserMatchIndex]) {
