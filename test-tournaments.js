@@ -1014,6 +1014,11 @@ class TournamentTester {
 
       if (champions.length !== 1) {
         this.log(`ERROR: Should have exactly 1 champion, found ${champions.length}`, 'error');
+        this.log(`  Champions: ${champions.map(c => `${c.player} (elim: ${c.eliminationRound}, wins: ${c.wins}, losses: ${c.losses})`).join(', ')}`, 'error');
+        // Debug all standings
+        standings.rankedStats.slice(0, 8).forEach(s => {
+          this.log(`    ${s.rank}. ${s.player}: wins=${s.wins}, losses=${s.losses}, elimRound=${s.eliminationRound}`, 'error');
+        });
       } else {
         this.log(`✓ Exactly 1 champion: ${champions[0].player}`);
       }
