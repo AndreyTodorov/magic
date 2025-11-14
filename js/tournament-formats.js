@@ -279,9 +279,91 @@ class RoundRobinFormat extends TournamentFormatBase {
   }
 
   calculateStandings(matches, players, config) {
-    // Use existing calculation from TournamentManager
-    // This will be integrated in the next step
-    return [];
+    if (!matches || !Array.isArray(matches)) {
+      return [];
+    }
+
+    const stats = players.map((player, index) => {
+      const playerMatches = matches.filter(
+        (m) => m.player1 === index || m.player2 === index
+      );
+
+      let wins = 0,
+        losses = 0,
+        gamesWon = 0,
+        gamesLost = 0;
+      const opponents = { beaten: [], lostTo: [] };
+
+      playerMatches.forEach((m) => {
+        if (!m || !m.games) return;
+
+        if (m.winner !== null) {
+          const isPlayer1 = m.player1 === index;
+          const playerNum = isPlayer1 ? 1 : 2;
+          const opponentIndex = isPlayer1 ? m.player2 : m.player1;
+
+          if (m.winner === playerNum) {
+            wins++;
+            opponents.beaten.push(opponentIndex);
+          } else {
+            losses++;
+            opponents.lostTo.push(opponentIndex);
+          }
+
+          m.games.forEach((game) => {
+            if (game === playerNum) gamesWon++;
+            else if (game !== null) gamesLost++;
+          });
+        }
+      });
+
+      // Scoring: Match Win (+3), Game Won (+1), Game Lost (-0.5)
+      const scoringSystem = APP_CONFIG.FORMATS.SCORING_SYSTEMS['points'];
+      const points =
+        wins * scoringSystem.MATCH_WIN +
+        gamesWon * scoringSystem.GAME_WIN +
+        gamesLost * scoringSystem.GAME_LOSS;
+
+      return {
+        player,
+        playerIndex: index,
+        wins,
+        losses,
+        gamesWon,
+        gamesLost,
+        points,
+        matchesPlayed: wins + losses,
+        opponents,
+        qualityScore: 0,
+      };
+    });
+
+    // Calculate quality scores (opponent strength)
+    stats.forEach((stat, index) => {
+      stat.qualityScore = this.calculateQualityScore(index, stats);
+    });
+
+    return stats;
+  }
+
+  /**
+   * Calculate quality score for a player based on opponents beaten
+   */
+  calculateQualityScore(playerIndex, allStats) {
+    const stat = allStats[playerIndex];
+    let qualityScore = 0;
+
+    // Add points from each opponent beaten
+    stat.opponents.beaten.forEach((oppIndex) => {
+      qualityScore += allStats[oppIndex].points;
+    });
+
+    // Subtract points from opponents who beat this player
+    stat.opponents.lostTo.forEach((oppIndex) => {
+      qualityScore -= allStats[oppIndex].points * 0.5;
+    });
+
+    return qualityScore;
   }
 }
 

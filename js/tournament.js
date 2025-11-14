@@ -459,6 +459,64 @@ class TournamentManager {
   }
 
   /**
+   * Rank players based on format-specific tiebreakers
+   */
+  rankPlayersByFormat(stats, format) {
+    // Swiss format uses: Wins → OMW% → GW% → OGW%
+    if (format === TOURNAMENT_FORMATS.SWISS) {
+      return stats.sort((a, b) => {
+        // Primary: Match wins (points / 3)
+        if (b.points !== a.points) return b.points - a.points;
+
+        // Secondary: Opponent Match Win %
+        if (Math.abs(b.omw - a.omw) > 0.001) return b.omw - a.omw;
+
+        // Tertiary: Game Win %
+        if (Math.abs(b.gwp - a.gwp) > 0.001) return b.gwp - a.gwp;
+
+        // Quaternary: Opponent Game Win %
+        if (Math.abs(b.ogw - a.ogw) > 0.001) return b.ogw - a.ogw;
+
+        // Final: Total games won
+        return b.gamesWon - a.gamesWon;
+      });
+    }
+
+    // Round Robin, Single/Double Elimination: Use existing tiebreakers
+    // Points → Quality Score → Win % → Game differential → Games won
+    return stats.sort((a, b) => {
+      // Primary: Total points
+      if (Math.abs(b.points - a.points) > 0.01) {
+        return b.points - a.points;
+      }
+
+      // Secondary: Head-to-head (if both have qualityScore)
+      if (a.qualityScore !== undefined && b.qualityScore !== undefined) {
+        if (Math.abs(b.qualityScore - a.qualityScore) > 0.01) {
+          return b.qualityScore - a.qualityScore;
+        }
+      }
+
+      // Tertiary: Win percentage
+      const aWinPct = a.matchesPlayed > 0 ? a.wins / a.matchesPlayed : 0;
+      const bWinPct = b.matchesPlayed > 0 ? b.wins / b.matchesPlayed : 0;
+      if (Math.abs(bWinPct - aWinPct) > 0.01) {
+        return bWinPct - aWinPct;
+      }
+
+      // Quaternary: Game differential
+      const aGameDiff = a.gamesWon - a.gamesLost;
+      const bGameDiff = b.gamesWon - b.gamesLost;
+      if (bGameDiff !== aGameDiff) {
+        return bGameDiff - aGameDiff;
+      }
+
+      // Final: Total games won
+      return b.gamesWon - a.gamesWon;
+    });
+  }
+
+  /**
    * Get complete standings with rankings
    * OPTIMIZED: Uses caching to avoid recalculating unchanged standings
    */
@@ -470,9 +528,18 @@ class TournamentManager {
       return this.standingsCache;
     }
 
-    // Calculate fresh standings
-    const stats = this.calculatePlayerStats();
-    const sortedStats = this.rankPlayers(stats);
+    // Get format handler
+    const formatHandler = tournamentFormats.factory.create(this.format);
+
+    // Calculate standings using format-specific method
+    const stats = formatHandler.calculateStandings(
+      this.matches,
+      this.players,
+      this.formatConfig
+    );
+
+    // Rank players based on format-specific tiebreakers
+    const sortedStats = this.rankPlayersByFormat(stats, this.format);
     const result = this.assignRanks(sortedStats);
 
     // Cache the result

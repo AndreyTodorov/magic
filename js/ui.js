@@ -63,6 +63,9 @@ class UIManager {
 
       progressFill: document.getElementById("progressFill"),
       progressText: document.getElementById("progressText"),
+      tournamentInfo: document.getElementById("tournamentInfo"),
+      formatBadge: document.getElementById("formatBadge"),
+      stageBadge: document.getElementById("stageBadge"),
       gamesPerPlayer: document.getElementById("gamesPerPlayer"),
       scheduleGrid: document.getElementById("scheduleGrid"),
       standingsTable: document.getElementById("standingsTable"),
@@ -750,7 +753,13 @@ class UIManager {
    * Render standings table
    * OPTIMIZED: Uses DocumentFragment for batch DOM insertion
    */
-  renderStandings(rankedStats, tiedRanks, players, isComplete = false) {
+  renderStandings(
+    rankedStats,
+    tiedRanks,
+    players,
+    isComplete = false,
+    format = "round-robin"
+  ) {
     const container = this.elements.standingsTable;
     if (!container) return;
 
@@ -759,7 +768,14 @@ class UIManager {
     // Use DocumentFragment to batch DOM operations
     const fragment = document.createDocumentFragment();
     rankedStats.forEach((stat) => {
-      const row = this.createStandingRow(stat, tiedRanks, rankedStats, players, isComplete);
+      const row = this.createStandingRow(
+        stat,
+        tiedRanks,
+        rankedStats,
+        players,
+        isComplete,
+        format
+      );
       fragment.appendChild(row);
     });
     container.appendChild(fragment);
@@ -768,7 +784,14 @@ class UIManager {
   /**
    * Create standing row element
    */
-  createStandingRow(stat, tiedRanks, rankedStats, players, isComplete = false) {
+  createStandingRow(
+    stat,
+    tiedRanks,
+    rankedStats,
+    players,
+    isComplete = false,
+    format = "round-robin"
+  ) {
     const row = document.createElement("div");
     row.className = "standing-row";
     row.setAttribute("role", "button");
@@ -816,26 +839,94 @@ class UIManager {
       "loss"
     );
 
+    // Format-specific record display
+    let recordHtml, detailsHtml;
+
+    if (format === TOURNAMENT_FORMATS.SWISS) {
+      // Swiss: Show W-L and tiebreakers
+      recordHtml = `${stat.wins}-${stat.losses}${
+        stat.draws > 0 ? `-${stat.draws}` : ""
+      } record`;
+      detailsHtml = `
+        OMW%: ${((stat.omw || 0) * 100).toFixed(1)}% |
+        GW%: ${((stat.gwp || 0) * 100).toFixed(1)}% |
+        OGW%: ${((stat.ogw || 0) * 100).toFixed(1)}%
+      `;
+    } else if (
+      format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+      format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION
+    ) {
+      // Elimination: Show W-L and elimination round
+      recordHtml = `${stat.wins}-${stat.losses} matches`;
+      if (stat.roundEliminated || stat.eliminationRound) {
+        const elimRound = stat.roundEliminated || stat.eliminationRound;
+        detailsHtml = `Eliminated in Round ${elimRound}`;
+      } else if (stat.finalPosition) {
+        detailsHtml = `Final Position: ${stat.finalPosition}`;
+      } else {
+        detailsHtml = `${stat.gamesWon}-${stat.gamesLost} games`;
+      }
+    } else if (format === TOURNAMENT_FORMATS.GROUP_STAGE) {
+      // Group Stage: Show group and record
+      recordHtml = `${stat.wins}-${stat.losses} matches`;
+      detailsHtml = stat.group
+        ? `Group ${stat.group} | ${stat.gamesWon}-${stat.gamesLost} games`
+        : `${stat.gamesWon}-${stat.gamesLost} games`;
+    } else {
+      // Round Robin: Show traditional record and quality
+      recordHtml = `${stat.wins}-${stat.losses} matches`;
+      detailsHtml = `${stat.gamesWon}-${stat.gamesLost} games<br>Quality: ${(
+        stat.qualityScore || 0
+      ).toFixed(1)}`;
+    }
+
     row.innerHTML = `
       <div class="standing-rank ${rankClass}${tiedIndicator}">${stat.rank}</div>
       <div class="standing-info">
         <div class="standing-name">${this.escapeHtml(stat.player)}</div>
-        <div class="standing-record">${stat.wins}-${stat.losses} matches</div>
+        <div class="standing-record">${recordHtml}</div>
         <div class="standing-details">
-          ${stat.gamesWon}-${stat.gamesLost} games<br>Quality: ${stat.qualityScore.toFixed(1)}
+          ${detailsHtml}
         </div>
         <div class="standing-breakdown">
-          <div class="breakdown-section">
-            <strong>Points Breakdown:</strong><br>
-            Match Wins: ${stat.wins} × 3 = ${stat.wins * 3} pts<br>
-            Games Won: ${stat.gamesWon} × 1 = ${stat.gamesWon} pts<br>
-            Games Lost: ${stat.gamesLost} × -0.5 = ${(
-      stat.gamesLost * -0.5
-    ).toFixed(1)} pts<br>
-            <strong>Total: ${stat.points.toFixed(1)} pts</strong>
-          </div>
           ${
-            beatenList
+            format === TOURNAMENT_FORMATS.SWISS
+              ? `
+            <div class="breakdown-section">
+              <strong>Swiss Tiebreakers:</strong><br>
+              Match Record: ${stat.wins}-${stat.losses}${
+                stat.draws > 0 ? `-${stat.draws}` : ""
+              } (${stat.points} pts)<br>
+              Opponent Match Win %: ${((stat.omw || 0) * 100).toFixed(1)}%<br>
+              Game Win %: ${((stat.gwp || 0) * 100).toFixed(1)}%<br>
+              Opponent Game Win %: ${((stat.ogw || 0) * 100).toFixed(1)}%<br>
+              Games: ${stat.gamesWon}-${stat.gamesLost}
+            </div>
+          `
+              : format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+                format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION
+              ? `
+            <div class="breakdown-section">
+              <strong>Match Record:</strong><br>
+              Wins: ${stat.wins}<br>
+              Losses: ${stat.losses}<br>
+              Games: ${stat.gamesWon}-${stat.gamesLost}
+            </div>
+          `
+              : `
+            <div class="breakdown-section">
+              <strong>Points Breakdown:</strong><br>
+              Match Wins: ${stat.wins} × 3 = ${stat.wins * 3} pts<br>
+              Games Won: ${stat.gamesWon} × 1 = ${stat.gamesWon} pts<br>
+              Games Lost: ${stat.gamesLost} × -0.5 = ${(
+                stat.gamesLost * -0.5
+              ).toFixed(1)} pts<br>
+              <strong>Total: ${stat.points.toFixed(1)} pts</strong>
+            </div>
+          `
+          }
+          ${
+            beatenList && stat.opponents
               ? `
             <div class="breakdown-section">
               <strong>Victories Against:</strong>
@@ -845,7 +936,7 @@ class UIManager {
               : ""
           }
           ${
-            lostToList
+            lostToList && stat.opponents
               ? `
             <div class="breakdown-section">
               <strong>Losses Against:</strong>
@@ -854,12 +945,21 @@ class UIManager {
           `
               : ""
           }
-          <div class="breakdown-section">
-            <strong>Quality Score:</strong> ${stat.qualityScore.toFixed(1)}<br>
-            <em style="font-size: 0.9em; color: #666;">
-              (Sum of beaten opponents' points)
-            </em>
-          </div>
+          ${
+            stat.qualityScore !== undefined &&
+            format !== TOURNAMENT_FORMATS.SWISS
+              ? `
+            <div class="breakdown-section">
+              <strong>Quality Score:</strong> ${(
+                stat.qualityScore || 0
+              ).toFixed(1)}<br>
+              <em style="font-size: 0.9em; color: #666;">
+                (Sum of beaten opponents' points)
+              </em>
+            </div>
+          `
+              : ""
+          }
         </div>
       </div>
       <div class="standing-points">${stat.points.toFixed(
@@ -906,6 +1006,94 @@ class UIManager {
     if (this.elements.progressText) {
       this.elements.progressText.textContent = `${completed} of ${total} matches completed`;
     }
+  }
+
+  /**
+   * Update tournament info display (format, stage, round)
+   */
+  updateTournamentInfo(format, currentStage = null, matches = []) {
+    if (!this.elements.tournamentInfo) return;
+
+    // Get format display name
+    const formatHandler = tournamentFormats.factory.create(format);
+    const formatInfo = formatHandler.getFormatInfo();
+
+    // Show tournament info
+    this.elements.tournamentInfo.style.display = "flex";
+
+    // Update format badge
+    if (this.elements.formatBadge) {
+      this.elements.formatBadge.textContent = `📋 ${formatInfo.name}`;
+      this.elements.formatBadge.className = "tournament-info__badge tournament-info__badge--format";
+    }
+
+    // Update stage/round badge if applicable
+    if (this.elements.stageBadge) {
+      let stageText = "";
+
+      if (format === TOURNAMENT_FORMATS.SWISS && matches.length > 0) {
+        // Show current round for Swiss
+        const currentRound = this.getCurrentSwissRound(matches);
+        if (currentRound) {
+          stageText = `Round ${currentRound.round}/${currentRound.totalRounds}`;
+        }
+      } else if (format === TOURNAMENT_FORMATS.GROUP_STAGE) {
+        // Show current stage for group stage
+        stageText = currentStage === "playoffs" ? "🏆 Playoffs" : "📦 Groups";
+      } else if (
+        format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+        format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION
+      ) {
+        // Show current bracket round
+        const currentRound = this.getCurrentEliminationRound(matches);
+        if (currentRound) {
+          stageText = `Round ${currentRound}`;
+        }
+      }
+
+      if (stageText) {
+        this.elements.stageBadge.textContent = stageText;
+        this.elements.stageBadge.className = "tournament-info__badge tournament-info__badge--stage";
+        this.elements.stageBadge.style.display = "inline-block";
+      } else {
+        this.elements.stageBadge.style.display = "none";
+      }
+    }
+  }
+
+  /**
+   * Get current Swiss round from matches
+   */
+  getCurrentSwissRound(matches) {
+    const swissMatches = matches.filter((m) => m.round !== undefined);
+    if (swissMatches.length === 0) return null;
+
+    const totalRounds = Math.max(...swissMatches.map((m) => m.round));
+    const completedMatches = swissMatches.filter((m) => m.winner !== null);
+    const completedRounds = completedMatches.length > 0
+      ? Math.max(...completedMatches.map((m) => m.round))
+      : 0;
+
+    const currentRound = completedRounds < totalRounds ? completedRounds + 1 : totalRounds;
+
+    return { round: currentRound, totalRounds };
+  }
+
+  /**
+   * Get current elimination round
+   */
+  getCurrentEliminationRound(matches) {
+    const bracketMatches = matches.filter(
+      (m) => m.round !== undefined && !m.isPlaceholder
+    );
+    if (bracketMatches.length === 0) return null;
+
+    const incompleteMatches = bracketMatches.filter((m) => m.winner === null);
+    if (incompleteMatches.length === 0) {
+      return Math.max(...bracketMatches.map((m) => m.round));
+    }
+
+    return Math.min(...incompleteMatches.map((m) => m.round));
   }
 
   /**

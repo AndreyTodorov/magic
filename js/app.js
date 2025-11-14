@@ -677,7 +677,13 @@ class App {
       uiManager.renderMatches(matches, players);
     } else if (currentView === "standings") {
       const { rankedStats, tiedRanks } = tournamentManager.getStandings();
-      uiManager.renderStandings(rankedStats, tiedRanks, players, isComplete);
+      uiManager.renderStandings(
+        rankedStats,
+        tiedRanks,
+        players,
+        isComplete,
+        tournamentManager.format
+      );
     }
 
     // Update progress (lightweight operation)
@@ -701,6 +707,13 @@ class App {
       console.warn("Failed to toggle code display:", err);
     }
     uiManager.updateProgress(progress.completed, progress.total);
+
+    // Update tournament info (format, stage, round)
+    uiManager.updateTournamentInfo(
+      tournamentManager.format,
+      tournamentManager.currentStage,
+      tournamentManager.matches
+    );
   }
 
   /**
