@@ -535,8 +535,9 @@ class UIManager {
   /**
    * Render player schedule
    * OPTIMIZED: Pre-computes player-to-matches map to avoid O(n²) filtering
+   * Format-specific visualizations for better UX
    */
-  renderSchedule(players, matches) {
+  renderSchedule(players, matches, format = null, currentStage = null) {
     const container = this.elements.scheduleGrid;
     if (!container) return;
 
@@ -558,6 +559,26 @@ class UIManager {
     // Use DocumentFragment for batch DOM insertion
     const fragment = document.createDocumentFragment();
 
+    // Choose rendering method based on format
+    if (format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+        format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION) {
+      this.renderEliminationSchedule(fragment, players, playerMatchesMap);
+    } else if (format === TOURNAMENT_FORMATS.SWISS) {
+      this.renderSwissSchedule(fragment, players, playerMatchesMap, matches);
+    } else if (format === TOURNAMENT_FORMATS.GROUP_STAGE) {
+      this.renderGroupStageSchedule(fragment, players, playerMatchesMap, currentStage);
+    } else {
+      // Default: Round Robin or unknown format
+      this.renderDefaultSchedule(fragment, players, playerMatchesMap);
+    }
+
+    container.appendChild(fragment);
+  }
+
+  /**
+   * Render default schedule (Round Robin)
+   */
+  renderDefaultSchedule(fragment, players, playerMatchesMap) {
     players.forEach((player, index) => {
       const playerMatches = playerMatchesMap.get(index) || [];
 
@@ -566,7 +587,6 @@ class UIManager {
         return players[opponentIndex];
       });
 
-      // Consider a player 'completed' when all their matches have a winner
       const allCompleted =
         playerMatches.length > 0 &&
         playerMatches.every((m) => m.winner !== null);
@@ -592,8 +612,332 @@ class UIManager {
 
       fragment.appendChild(scheduleItem);
     });
+  }
 
-    container.appendChild(fragment);
+  /**
+   * Render elimination bracket schedule (shows progression path)
+   */
+  renderEliminationSchedule(fragment, players, playerMatchesMap) {
+    players.forEach((player, index) => {
+      const playerMatches = playerMatchesMap.get(index) || [];
+
+      // Group matches by round/bracket
+      const matchesByRound = {};
+      let isInLosersBracket = false;
+
+      playerMatches.forEach((m) => {
+        if (m.isPlaceholder && m.player1 === null && m.player2 === null) {
+          return; // Skip empty placeholders
+        }
+
+        const round = m.round || 1;
+        if (!matchesByRound[round]) matchesByRound[round] = [];
+        matchesByRound[round].push(m);
+
+        // Check if player is in losers bracket
+        if (m.bracket === 'losers') {
+          isInLosersBracket = true;
+        }
+      });
+
+      // Find player's current status
+      let isEliminated = false;
+      let currentRound = null;
+      const rounds = Object.keys(matchesByRound).map(Number).sort((a, b) => a - b);
+
+      for (const round of rounds) {
+        const roundMatches = matchesByRound[round];
+        const hasUnfinished = roundMatches.some((m) => m.winner === null);
+
+        if (hasUnfinished) {
+          currentRound = round;
+          break;
+        }
+
+        // Check if lost this round
+        const lost = roundMatches.some((m) => {
+          const isPlayer1 = m.player1 === index;
+          return m.winner !== null && m.winner !== (isPlayer1 ? 1 : 2);
+        });
+
+        if (lost && m.bracket === 'losers') {
+          isEliminated = true;
+        }
+      }
+
+      const allCompleted =
+        playerMatches.length > 0 &&
+        playerMatches.every((m) => m.winner !== null || m.isPlaceholder);
+
+      const scheduleItem = document.createElement("div");
+      scheduleItem.className = `schedule-item${
+        allCompleted ? " completed" : ""
+      }${isEliminated ? " eliminated" : ""}`;
+
+      let statusHtml = "";
+      if (isEliminated) {
+        statusHtml = `<div class="player-status eliminated">Eliminated</div>`;
+      } else if (allCompleted) {
+        statusHtml = `<div class="player-status">Champion 🏆</div>`;
+      } else if (currentRound) {
+        const roundName = this.getRoundName(currentRound, rounds.length);
+        statusHtml = `<div class="player-status active">→ ${roundName}</div>`;
+      }
+
+      // Build bracket path display
+      let pathHtml = '<div class="bracket-path">';
+      rounds.forEach((round, idx) => {
+        const roundMatches = matchesByRound[round];
+        const match = roundMatches[0]; // Should only be one match per round per player
+        const opponentIndex = match.player1 === index ? match.player2 : match.player1;
+        const opponentName = opponentIndex !== null ? players[opponentIndex] : 'TBD';
+        const roundName = this.getRoundName(round, rounds.length);
+
+        const isWin = match.winner === (match.player1 === index ? 1 : 2);
+        const isLoss = match.winner !== null && !isWin;
+        const isPending = match.winner === null && !match.isPlaceholder;
+
+        let matchStatus = '';
+        if (isWin) matchStatus = '✓';
+        else if (isLoss) matchStatus = '✗';
+        else if (isPending) matchStatus = '○';
+        else matchStatus = '—';
+
+        const bracketLabel = match.bracket === 'losers' ? ' (L)' : '';
+
+        pathHtml += `
+          <div class="bracket-round ${isPending ? 'active' : ''} ${isWin ? 'win' : ''} ${isLoss ? 'loss' : ''}">
+            <span class="round-label">${roundName}${bracketLabel}</span>
+            <span class="match-status">${matchStatus}</span>
+            <span class="opponent">vs ${this.escapeHtml(opponentName)}</span>
+          </div>
+        `;
+      });
+      pathHtml += '</div>';
+
+      scheduleItem.innerHTML = `
+        <div class="schedule-item__title">
+          <strong>${this.escapeHtml(player)}</strong>
+          ${statusHtml}
+        </div>
+        ${pathHtml}
+      `;
+
+      fragment.appendChild(scheduleItem);
+    });
+  }
+
+  /**
+   * Render Swiss tournament schedule (current vs future rounds)
+   */
+  renderSwissSchedule(fragment, players, playerMatchesMap, allMatches) {
+    // Determine current round
+    let currentRound = 1;
+    const swissMatches = allMatches.filter((m) => m.round !== undefined);
+    if (swissMatches.length > 0) {
+      const completedRounds = new Set();
+      swissMatches.forEach((m) => {
+        if (m.winner !== null && !m.isPlaceholder) {
+          completedRounds.add(m.round);
+        }
+      });
+
+      if (completedRounds.size > 0) {
+        currentRound = Math.max(...completedRounds);
+        // Check if current round is fully complete
+        const currentRoundMatches = swissMatches.filter((m) => m.round === currentRound);
+        const allComplete = currentRoundMatches.every((m) => m.winner !== null || m.isPlaceholder);
+        if (allComplete) {
+          currentRound++;
+        }
+      }
+    }
+
+    players.forEach((player, index) => {
+      const playerMatches = playerMatchesMap.get(index) || [];
+
+      // Split matches into current and future
+      const currentMatches = [];
+      const futureMatches = [];
+      const pastMatches = [];
+
+      playerMatches.forEach((m) => {
+        if (m.isPlaceholder && m.player1 === null && m.player2 === null) {
+          return;
+        }
+
+        if (m.round < currentRound) {
+          pastMatches.push(m);
+        } else if (m.round === currentRound) {
+          currentMatches.push(m);
+        } else {
+          futureMatches.push(m);
+        }
+      });
+
+      const allCompleted =
+        playerMatches.length > 0 &&
+        playerMatches.every((m) => m.winner !== null || m.isPlaceholder);
+
+      const scheduleItem = document.createElement("div");
+      scheduleItem.className = `schedule-item${
+        allCompleted ? " completed" : ""
+      }`;
+
+      const statusHtml = allCompleted
+        ? `<div class="player-status">Done</div>`
+        : currentMatches.length > 0
+        ? `<div class="player-status active">→ Round ${currentRound}</div>`
+        : "";
+
+      let matchesHtml = '<div class="swiss-rounds">';
+
+      // Current round (highlighted)
+      if (currentMatches.length > 0) {
+        matchesHtml += '<div class="round-section current">';
+        matchesHtml += `<div class="round-header">⚡ Round ${currentRound}</div>`;
+        currentMatches.forEach((m) => {
+          const opponentIndex = m.player1 === index ? m.player2 : m.player1;
+          const opponentName = opponentIndex !== null ? players[opponentIndex] : 'BYE';
+          matchesHtml += `<div class="round-match">vs ${this.escapeHtml(opponentName)}</div>`;
+        });
+        matchesHtml += '</div>';
+      }
+
+      // Future rounds (grayed out)
+      if (futureMatches.length > 0) {
+        matchesHtml += '<div class="round-section future">';
+        matchesHtml += '<div class="round-header">Upcoming Rounds</div>';
+        matchesHtml += '<div class="round-match tbd">Pairings TBD</div>';
+        matchesHtml += '</div>';
+      }
+
+      matchesHtml += '</div>';
+
+      scheduleItem.innerHTML = `
+        <div class="schedule-item__title">
+          <strong>${this.escapeHtml(player)}</strong>
+          ${statusHtml}
+        </div>
+        ${matchesHtml}
+      `;
+
+      fragment.appendChild(scheduleItem);
+    });
+  }
+
+  /**
+   * Render Group Stage schedule (groups vs playoffs)
+   */
+  renderGroupStageSchedule(fragment, players, playerMatchesMap, currentStage) {
+    players.forEach((player, index) => {
+      const playerMatches = playerMatchesMap.get(index) || [];
+
+      // Split matches by stage
+      const groupMatches = [];
+      const playoffMatches = [];
+
+      playerMatches.forEach((m) => {
+        if (m.isPlaceholder && m.player1 === null && m.player2 === null) {
+          return;
+        }
+
+        if (m.stage === 'groups') {
+          groupMatches.push(m);
+        } else if (m.stage === 'playoffs') {
+          playoffMatches.push(m);
+        }
+      });
+
+      const allCompleted =
+        playerMatches.length > 0 &&
+        playerMatches.every((m) => m.winner !== null || m.isPlaceholder);
+
+      const groupsComplete = groupMatches.every((m) => m.winner !== null);
+      const inPlayoffs = playoffMatches.length > 0;
+
+      const scheduleItem = document.createElement("div");
+      scheduleItem.className = `schedule-item${
+        allCompleted ? " completed" : ""
+      }`;
+
+      let statusHtml = "";
+      if (allCompleted) {
+        statusHtml = `<div class="player-status">Done</div>`;
+      } else if (inPlayoffs && !groupsComplete) {
+        statusHtml = `<div class="player-status active">→ Playoffs</div>`;
+      } else if (groupsComplete && !inPlayoffs) {
+        statusHtml = `<div class="player-status eliminated">Did not advance</div>`;
+      }
+
+      let matchesHtml = '<div class="group-stage-schedule">';
+
+      // Group stage matches
+      if (groupMatches.length > 0) {
+        const groupName = groupMatches[0].group || '?';
+        matchesHtml += `<div class="stage-section ${groupsComplete ? 'completed' : ''}">`;
+        matchesHtml += `<div class="stage-header">📦 Group ${groupName}</div>`;
+
+        groupMatches.forEach((m) => {
+          const opponentIndex = m.player1 === index ? m.player2 : m.player1;
+          const opponentName = players[opponentIndex];
+          const isWon = m.winner === (m.player1 === index ? 1 : 2);
+          const isLost = m.winner !== null && !isWon;
+          const statusIcon = isWon ? '✓' : isLost ? '✗' : '○';
+
+          matchesHtml += `<div class="stage-match ${isWon ? 'win' : ''} ${isLost ? 'loss' : ''}">`;
+          matchesHtml += `<span class="match-status">${statusIcon}</span> vs ${this.escapeHtml(opponentName)}`;
+          matchesHtml += '</div>';
+        });
+        matchesHtml += '</div>';
+      }
+
+      // Playoff matches
+      if (playoffMatches.length > 0) {
+        matchesHtml += '<div class="stage-section playoffs">';
+        matchesHtml += '<div class="stage-header">🏆 Playoffs</div>';
+
+        playoffMatches.forEach((m) => {
+          const opponentIndex = m.player1 === index ? m.player2 : m.player1;
+          const opponentName = opponentIndex !== null ? players[opponentIndex] : 'TBD';
+          const roundName = this.getRoundName(m.round, 4); // Assume max 4 rounds for playoffs
+          const isWon = m.winner === (m.player1 === index ? 1 : 2);
+          const isLost = m.winner !== null && !isWon;
+          const isPending = m.winner === null && !m.isPlaceholder;
+          const statusIcon = isWon ? '✓' : isLost ? '✗' : isPending ? '○' : '—';
+
+          matchesHtml += `<div class="stage-match ${isWon ? 'win' : ''} ${isLost ? 'loss' : ''} ${isPending ? 'active' : ''}">`;
+          matchesHtml += `<span class="match-status">${statusIcon}</span> ${roundName}: vs ${this.escapeHtml(opponentName)}`;
+          matchesHtml += '</div>';
+        });
+        matchesHtml += '</div>';
+      }
+
+      matchesHtml += '</div>';
+
+      scheduleItem.innerHTML = `
+        <div class="schedule-item__title">
+          <strong>${this.escapeHtml(player)}</strong>
+          ${statusHtml}
+        </div>
+        ${matchesHtml}
+      `;
+
+      fragment.appendChild(scheduleItem);
+    });
+  }
+
+  /**
+   * Get friendly round name for elimination brackets
+   */
+  getRoundName(round, totalRounds) {
+    const roundsFromEnd = totalRounds - round;
+
+    if (roundsFromEnd === 0) return 'Finals';
+    if (roundsFromEnd === 1) return 'Semifinals';
+    if (roundsFromEnd === 2) return 'Quarterfinals';
+
+    return `Round ${round}`;
   }
 
   /**
@@ -1285,6 +1629,7 @@ class UIManager {
     if (!playerCountSelect) return;
 
     const currentValue = parseInt(playerCountSelect.value) || APP_CONFIG.DEFAULT_PLAYERS;
+    const recommendedCounts = format.getRecommendedPlayerCounts();
     playerCountSelect.innerHTML = "";
 
     // Generate options from minPlayers to maxPlayers (capped at 20 for UI)
@@ -1292,14 +1637,17 @@ class UIManager {
     for (let i = format.minPlayers; i <= maxDisplay; i++) {
       const option = document.createElement("option");
       option.value = i;
-      option.textContent = `${i} Player${i !== 1 ? "s" : ""}`;
+
+      // Add visual indicator for recommended counts
+      const isRecommended = recommendedCounts.includes(i);
+      option.textContent = `${i} Player${i !== 1 ? "s" : ""}${isRecommended ? " ⭐" : ""}`;
 
       // Try to keep current selection if valid
       if (i === currentValue && i >= format.minPlayers && i <= format.maxPlayers) {
         option.selected = true;
       }
       // Otherwise select a recommended count if available
-      else if (!option.selected && format.getRecommendedPlayerCounts().includes(i)) {
+      else if (!option.selected && isRecommended) {
         option.selected = true;
       }
 
@@ -1308,14 +1656,50 @@ class UIManager {
 
     // If no option is selected, select the first recommended count or middle value
     if (!playerCountSelect.value) {
-      const recommended = format.getRecommendedPlayerCounts();
-      if (recommended.length > 0) {
-        playerCountSelect.value = recommended[0];
+      if (recommendedCounts.length > 0) {
+        playerCountSelect.value = recommendedCounts[0];
       } else {
         const midPoint = Math.floor((format.minPlayers + Math.min(format.maxPlayers, 20)) / 2);
         playerCountSelect.value = midPoint;
       }
     }
+
+    // Add helpful text showing recommended counts
+    this.updatePlayerCountHelp(format, parseInt(playerCountSelect.value));
+  }
+
+  /**
+   * Update help text for player count showing recommendations and warnings
+   */
+  updatePlayerCountHelp(format, selectedCount) {
+    // Find or create help text element
+    let helpText = document.getElementById("playerCountHelp");
+    if (!helpText) {
+      helpText = document.createElement("div");
+      helpText.id = "playerCountHelp";
+      helpText.className = "form-help-text";
+
+      // Insert after player count select
+      const playerCountSelect = this.elements.playerCount;
+      if (playerCountSelect && playerCountSelect.parentNode) {
+        playerCountSelect.parentNode.insertBefore(helpText, playerCountSelect.nextSibling);
+      }
+    }
+
+    // Validate player count and show recommendations/warnings
+    const validation = format.validatePlayerCount(selectedCount);
+    const recommended = format.getRecommendedPlayerCounts().filter(n => n <= 20);
+
+    let helpHtml = "";
+
+    if (validation.warning) {
+      helpHtml = `<div class="form-warning">⚠️ ${validation.warning}</div>`;
+    } else if (recommended.length > 0 && !recommended.includes(selectedCount)) {
+      helpHtml = `<div class="form-info">💡 Recommended: ${recommended.slice(0, 5).join(", ")} players</div>`;
+    }
+
+    helpText.innerHTML = helpHtml;
+    helpText.style.display = helpHtml ? "block" : "none";
   }
 
   /**
