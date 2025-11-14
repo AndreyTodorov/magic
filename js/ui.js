@@ -677,11 +677,27 @@ class UIManager {
         allCompleted ? " completed" : ""
       }${isEliminated ? " eliminated" : ""}`;
 
+      // Determine if this player is the champion
+      // Champion = won all matches AND won the final round
+      let isChampion = false;
+      if (allCompleted && !isEliminated && rounds.length > 0) {
+        const finalRound = rounds[rounds.length - 1];
+        const finalMatches = matchesByRound[finalRound];
+        if (finalMatches && finalMatches.length > 0) {
+          const finalMatch = finalMatches[0];
+          const isWin = finalMatch.winner === (finalMatch.player1 === index ? 1 : 2);
+          isChampion = isWin;
+        }
+      }
+
       let statusHtml = "";
       if (isEliminated) {
         statusHtml = `<div class="player-status eliminated">Eliminated</div>`;
-      } else if (allCompleted) {
+      } else if (isChampion) {
         statusHtml = `<div class="player-status">Champion 🏆</div>`;
+      } else if (allCompleted) {
+        // Completed but not champion = placed (e.g., 2nd, 3rd-4th, etc.)
+        statusHtml = `<div class="player-status">Eliminated</div>`;
       } else if (currentRound) {
         const roundName = this.getRoundName(currentRound, rounds.length);
         statusHtml = `<div class="player-status active">→ ${roundName}</div>`;
@@ -1642,17 +1658,29 @@ class UIManager {
     let playerOptions = [];
     if (isElimination) {
       // Only show power-of-2 counts: 2, 4, 8, 16, 32, 64
-      playerOptions = recommendedCounts.filter(n => n <= 20);
+      // For eliminations, show up to 64 players (or 32 for double elim)
+      const maxElimDisplay = format.formatType === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION ? 32 : 64;
+      playerOptions = recommendedCounts.filter(n => n <= maxElimDisplay);
       if (playerOptions.length === 0) {
         // Fallback: generate power of 2 sequence
-        for (let pow = 1; pow <= 64; pow *= 2) {
-          if (pow >= format.minPlayers && pow <= Math.min(format.maxPlayers, 20)) {
+        for (let pow = 1; pow <= maxElimDisplay; pow *= 2) {
+          if (pow >= format.minPlayers && pow <= format.maxPlayers) {
             playerOptions.push(pow);
           }
         }
       }
+    } else if (format.formatType === TOURNAMENT_FORMATS.GROUP_STAGE) {
+      // For group stage, only show counts that divide nicely into groups
+      // Multiples of 4 work best (4 players per group)
+      const maxDisplay = Math.min(format.maxPlayers, 32);
+      for (let i = format.minPlayers; i <= maxDisplay; i++) {
+        // Include if it's divisible by 4 (standard groups) or recommended
+        if (i % 4 === 0 || recommendedCounts.includes(i)) {
+          playerOptions.push(i);
+        }
+      }
     } else {
-      // For other formats, show all counts from minPlayers to maxPlayers
+      // For other formats (Round Robin, Swiss), show all counts from minPlayers to maxPlayers
       const maxDisplay = Math.min(format.maxPlayers, 20);
       for (let i = format.minPlayers; i <= maxDisplay; i++) {
         playerOptions.push(i);
@@ -1664,16 +1692,15 @@ class UIManager {
       const option = document.createElement("option");
       option.value = count;
 
-      // Add visual indicator for recommended counts
-      const isRecommended = recommendedCounts.includes(count);
-      option.textContent = `${count} Player${count !== 1 ? "s" : ""}${isRecommended ? " ⭐" : ""}`;
+      // Simple display without star indicators
+      option.textContent = `${count} Player${count !== 1 ? "s" : ""}`;
 
       // Try to keep current selection if valid
       if (count === currentValue) {
         option.selected = true;
       }
       // Otherwise select a recommended count if available
-      else if (!option.selected && isRecommended) {
+      else if (!option.selected && recommendedCounts.includes(count)) {
         option.selected = true;
       }
 
