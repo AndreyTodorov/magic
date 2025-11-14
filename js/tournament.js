@@ -14,6 +14,10 @@ class TournamentManager {
     // Cache for standings calculations (improves mobile performance)
     this.standingsCache = null;
     this.standingsCacheHash = null;
+    // Format support
+    this.format = APP_CONFIG.FORMATS.DEFAULT;
+    this.formatConfig = {};
+    this.currentStage = null; // For multi-stage tournaments
   }
 
   /**
@@ -26,6 +30,9 @@ class TournamentManager {
     this.isCreator = false;
     this.standingsCache = null;
     this.standingsCacheHash = null;
+    this.format = APP_CONFIG.FORMATS.DEFAULT;
+    this.formatConfig = {};
+    this.currentStage = null;
   }
 
   /**
@@ -123,24 +130,36 @@ class TournamentManager {
 
   /**
    * Create tournament from player names
+   * @param {Array<string>} playerNames - Array of player names
+   * @param {number} matchesPerPlayer - Matches per player (for round-robin)
+   * @param {string} format - Tournament format type (optional, defaults to round-robin)
+   * @param {Object} formatConfig - Format-specific configuration (optional)
    */
-  createTournament(playerNames, matchesPerPlayer) {
+  createTournament(playerNames, matchesPerPlayer, format = null, formatConfig = null) {
     this.players = playerNames;
     this.playerCount = playerNames.length;
     this.matchesPerPlayer = matchesPerPlayer;
 
-    const matchStructure = this.generateMatchStructure(
-      this.playerCount,
-      matchesPerPlayer
-    );
+    // Set format (default to round-robin for backward compatibility)
+    this.format = format || APP_CONFIG.FORMATS.DEFAULT;
 
-    this.matches = matchStructure.map((match, index) => ({
-      id: index,
-      player1: match[0],
-      player2: match[1],
-      games: [null, null, null],
-      winner: null,
-    }));
+    // Get format handler
+    const formatHandler = tournamentFormats.factory.create(this.format);
+
+    // Set format config
+    if (formatConfig) {
+      this.formatConfig = formatConfig;
+    } else {
+      // Use default config for format
+      this.formatConfig = formatHandler.getDefaultConfig(this.playerCount);
+      // For round-robin, ensure matchesPerPlayer is set
+      if (this.format === 'round-robin') {
+        this.formatConfig.matchesPerPlayer = matchesPerPlayer;
+      }
+    }
+
+    // Generate matches using format handler
+    this.matches = formatHandler.generateMatches(this.players, this.formatConfig);
 
     return this.matches;
   }
@@ -152,6 +171,13 @@ class TournamentManager {
     this.players = tournamentData.players;
     this.playerCount = this.players.length;
     this.matchesPerPlayer = tournamentData.matchesPerPlayer;
+
+    // Load format data (backward compatibility: default to round-robin)
+    this.format = tournamentData.format || APP_CONFIG.FORMATS.DEFAULT;
+    this.formatConfig = tournamentData.formatConfig || {
+      matchesPerPlayer: this.matchesPerPlayer,
+    };
+    this.currentStage = tournamentData.currentStage || null;
 
     // Convert Firebase object to array
     if (tournamentData.matches) {
