@@ -750,6 +750,21 @@ class TournamentTester {
       );
       this.log(`✓ Final state: Round 1=${allRounds[0]}, Round 2=${allRounds[1]}, Round 3=${allRounds[2]} matches`);
 
+      // Test rendering filter: Ensure placeholder matches are hidden
+      const renderableMatches = manager.matches.filter(m => {
+        if (m.isPlaceholder) return false;
+        if (m.player1 === null) return false;
+        if (m.player2 === null && !m.isBye) return false;
+        return true;
+      });
+
+      const expectedRenderable = allRounds[0] + allRounds[1] + allRounds[2];
+      if (renderableMatches.length === expectedRenderable) {
+        this.log(`✓ Rendering filter correct: ${renderableMatches.length} matches visible`);
+      } else {
+        this.log(`Rendering filter issue: ${renderableMatches.length} matches, expected ${expectedRenderable}`, 'error');
+      }
+
       return true;
     } catch (error) {
       this.log(`Swiss round visibility test failed: ${error.message}`, 'error');
