@@ -45,6 +45,11 @@ class App {
     // Manually trigger auth state handler to set initial UI state
     if (typeof authManager !== 'undefined') {
       this.handleAuthStateChange(authManager.currentUser);
+    } else {
+      // In standalone mode (no auth), show mode selector immediately
+      if (modeSelector) {
+        modeSelector.style.display = "flex";
+      }
     }
 
     // Attempt to rejoin tournament
