@@ -31,7 +31,7 @@ let APPCHECK_SITE_KEY = "APP_CHECK_SITE_KEY";
  * Environment Detection
  * Automatically detects if running in development or production
  */
-let ENVIRONMENT = 'production';
+let ENVIRONMENT = 'development'; // Set to 'production' when deploying
 
 // Detect localhost/development
 if (typeof window !== 'undefined') {
