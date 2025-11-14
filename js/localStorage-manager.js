@@ -127,6 +127,25 @@ class LocalStorageManager {
 
     tournaments[tournamentCode].matches[matchId] = matchData;
     this.saveAllTournaments(tournaments);
+    this.triggerListeners();
+
+    return true;
+  }
+
+  /**
+   * Update tournament data (partial update)
+   */
+  async updateTournament(tournamentCode, updates) {
+    const tournaments = this.getAllTournaments();
+
+    if (!tournaments[tournamentCode]) {
+      throw new Error("Tournament not found");
+    }
+
+    // Merge updates into existing tournament
+    Object.assign(tournaments[tournamentCode], updates);
+    this.saveAllTournaments(tournaments);
+    this.triggerListeners();
 
     return true;
   }

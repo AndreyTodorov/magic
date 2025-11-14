@@ -304,6 +304,26 @@ class FirebaseManager {
   }
 
   /**
+   * Update tournament data (partial update)
+   */
+  async updateTournament(tournamentCode, updates) {
+    if (!this.isInitialized) {
+      throw new Error("Firebase not initialized");
+    }
+
+    try {
+      await this.database
+        .ref(`tournaments/${tournamentCode}`)
+        .update(updates);
+
+      return true;
+    } catch (error) {
+      console.error("Error updating tournament:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Listen to tournament updates
    */
   onTournamentUpdate(tournamentCode, callback) {

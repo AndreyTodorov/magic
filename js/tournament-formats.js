@@ -673,7 +673,7 @@ class SwissFormat extends TournamentFormatBase {
       // Opponent Game Win % (OGW)
       let opponentGamesWon = 0;
       let opponentTotalGames = 0;
-      stat.opponents.forEach((oppIndex) => {
+      stat.allOpponents.forEach((oppIndex) => {
         const opp = stats[oppIndex];
         opponentGamesWon += opp.gamesWon;
         opponentTotalGames += opp.gamesWon + opp.gamesLost;

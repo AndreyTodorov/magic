@@ -770,15 +770,15 @@ class App {
     // Track which match was updated for incremental rendering
     this.lastMatchUpdate = matchId;
 
-    // Update Firebase
+    // Update Firebase with all matches (includes bracket advancements)
     try {
-      await firebaseManager.updateMatch(
+      const matchesObject = tournamentManager.getMatchesForFirebase();
+      await firebaseManager.updateTournament(
         tournamentManager.currentTournamentCode,
-        matchId,
-        result.match
+        { matches: matchesObject }
       );
     } catch (error) {
-      logger.error("App", "Failed to update match", error);
+      logger.error("App", "Failed to update matches", error);
       uiManager.showAlert("Error updating match. Please try again.", "error");
     }
   }
