@@ -149,6 +149,11 @@ class App {
       this.handleLeaveTournament()
     );
 
+    // Advance stage button
+    uiManager.elements.advanceStageBtn?.addEventListener("click", () =>
+      this.handleAdvanceStage()
+    );
+
     // Scroll to top button
     const scrollToTopBtn = document.getElementById("scrollToTop");
     if (scrollToTopBtn) {
@@ -713,6 +718,14 @@ class App {
       tournamentManager.currentStage,
       tournamentManager.matches
     );
+
+    // Update stage advancement button
+    const canAdvance = tournamentManager.canAdvanceStage();
+    uiManager.updateStageAdvancement(
+      canAdvance,
+      tournamentManager.format,
+      tournamentManager.currentStage
+    );
   }
 
   /**
@@ -757,6 +770,68 @@ class App {
     }
 
     this.leaveTournament();
+  }
+
+  /**
+   * Handle advance stage button click
+   */
+  async handleAdvanceStage() {
+    const format = tournamentManager.format;
+    let confirmMessage = "Advance to the next stage?";
+
+    if (format === TOURNAMENT_FORMATS.SWISS) {
+      confirmMessage = "Generate the next round? This will pair players based on current standings.";
+    } else if (format === TOURNAMENT_FORMATS.GROUP_STAGE) {
+      if (tournamentManager.currentStage === "groups" || !tournamentManager.currentStage) {
+        confirmMessage = "Advance to playoffs? Top players from each group will compete in elimination bracket.";
+      }
+    }
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    // Show loading state
+    uiManager.elements.advanceStageBtn.disabled = true;
+    uiManager.elements.advanceStageText.textContent = "Advancing...";
+
+    try {
+      const result = await tournamentManager.advanceToNextStage();
+
+      if (!result.success) {
+        uiManager.showAlert(result.error || "Failed to advance stage", "danger");
+        return;
+      }
+
+      // Update Firebase
+      await firebaseManager.updateTournament(
+        tournamentManager.currentTournamentCode,
+        {
+          matches: tournamentManager.matches,
+          currentStage: tournamentManager.currentStage,
+        }
+      );
+
+      // Show success message
+      let successMessage = "Stage advanced successfully!";
+      if (format === TOURNAMENT_FORMATS.SWISS) {
+        successMessage = `Round ${result.round} generated!`;
+      } else if (format === TOURNAMENT_FORMATS.GROUP_STAGE && result.stage === "playoffs") {
+        successMessage = `Playoffs started! ${result.advancingPlayers.length} players advancing.`;
+      }
+
+      uiManager.showAlert(successMessage, "success");
+
+      // Force full re-render
+      this.lastMatchUpdate = null;
+      this.renderTournament(true);
+    } catch (error) {
+      console.error("Failed to advance stage:", error);
+      uiManager.showAlert("Failed to advance stage", "danger");
+    } finally {
+      // Reset button state
+      uiManager.elements.advanceStageBtn.disabled = false;
+    }
   }
 
   /**

@@ -980,6 +980,30 @@ body {
   background: var(--color-bg-cyan);
 }
 
+/* === STAGE ADVANCEMENT === */
+.stage-advancement {
+  display: flex;
+  justify-content: center;
+  margin: var(--spacing-lg) 0;
+}
+
+.stage-advancement .btn {
+  font-size: 1rem;
+  padding: var(--spacing-md) var(--spacing-xl);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: var(--shadow-md);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 7px 7px 0px rgba(0, 0, 0, 0.7);
+  }
+}
+
 /* === SCHEDULE === */
 .schedule-info {
   background: var(--color-bg-tertiary);

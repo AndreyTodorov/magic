@@ -66,6 +66,9 @@ class UIManager {
       tournamentInfo: document.getElementById("tournamentInfo"),
       formatBadge: document.getElementById("formatBadge"),
       stageBadge: document.getElementById("stageBadge"),
+      stageAdvancement: document.getElementById("stageAdvancement"),
+      advanceStageBtn: document.getElementById("advanceStageBtn"),
+      advanceStageText: document.getElementById("advanceStageText"),
       gamesPerPlayer: document.getElementById("gamesPerPlayer"),
       scheduleGrid: document.getElementById("scheduleGrid"),
       standingsTable: document.getElementById("standingsTable"),
@@ -1094,6 +1097,38 @@ class UIManager {
     }
 
     return Math.min(...incompleteMatches.map((m) => m.round));
+  }
+
+  /**
+   * Update stage advancement button visibility and text
+   */
+  updateStageAdvancement(canAdvance, format, currentStage = null) {
+    if (!this.elements.stageAdvancement) return;
+
+    if (!canAdvance) {
+      this.elements.stageAdvancement.style.display = "none";
+      return;
+    }
+
+    // Show button
+    this.elements.stageAdvancement.style.display = "flex";
+
+    // Update button text based on format
+    let buttonText = "Advance to Next Round";
+
+    if (format === TOURNAMENT_FORMATS.SWISS) {
+      buttonText = "🎲 Generate Next Round";
+    } else if (format === TOURNAMENT_FORMATS.GROUP_STAGE) {
+      if (currentStage === "groups" || !currentStage) {
+        buttonText = "🏆 Advance to Playoffs";
+      } else {
+        buttonText = "Advance to Next Round";
+      }
+    }
+
+    if (this.elements.advanceStageText) {
+      this.elements.advanceStageText.textContent = buttonText;
+    }
   }
 
   /**
