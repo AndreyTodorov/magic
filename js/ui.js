@@ -22,6 +22,7 @@ class UIManager {
       // Sections
       modeSelector: document.getElementById("modeSelector"),
       joinSection: document.getElementById("joinSection"),
+      formatSelectionSection: document.getElementById("formatSelectionSection"),
       createSection: document.getElementById("createSection"),
       tournamentSection: document.getElementById("tournamentSection"),
       // View tabs
@@ -39,6 +40,14 @@ class UIManager {
       tournamentCode: document.getElementById("tournamentCode"),
       joinSubmitBtn: document.getElementById("joinSubmitBtn"),
       joinError: document.getElementById("joinError"),
+
+      // Format selection
+      formatGrid: document.getElementById("formatGrid"),
+      backToModeBtn: document.getElementById("backToModeBtn"),
+      backToFormatBtn: document.getElementById("backToFormatBtn"),
+      selectedFormatTitle: document.getElementById("selectedFormatTitle"),
+      formatConfigContainer: document.getElementById("formatConfigContainer"),
+      matchesPerPlayerContainer: document.getElementById("matchesPerPlayerContainer"),
 
       playerCount: document.getElementById("playerCount"),
       matchesPerPlayer: document.getElementById("matchesPerPlayer"),
@@ -151,6 +160,7 @@ class UIManager {
     [
       "modeSelector",
       "joinSection",
+      "formatSelectionSection",
       "createSection",
       "tournamentSection",
     ].forEach((section) => {
@@ -937,6 +947,273 @@ class UIManager {
     document.querySelectorAll(".mode-btn").forEach((btn) => {
       btn.classList.remove("active");
     });
+  }
+
+  /**
+   * Render format selection cards
+   */
+  renderFormatCards() {
+    const formatGrid = this.elements.formatGrid;
+    if (!formatGrid) return;
+
+    // Get all available formats
+    const formats = tournamentFormats.factory.getAllFormats();
+
+    // Clear existing cards
+    formatGrid.innerHTML = "";
+
+    // Create card for each format
+    formats.forEach((formatInfo) => {
+      const card = document.createElement("div");
+      card.className = "format-card";
+      card.dataset.formatType = formatInfo.type;
+      card.setAttribute("role", "button");
+      card.setAttribute("tabindex", "0");
+      card.setAttribute("aria-label", `Select ${formatInfo.name} format`);
+
+      card.innerHTML = `
+        <div class="format-card__icon">${formatInfo.icon}</div>
+        <div class="format-card__name">${formatInfo.name}</div>
+        <div class="format-card__description">${formatInfo.description}</div>
+        <div class="format-card__meta">
+          <div class="format-card__meta-item">
+            <span class="format-card__meta-label">Min Players:</span>
+            <span class="format-card__meta-value">${formatInfo.minPlayers}</span>
+          </div>
+          <div class="format-card__meta-item">
+            <span class="format-card__meta-label">Max Players:</span>
+            <span class="format-card__meta-value">${formatInfo.maxPlayers}</span>
+          </div>
+          ${formatInfo.supportsMultiStage ? '<div class="format-card__meta-item"><span class="format-card__meta-label">Multi-Stage</span><span class="format-card__meta-value">✓</span></div>' : ''}
+        </div>
+      `;
+
+      formatGrid.appendChild(card);
+    });
+  }
+
+  /**
+   * Set selected format and update UI
+   * @param {string} formatType - Format type constant
+   */
+  setSelectedFormat(formatType) {
+    // Store selected format
+    this.selectedFormat = formatType;
+
+    // Update card selection visually
+    document.querySelectorAll(".format-card").forEach((card) => {
+      if (card.dataset.formatType === formatType) {
+        card.classList.add("format-card--selected");
+      } else {
+        card.classList.remove("format-card--selected");
+      }
+    });
+
+    // Get format instance
+    const format = tournamentFormats.factory.create(formatType);
+    const formatInfo = format.getFormatInfo();
+
+    // Update format title
+    if (this.elements.selectedFormatTitle) {
+      this.elements.selectedFormatTitle.textContent = `${formatInfo.icon} ${formatInfo.name}`;
+    }
+
+    // Update player count options based on format requirements
+    this.updatePlayerCountOptions(format);
+
+    // Show/hide format-specific configuration
+    this.renderFormatConfig(format);
+  }
+
+  /**
+   * Update player count dropdown based on format requirements
+   * @param {TournamentFormatBase} format - Format instance
+   */
+  updatePlayerCountOptions(format) {
+    const playerCountSelect = this.elements.playerCount;
+    if (!playerCountSelect) return;
+
+    const currentValue = parseInt(playerCountSelect.value) || APP_CONFIG.DEFAULT_PLAYERS;
+    playerCountSelect.innerHTML = "";
+
+    // Generate options from minPlayers to maxPlayers (capped at 20 for UI)
+    const maxDisplay = Math.min(format.maxPlayers, 20);
+    for (let i = format.minPlayers; i <= maxDisplay; i++) {
+      const option = document.createElement("option");
+      option.value = i;
+      option.textContent = `${i} Player${i !== 1 ? "s" : ""}`;
+
+      // Try to keep current selection if valid
+      if (i === currentValue && i >= format.minPlayers && i <= format.maxPlayers) {
+        option.selected = true;
+      }
+      // Otherwise select a recommended count if available
+      else if (!option.selected && format.getRecommendedPlayerCounts().includes(i)) {
+        option.selected = true;
+      }
+
+      playerCountSelect.appendChild(option);
+    }
+
+    // If no option is selected, select the first recommended count or middle value
+    if (!playerCountSelect.value) {
+      const recommended = format.getRecommendedPlayerCounts();
+      if (recommended.length > 0) {
+        playerCountSelect.value = recommended[0];
+      } else {
+        const midPoint = Math.floor((format.minPlayers + Math.min(format.maxPlayers, 20)) / 2);
+        playerCountSelect.value = midPoint;
+      }
+    }
+  }
+
+  /**
+   * Render format-specific configuration UI
+   * @param {TournamentFormatBase} format - Format instance
+   */
+  renderFormatConfig(format) {
+    const configContainer = this.elements.formatConfigContainer;
+    const matchesContainer = this.elements.matchesPerPlayerContainer;
+
+    if (!configContainer) return;
+
+    // Clear existing config
+    configContainer.innerHTML = "";
+
+    // Show/hide matches per player selector (only for round-robin)
+    if (matchesContainer) {
+      if (format.formatType === "round-robin") {
+        matchesContainer.style.display = "block";
+      } else {
+        matchesContainer.style.display = "none";
+      }
+    }
+
+    // Add format-specific configuration based on format type
+    const playerCount = parseInt(this.elements.playerCount?.value) || APP_CONFIG.DEFAULT_PLAYERS;
+    const defaultConfig = format.getDefaultConfig(playerCount);
+
+    switch (format.formatType) {
+      case "swiss":
+        configContainer.innerHTML = `
+          <div class="form-group text-center">
+            <label for="swissRounds" class="form-label">Number of Rounds:</label>
+            <select id="swissRounds" class="form-select" aria-label="Select number of rounds">
+              ${[3, 4, 5, 6, 7].map(r => `
+                <option value="${r}" ${r === defaultConfig.rounds ? "selected" : ""}>${r} Rounds</option>
+              `).join("")}
+            </select>
+            <div class="matches-info">Recommended: ${defaultConfig.rounds} rounds for ${playerCount} players</div>
+          </div>
+        `;
+        break;
+
+      case "single-elimination":
+        configContainer.innerHTML = `
+          <div class="form-group text-center">
+            <label class="form-label">Bracket Options:</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="thirdPlaceMatch" />
+                <span>Include 3rd Place Match</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="seededBracket" />
+                <span>Use Seeded Bracket (players 1-N)</span>
+              </label>
+            </div>
+          </div>
+        `;
+        break;
+
+      case "double-elimination":
+        configContainer.innerHTML = `
+          <div class="form-group text-center">
+            <label class="form-label">Bracket Options:</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="grandFinalReset" />
+                <span>Grand Finals Reset (if losers bracket wins)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="seededBracket" />
+                <span>Use Seeded Bracket (players 1-N)</span>
+              </label>
+            </div>
+          </div>
+        `;
+        break;
+
+      case "group-stage":
+        const numGroups = defaultConfig.numGroups;
+        configContainer.innerHTML = `
+          <div class="form-group text-center">
+            <label for="numGroups" class="form-label">Number of Groups:</label>
+            <select id="numGroups" class="form-select" aria-label="Select number of groups">
+              ${[2, 3, 4, 6, 8].map(g => `
+                <option value="${g}" ${g === numGroups ? "selected" : ""}>${g} Groups</option>
+              `).join("")}
+            </select>
+          </div>
+          <div class="form-group text-center">
+            <label for="advancingPerGroup" class="form-label">Advancing Per Group:</label>
+            <select id="advancingPerGroup" class="form-select" aria-label="Select advancing per group">
+              ${[1, 2, 3, 4].map(a => `
+                <option value="${a}" ${a === defaultConfig.advancingPerGroup ? "selected" : ""}>${a} Player${a !== 1 ? "s" : ""}</option>
+              `).join("")}
+            </select>
+          </div>
+        `;
+        break;
+    }
+  }
+
+  /**
+   * Get current format configuration from UI
+   * @returns {Object} Format configuration object
+   */
+  getFormatConfig() {
+    if (!this.selectedFormat) return {};
+
+    const format = tournamentFormats.factory.create(this.selectedFormat);
+    const playerCount = parseInt(this.elements.playerCount?.value) || APP_CONFIG.DEFAULT_PLAYERS;
+    const config = format.getDefaultConfig(playerCount);
+
+    // Override with user selections
+    switch (this.selectedFormat) {
+      case "round-robin":
+        config.matchesPerPlayer = parseInt(this.elements.matchesPerPlayer?.value) || config.matchesPerPlayer;
+        break;
+
+      case "swiss":
+        const swissRounds = document.getElementById("swissRounds");
+        if (swissRounds) config.rounds = parseInt(swissRounds.value);
+        break;
+
+      case "single-elimination":
+        const thirdPlace = document.getElementById("thirdPlaceMatch");
+        const seededSingle = document.getElementById("seededBracket");
+        if (thirdPlace) config.thirdPlaceMatch = thirdPlace.checked;
+        if (seededSingle) config.seedingMethod = seededSingle.checked ? "seeded" : "random";
+        break;
+
+      case "double-elimination":
+        const grandFinalReset = document.getElementById("grandFinalReset");
+        const seededDouble = document.getElementById("seededBracket");
+        if (grandFinalReset) config.grandFinalReset = grandFinalReset.checked;
+        if (seededDouble) config.seedingMethod = seededDouble.checked ? "seeded" : "random";
+        break;
+
+      case "group-stage":
+        const numGroups = document.getElementById("numGroups");
+        const advancingPerGroup = document.getElementById("advancingPerGroup");
+        if (numGroups) config.numGroups = parseInt(numGroups.value);
+        if (advancingPerGroup) config.advancingPerGroup = parseInt(advancingPerGroup.value);
+        config.playersPerGroup = Math.floor(playerCount / config.numGroups);
+        break;
+    }
+
+    return config;
   }
 }
 
