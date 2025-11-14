@@ -304,6 +304,7 @@ class App {
     if (uiManager.selectedFormat) {
       const format = tournamentFormats.factory.create(uiManager.selectedFormat);
       uiManager.renderFormatConfig(format);
+      uiManager.updatePlayerCountHelp(format, playerCount);
     }
 
     const matchesPerPlayer =
@@ -702,7 +703,12 @@ class App {
     const isComplete = progress.completed === progress.total && progress.total > 0;
 
     if (currentView === "schedule") {
-      uiManager.renderSchedule(players, matches);
+      uiManager.renderSchedule(
+        players,
+        matches,
+        tournamentManager.format,
+        tournamentManager.currentStage
+      );
     } else if (currentView === "matches") {
       uiManager.renderMatches(matches, players);
     } else if (currentView === "standings") {

@@ -385,6 +385,24 @@ class SwissFormat extends TournamentFormatBase {
     return '🔄';
   }
 
+  validatePlayerCount(numPlayers) {
+    // Call base validation first
+    const baseValidation = super.validatePlayerCount(numPlayers);
+    if (!baseValidation.isValid) {
+      return baseValidation;
+    }
+
+    // Warn about odd player counts (BYE each round)
+    if (numPlayers % 2 === 1) {
+      return {
+        isValid: true,
+        warning: `With odd player count, one player will receive a BYE each round. Even numbers recommended: ${this.getRecommendedPlayerCounts().filter(n => n >= numPlayers && n <= 64).slice(0, 3).join(', ')}`
+      };
+    }
+
+    return { isValid: true };
+  }
+
   getRecommendedPlayerCounts() {
     return [8, 16, 32, 64];
   }
@@ -701,6 +719,27 @@ class SingleEliminationFormat extends TournamentFormatBase {
 
   getFormatIcon() {
     return '🏆';
+  }
+
+  validatePlayerCount(numPlayers) {
+    // Call base validation first
+    const baseValidation = super.validatePlayerCount(numPlayers);
+    if (!baseValidation.isValid) {
+      return baseValidation;
+    }
+
+    // Check if power of 2 - if not, add helpful warning
+    const isPowerOf2 = (numPlayers & (numPlayers - 1)) === 0;
+    if (!isPowerOf2) {
+      const nextPower = this.nextPowerOf2(numPlayers);
+      const numByes = nextPower - numPlayers;
+      return {
+        isValid: true,
+        warning: `${numByes} player${numByes > 1 ? 's' : ''} will receive a BYE in Round 1 (bracket sized for ${nextPower} players). Recommended: ${this.getRecommendedPlayerCounts().filter(n => n >= numPlayers && n <= 64).slice(0, 3).join(', ')}`
+      };
+    }
+
+    return { isValid: true };
   }
 
   getRecommendedPlayerCounts() {
@@ -1054,6 +1093,27 @@ class DoubleEliminationFormat extends TournamentFormatBase {
     return '♻️';
   }
 
+  validatePlayerCount(numPlayers) {
+    // Call base validation first
+    const baseValidation = super.validatePlayerCount(numPlayers);
+    if (!baseValidation.isValid) {
+      return baseValidation;
+    }
+
+    // Check if power of 2 - if not, add helpful warning
+    const isPowerOf2 = (numPlayers & (numPlayers - 1)) === 0;
+    if (!isPowerOf2) {
+      const nextPower = this.nextPowerOf2(numPlayers);
+      const numByes = nextPower - numPlayers;
+      return {
+        isValid: true,
+        warning: `${numByes} player${numByes > 1 ? 's' : ''} will receive a BYE in Round 1 (bracket sized for ${nextPower} players). Recommended: ${this.getRecommendedPlayerCounts().filter(n => n >= numPlayers && n <= 32).slice(0, 3).join(', ')}`
+      };
+    }
+
+    return { isValid: true };
+  }
+
   getRecommendedPlayerCounts() {
     return [4, 8, 16, 32];
   }
@@ -1066,8 +1126,8 @@ class DoubleEliminationFormat extends TournamentFormatBase {
   }
 
   validateConfig(config, numPlayers) {
-    if (numPlayers < 4) {
-      return { isValid: false, error: 'At least 4 players required for double elimination' };
+    if (numPlayers < 3) {
+      return { isValid: false, error: 'At least 3 players required for double elimination' };
     }
     return { isValid: true };
   }
