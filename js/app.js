@@ -530,9 +530,10 @@ class App {
     } catch (error) {
       logger.error("App", "Failed to create tournament", error);
       uiManager.showAlert(
-        "Error creating tournament. Please try again.",
+        `Error creating tournament: ${error.message || error}`,
         "error"
       );
+      console.error("Tournament creation error:", error);
     } finally {
       uiManager.setButtonLoading(uiManager.elements.generateBtn, false);
     }
@@ -544,7 +545,10 @@ class App {
   async createTournament(playerNames) {
     // Get selected format and config from UI
     const selectedFormat = uiManager.selectedFormat || APP_CONFIG.FORMATS.DEFAULT;
+    logger.debug("App", `Creating tournament with format: ${selectedFormat}`);
+
     const formatConfig = uiManager.getFormatConfig();
+    logger.debug("App", `Format config:`, formatConfig);
 
     // For round-robin backward compatibility
     const matchesPerPlayer = parseInt(
@@ -552,12 +556,14 @@ class App {
     ) || formatConfig.matchesPerPlayer || 3;
 
     // Generate matches using selected format
+    logger.debug("App", `Generating matches for ${playerNames.length} players`);
     tournamentManager.createTournament(
       playerNames,
       matchesPerPlayer,
       selectedFormat,
       formatConfig
     );
+    logger.debug("App", `Generated ${tournamentManager.matches.length} matches`);
 
     // Generate unique code
     const code = TournamentManager.generateTournamentCode();
