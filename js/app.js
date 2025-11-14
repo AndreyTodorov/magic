@@ -43,7 +43,14 @@ class App {
     }
 
     // Manually trigger auth state handler to set initial UI state
-    this.handleAuthStateChange(authManager.currentUser);
+    if (typeof authManager !== 'undefined') {
+      this.handleAuthStateChange(authManager.currentUser);
+    } else {
+      // In standalone mode (no auth), show mode selector immediately
+      if (modeSelector) {
+        modeSelector.style.display = "flex";
+      }
+    }
 
     // Attempt to rejoin tournament
     await this.attemptRejoin();
@@ -80,10 +87,12 @@ class App {
       this.handleForgotPassword()
     );
 
-    // Listen to auth state changes
-    authManager.onAuthStateChange((user) => {
-      this.handleAuthStateChange(user);
-    });
+    // Listen to auth state changes (only if authManager is available)
+    if (typeof authManager !== 'undefined') {
+      authManager.onAuthStateChange((user) => {
+        this.handleAuthStateChange(user);
+      });
+    }
 
     // Mode selection
     document.querySelectorAll(".mode-btn").forEach((btn) => {
@@ -149,6 +158,11 @@ class App {
       this.handleLeaveTournament()
     );
 
+    // Advance stage button
+    uiManager.elements.advanceStageBtn?.addEventListener("click", () =>
+      this.handleAdvanceStage()
+    );
+
     // Scroll to top button
     const scrollToTopBtn = document.getElementById("scrollToTop");
     if (scrollToTopBtn) {
@@ -184,6 +198,31 @@ class App {
       }
     });
 
+    // Format selection (event delegation)
+    document.addEventListener("click", (e) => {
+      // Format card click
+      if (e.target.closest(".format-card")) {
+        const card = e.target.closest(".format-card");
+        const formatType = card.dataset.formatType;
+        this.handleFormatSelection(formatType);
+      }
+    });
+
+    // Back to mode selector from format selection
+    uiManager.elements.backToModeBtn?.addEventListener("click", () => {
+      uiManager.showSection("modeSelector");
+      // Clear mode button selection
+      document.querySelectorAll(".mode-btn").forEach((btn) => {
+        btn.classList.remove("active");
+      });
+    });
+
+    // Back to format selection from create section
+    uiManager.elements.backToFormatBtn?.addEventListener("click", () => {
+      uiManager.renderFormatCards();
+      uiManager.showSection(["modeSelector", "formatSelectionSection"]);
+    });
+
     // Game result buttons (event delegation for security)
     document.addEventListener("click", (e) => {
       if (e.target.matches(".game-result") && !e.target.disabled) {
@@ -205,7 +244,6 @@ class App {
     const matchesPerPlayer =
       uiManager.updateMatchesPerPlayerOptions(playerCount);
     tournamentManager.matchesPerPlayer = matchesPerPlayer;
-    uiManager.updateTournamentInfo(playerCount, matchesPerPlayer);
     uiManager.renderPlayerInputs(playerCount);
     // Restore or apply previously selected sub-view (matches/schedule/standings)
     uiManager.switchView(uiManager.currentView || "matches");
@@ -213,7 +251,7 @@ class App {
     // Show auth section by default if not logged in
     // This ensures the login form is visible on initial load
     const authSection = document.getElementById('authSection');
-    if (authSection && !authManager.isSignedIn()) {
+    if (authSection && typeof authManager !== 'undefined' && !authManager.isSignedIn()) {
       authSection.style.display = 'block';
     }
   }
@@ -233,10 +271,27 @@ class App {
 
     // Show appropriate section
     if (mode === "create") {
-      uiManager.showSection(["modeSelector", "createSection"]);
+      // Show format selection instead of going directly to create
+      uiManager.renderFormatCards();
+      uiManager.showSection(["modeSelector", "formatSelectionSection"]);
     } else if (mode === "join") {
       uiManager.showSection(["modeSelector", "joinSection"]);
     }
+  }
+
+  /**
+   * Handle format selection
+   */
+  handleFormatSelection(formatType) {
+    // Set selected format in UI manager
+    uiManager.setSelectedFormat(formatType);
+
+    // Show create section
+    uiManager.showSection(["modeSelector", "createSection"]);
+
+    // Update player count change to refresh format config
+    const playerCount = parseInt(uiManager.elements.playerCount.value);
+    this.handlePlayerCountChange();
   }
 
   /**
@@ -244,11 +299,17 @@ class App {
    */
   handlePlayerCountChange() {
     const playerCount = parseInt(uiManager.elements.playerCount.value);
+
+    // Update format config if format is selected
+    if (uiManager.selectedFormat) {
+      const format = tournamentFormats.factory.create(uiManager.selectedFormat);
+      uiManager.renderFormatConfig(format);
+    }
+
     const matchesPerPlayer =
       uiManager.updateMatchesPerPlayerOptions(playerCount);
     tournamentManager.playerCount = playerCount;
     tournamentManager.matchesPerPlayer = matchesPerPlayer;
-    uiManager.updateTournamentInfo(playerCount, matchesPerPlayer);
     uiManager.renderPlayerInputs(playerCount);
   }
 
@@ -256,12 +317,10 @@ class App {
    * Handle matches per player change
    */
   handleMatchesPerPlayerChange() {
-    const playerCount = parseInt(uiManager.elements.playerCount.value);
     const matchesPerPlayer = parseInt(
       uiManager.elements.matchesPerPlayer.value
     );
     tournamentManager.matchesPerPlayer = matchesPerPlayer;
-    uiManager.updateTournamentInfo(playerCount, matchesPerPlayer);
   }
 
   /**
@@ -381,7 +440,7 @@ class App {
 
     // Only add to members list if user is authenticated
     // Unauthenticated users can view and update scores without being members
-    if (authManager.isSignedIn()) {
+    if (typeof authManager !== 'undefined' && authManager.isSignedIn()) {
       try {
         await firebaseManager.joinTournament(code);
         logger.info("App", `Joined as member: ${code}`);
@@ -411,7 +470,7 @@ class App {
     // Show guest indicator if not logged in
     const viewingStatus = document.getElementById('viewingStatus');
     if (viewingStatus) {
-      viewingStatus.style.display = authManager.isSignedIn() ? 'none' : 'flex';
+      viewingStatus.style.display = (typeof authManager !== 'undefined' && authManager.isSignedIn()) ? 'none' : 'flex';
     }
 
     // Start listening to updates
@@ -480,9 +539,10 @@ class App {
     } catch (error) {
       logger.error("App", "Failed to create tournament", error);
       uiManager.showAlert(
-        "Error creating tournament. Please try again.",
+        `Error creating tournament: ${error.message || error}`,
         "error"
       );
+      console.error("Tournament creation error:", error);
     } finally {
       uiManager.setButtonLoading(uiManager.elements.generateBtn, false);
     }
@@ -492,27 +552,59 @@ class App {
    * Create new tournament
    */
   async createTournament(playerNames) {
+    // Get selected format and config from UI
+    const selectedFormat = uiManager.selectedFormat || APP_CONFIG.FORMATS.DEFAULT;
+    logger.debug("App", `Creating tournament with format: ${selectedFormat}`);
+
+    const formatConfig = uiManager.getFormatConfig();
+    logger.debug("App", `Format config:`, formatConfig);
+
+    // For round-robin backward compatibility
     const matchesPerPlayer = parseInt(
       uiManager.elements.matchesPerPlayer.value
-    );
+    ) || formatConfig.matchesPerPlayer || 3;
 
-    // Generate matches
-    tournamentManager.createTournament(playerNames, matchesPerPlayer);
+    // Generate matches using selected format
+    logger.debug("App", `Generating matches for ${playerNames.length} players`);
+    tournamentManager.createTournament(
+      playerNames,
+      matchesPerPlayer,
+      selectedFormat,
+      formatConfig
+    );
+    logger.debug("App", `Generated ${tournamentManager.matches.length} matches`);
 
     // Generate unique code
     const code = TournamentManager.generateTournamentCode();
     tournamentManager.currentTournamentCode = code;
     tournamentManager.isCreator = true;
 
-    // Save to Firebase
+    // Save to Firebase with format data
     const matchesObject = tournamentManager.getMatchesForFirebase();
-    await firebaseManager.createTournament(code, {
-      players: playerNames,
-      matches: matchesObject,
-      matchesPerPlayer: matchesPerPlayer,
-    });
+    logger.debug("App", `Saving tournament ${code} to Firebase...`);
+
+    try {
+      await Promise.race([
+        firebaseManager.createTournament(code, {
+          players: playerNames,
+          matches: matchesObject,
+          matchesPerPlayer: matchesPerPlayer,
+          format: tournamentManager.format,
+          formatConfig: tournamentManager.formatConfig,
+          currentStage: tournamentManager.currentStage,
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Firebase save timeout after 10s')), 10000)
+        )
+      ]);
+      logger.debug("App", `Tournament ${code} saved to Firebase successfully`);
+    } catch (error) {
+      logger.error("App", `Failed to save to Firebase: ${error.message}`);
+      throw error;
+    }
 
     // Update UI
+    logger.debug("App", "Updating UI to show tournament");
     uiManager.showSection("tournamentSection");
     uiManager.displayTournamentCode(code);
     uiManager.elements.gamesPerPlayer.textContent = matchesPerPlayer;
@@ -615,7 +707,13 @@ class App {
       uiManager.renderMatches(matches, players);
     } else if (currentView === "standings") {
       const { rankedStats, tiedRanks } = tournamentManager.getStandings();
-      uiManager.renderStandings(rankedStats, tiedRanks, players, isComplete);
+      uiManager.renderStandings(
+        rankedStats,
+        tiedRanks,
+        players,
+        isComplete,
+        tournamentManager.format
+      );
     }
 
     // Update progress (lightweight operation)
@@ -639,6 +737,21 @@ class App {
       console.warn("Failed to toggle code display:", err);
     }
     uiManager.updateProgress(progress.completed, progress.total);
+
+    // Update tournament info (format, stage, round)
+    uiManager.updateTournamentInfo(
+      tournamentManager.format,
+      tournamentManager.currentStage,
+      tournamentManager.matches
+    );
+
+    // Update stage advancement button
+    const canAdvance = tournamentManager.canAdvanceStage();
+    uiManager.updateStageAdvancement(
+      canAdvance,
+      tournamentManager.format,
+      tournamentManager.currentStage
+    );
   }
 
   /**
@@ -686,6 +799,68 @@ class App {
   }
 
   /**
+   * Handle advance stage button click
+   */
+  async handleAdvanceStage() {
+    const format = tournamentManager.format;
+    let confirmMessage = "Advance to the next stage?";
+
+    if (format === TOURNAMENT_FORMATS.SWISS) {
+      confirmMessage = "Generate the next round? This will pair players based on current standings.";
+    } else if (format === TOURNAMENT_FORMATS.GROUP_STAGE) {
+      if (tournamentManager.currentStage === "groups" || !tournamentManager.currentStage) {
+        confirmMessage = "Advance to playoffs? Top players from each group will compete in elimination bracket.";
+      }
+    }
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    // Show loading state
+    uiManager.elements.advanceStageBtn.disabled = true;
+    uiManager.elements.advanceStageText.textContent = "Advancing...";
+
+    try {
+      const result = await tournamentManager.advanceToNextStage();
+
+      if (!result.success) {
+        uiManager.showAlert(result.error || "Failed to advance stage", "danger");
+        return;
+      }
+
+      // Update Firebase
+      await firebaseManager.updateTournament(
+        tournamentManager.currentTournamentCode,
+        {
+          matches: tournamentManager.matches,
+          currentStage: tournamentManager.currentStage,
+        }
+      );
+
+      // Show success message
+      let successMessage = "Stage advanced successfully!";
+      if (format === TOURNAMENT_FORMATS.SWISS) {
+        successMessage = `Round ${result.round} generated!`;
+      } else if (format === TOURNAMENT_FORMATS.GROUP_STAGE && result.stage === "playoffs") {
+        successMessage = `Playoffs started! ${result.advancingPlayers.length} players advancing.`;
+      }
+
+      uiManager.showAlert(successMessage, "success");
+
+      // Force full re-render
+      this.lastMatchUpdate = null;
+      this.renderTournament(true);
+    } catch (error) {
+      console.error("Failed to advance stage:", error);
+      uiManager.showAlert("Failed to advance stage", "danger");
+    } finally {
+      // Reset button state
+      uiManager.elements.advanceStageBtn.disabled = false;
+    }
+  }
+
+  /**
    * Leave tournament
    */
   leaveTournament() {
@@ -708,7 +883,7 @@ class App {
     const authSection = document.getElementById('authSection');
     const modeSelector = document.getElementById('modeSelector');
 
-    if (authSection && !authManager.isSignedIn()) {
+    if (authSection && typeof authManager !== 'undefined' && !authManager.isSignedIn()) {
       authSection.style.display = 'block';
     }
 

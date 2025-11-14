@@ -31,7 +31,7 @@ let APPCHECK_SITE_KEY = "APP_CHECK_SITE_KEY";
  * Environment Detection
  * Automatically detects if running in development or production
  */
-let ENVIRONMENT = 'production';
+let ENVIRONMENT = 'development'; // Set to 'production' when deploying
 
 // Detect localhost/development
 if (typeof window !== 'undefined') {
@@ -144,5 +144,31 @@ const APP_CONFIG = {
         MATCH_WIN: 3,
         GAME_WIN: 1,
         GAME_LOSS: -0.5,
+    },
+
+    // Tournament format configuration
+    FORMATS: {
+        DEFAULT: 'round-robin', // Default format for new tournaments
+
+        // Scoring systems for different formats
+        SCORING_SYSTEMS: {
+            'points': {  // Current system for round-robin
+                MATCH_WIN: 3,
+                GAME_WIN: 1,
+                GAME_LOSS: -0.5,
+            },
+            'wins-only': {  // For elimination formats
+                MATCH_WIN: 1,
+                GAME_WIN: 0,
+                GAME_LOSS: 0,
+            },
+            'swiss': {  // Swiss pairing points
+                MATCH_WIN: 3,
+                MATCH_DRAW: 1,
+                MATCH_LOSS: 0,
+                GAME_WIN: 0,    // Game wins don't count in Swiss
+                GAME_LOSS: 0,
+            },
+        },
     },
 };

@@ -14,6 +14,10 @@ class TournamentManager {
     // Cache for standings calculations (improves mobile performance)
     this.standingsCache = null;
     this.standingsCacheHash = null;
+    // Format support
+    this.format = APP_CONFIG.FORMATS.DEFAULT;
+    this.formatConfig = {};
+    this.currentStage = null; // For multi-stage tournaments
   }
 
   /**
@@ -26,6 +30,9 @@ class TournamentManager {
     this.isCreator = false;
     this.standingsCache = null;
     this.standingsCacheHash = null;
+    this.format = APP_CONFIG.FORMATS.DEFAULT;
+    this.formatConfig = {};
+    this.currentStage = null;
   }
 
   /**
@@ -123,24 +130,36 @@ class TournamentManager {
 
   /**
    * Create tournament from player names
+   * @param {Array<string>} playerNames - Array of player names
+   * @param {number} matchesPerPlayer - Matches per player (for round-robin)
+   * @param {string} format - Tournament format type (optional, defaults to round-robin)
+   * @param {Object} formatConfig - Format-specific configuration (optional)
    */
-  createTournament(playerNames, matchesPerPlayer) {
+  createTournament(playerNames, matchesPerPlayer, format = null, formatConfig = null) {
     this.players = playerNames;
     this.playerCount = playerNames.length;
     this.matchesPerPlayer = matchesPerPlayer;
 
-    const matchStructure = this.generateMatchStructure(
-      this.playerCount,
-      matchesPerPlayer
-    );
+    // Set format (default to round-robin for backward compatibility)
+    this.format = format || APP_CONFIG.FORMATS.DEFAULT;
 
-    this.matches = matchStructure.map((match, index) => ({
-      id: index,
-      player1: match[0],
-      player2: match[1],
-      games: [null, null, null],
-      winner: null,
-    }));
+    // Get format handler
+    const formatHandler = tournamentFormats.factory.create(this.format);
+
+    // Set format config
+    if (formatConfig) {
+      this.formatConfig = formatConfig;
+    } else {
+      // Use default config for format
+      this.formatConfig = formatHandler.getDefaultConfig(this.playerCount);
+      // For round-robin, ensure matchesPerPlayer is set
+      if (this.format === 'round-robin') {
+        this.formatConfig.matchesPerPlayer = matchesPerPlayer;
+      }
+    }
+
+    // Generate matches using format handler
+    this.matches = formatHandler.generateMatches(this.players, this.formatConfig);
 
     return this.matches;
   }
@@ -152,6 +171,13 @@ class TournamentManager {
     this.players = tournamentData.players;
     this.playerCount = this.players.length;
     this.matchesPerPlayer = tournamentData.matchesPerPlayer;
+
+    // Load format data (backward compatibility: default to round-robin)
+    this.format = tournamentData.format || APP_CONFIG.FORMATS.DEFAULT;
+    this.formatConfig = tournamentData.formatConfig || {
+      matchesPerPlayer: this.matchesPerPlayer,
+    };
+    this.currentStage = tournamentData.currentStage || null;
 
     // Convert Firebase object to array
     if (tournamentData.matches) {
@@ -433,6 +459,64 @@ class TournamentManager {
   }
 
   /**
+   * Rank players based on format-specific tiebreakers
+   */
+  rankPlayersByFormat(stats, format) {
+    // Swiss format uses: Wins → OMW% → GW% → OGW%
+    if (format === TOURNAMENT_FORMATS.SWISS) {
+      return stats.sort((a, b) => {
+        // Primary: Match wins (points / 3)
+        if (b.points !== a.points) return b.points - a.points;
+
+        // Secondary: Opponent Match Win %
+        if (Math.abs(b.omw - a.omw) > 0.001) return b.omw - a.omw;
+
+        // Tertiary: Game Win %
+        if (Math.abs(b.gwp - a.gwp) > 0.001) return b.gwp - a.gwp;
+
+        // Quaternary: Opponent Game Win %
+        if (Math.abs(b.ogw - a.ogw) > 0.001) return b.ogw - a.ogw;
+
+        // Final: Total games won
+        return b.gamesWon - a.gamesWon;
+      });
+    }
+
+    // Round Robin, Single/Double Elimination: Use existing tiebreakers
+    // Points → Quality Score → Win % → Game differential → Games won
+    return stats.sort((a, b) => {
+      // Primary: Total points
+      if (Math.abs(b.points - a.points) > 0.01) {
+        return b.points - a.points;
+      }
+
+      // Secondary: Head-to-head (if both have qualityScore)
+      if (a.qualityScore !== undefined && b.qualityScore !== undefined) {
+        if (Math.abs(b.qualityScore - a.qualityScore) > 0.01) {
+          return b.qualityScore - a.qualityScore;
+        }
+      }
+
+      // Tertiary: Win percentage
+      const aWinPct = a.matchesPlayed > 0 ? a.wins / a.matchesPlayed : 0;
+      const bWinPct = b.matchesPlayed > 0 ? b.wins / b.matchesPlayed : 0;
+      if (Math.abs(bWinPct - aWinPct) > 0.01) {
+        return bWinPct - aWinPct;
+      }
+
+      // Quaternary: Game differential
+      const aGameDiff = a.gamesWon - a.gamesLost;
+      const bGameDiff = b.gamesWon - b.gamesLost;
+      if (bGameDiff !== aGameDiff) {
+        return bGameDiff - aGameDiff;
+      }
+
+      // Final: Total games won
+      return b.gamesWon - a.gamesWon;
+    });
+  }
+
+  /**
    * Get complete standings with rankings
    * OPTIMIZED: Uses caching to avoid recalculating unchanged standings
    */
@@ -444,9 +528,18 @@ class TournamentManager {
       return this.standingsCache;
     }
 
-    // Calculate fresh standings
-    const stats = this.calculatePlayerStats();
-    const sortedStats = this.rankPlayers(stats);
+    // Get format handler
+    const formatHandler = tournamentFormats.factory.create(this.format);
+
+    // Calculate standings using format-specific method
+    const stats = formatHandler.calculateStandings(
+      this.matches,
+      this.players,
+      this.formatConfig
+    );
+
+    // Rank players based on format-specific tiebreakers
+    const sortedStats = this.rankPlayersByFormat(stats, this.format);
     const result = this.assignRanks(sortedStats);
 
     // Cache the result
@@ -576,6 +669,244 @@ class TournamentManager {
       matchesObject[index] = match;
     });
     return matchesObject;
+  }
+
+  /**
+   * Check if current stage is complete
+   */
+  isCurrentStageComplete() {
+    const formatHandler = tournamentFormats.factory.create(this.format);
+
+    // For Swiss format, check if current round is complete
+    if (this.format === TOURNAMENT_FORMATS.SWISS) {
+      return this.isCurrentSwissRoundComplete();
+    }
+
+    // For Group Stage, check based on current stage
+    if (this.format === TOURNAMENT_FORMATS.GROUP_STAGE) {
+      const stage = this.currentStage || 'groups';
+      const stageMatches = this.matches.filter((m) => m.stage === stage);
+      return stageMatches.every((m) => m.winner !== null || m.isPlaceholder);
+    }
+
+    // For other formats, use format handler's method
+    return formatHandler.isStageComplete(this.matches);
+  }
+
+  /**
+   * Check if current Swiss round is complete
+   */
+  isCurrentSwissRoundComplete() {
+    const currentRound = this.getCurrentSwissRound();
+    if (!currentRound) return false;
+
+    const roundMatches = this.matches.filter(
+      (m) => m.round === currentRound && !m.isPlaceholder
+    );
+
+    return roundMatches.every((m) => m.winner !== null || m.isBye);
+  }
+
+  /**
+   * Get current Swiss round number
+   */
+  getCurrentSwissRound() {
+    const swissMatches = this.matches.filter(
+      (m) => m.round !== undefined && !m.isPlaceholder
+    );
+    if (swissMatches.length === 0) return null;
+
+    const completedMatches = swissMatches.filter((m) => m.winner !== null);
+    if (completedMatches.length === 0) return 1;
+
+    const maxCompletedRound = Math.max(...completedMatches.map((m) => m.round));
+    const maxRound = Math.max(...swissMatches.map((m) => m.round));
+
+    // If all matches in max completed round are done, we're ready for next round
+    const maxCompletedRoundMatches = swissMatches.filter(
+      (m) => m.round === maxCompletedRound
+    );
+    const allDone = maxCompletedRoundMatches.every((m) => m.winner !== null);
+
+    return allDone && maxCompletedRound < maxRound
+      ? maxCompletedRound + 1
+      : maxCompletedRound;
+  }
+
+  /**
+   * Check if tournament can advance to next stage
+   */
+  canAdvanceStage() {
+    if (!this.isCurrentStageComplete()) return false;
+
+    const formatHandler = tournamentFormats.factory.create(this.format);
+
+    // Check if there is a next stage
+    const nextStage = formatHandler.getNextStage(this.currentStage, {
+      matches: this.matches,
+      players: this.players,
+      formatConfig: this.formatConfig,
+    });
+
+    return nextStage !== null;
+  }
+
+  /**
+   * Advance to next stage
+   */
+  async advanceToNextStage() {
+    if (!this.canAdvanceStage()) {
+      return { success: false, error: 'Cannot advance stage' };
+    }
+
+    const formatHandler = tournamentFormats.factory.create(this.format);
+
+    // Swiss: Generate next round
+    if (this.format === TOURNAMENT_FORMATS.SWISS) {
+      return this.generateNextSwissRound();
+    }
+
+    // Group Stage: Advance to playoffs
+    if (this.format === TOURNAMENT_FORMATS.GROUP_STAGE) {
+      return this.advanceToPlayoffs();
+    }
+
+    return { success: false, error: 'Stage advancement not supported for this format' };
+  }
+
+  /**
+   * Generate next Swiss round pairings
+   */
+  generateNextSwissRound() {
+    const currentRound = this.getCurrentSwissRound();
+    const nextRound = currentRound + 1;
+
+    // Check if next round exists
+    const hasNextRound = this.matches.some(
+      (m) => m.round === nextRound && m.isPlaceholder
+    );
+    if (!hasNextRound) {
+      return { success: false, error: 'No more rounds available' };
+    }
+
+    // Get current standings
+    const { rankedStats } = this.getStandings();
+
+    // Get format handler to generate pairings
+    const formatHandler = tournamentFormats.factory.create(this.format);
+
+    // Get all previous pairings to avoid repeats
+    const previousPairings = this.matches
+      .filter((m) => !m.isPlaceholder && !m.isBye)
+      .map((m) => [m.player1, m.player2]);
+
+    // Generate next round pairings
+    const pairings = formatHandler.generateSwissRoundPairings(
+      rankedStats,
+      previousPairings
+    );
+
+    // Update placeholder matches with new pairings
+    const nextRoundMatches = this.matches.filter(
+      (m) => m.round === nextRound && m.isPlaceholder
+    );
+
+    pairings.forEach((pairing, index) => {
+      if (nextRoundMatches[index]) {
+        nextRoundMatches[index].player1 = pairing[0];
+        nextRoundMatches[index].player2 = pairing[1];
+        nextRoundMatches[index].isPlaceholder = false;
+        nextRoundMatches[index].isBye = pairing[1] === null;
+        if (pairing[1] === null) {
+          nextRoundMatches[index].winner = 1; // Auto-win for bye
+        }
+      }
+    });
+
+    // Invalidate cache
+    this.standingsCache = null;
+    this.standingsCacheHash = null;
+
+    return { success: true, round: nextRound };
+  }
+
+  /**
+   * Advance from group stage to playoffs
+   */
+  advanceToPlayoffs() {
+    if (this.currentStage !== 'groups' && this.currentStage !== null) {
+      return { success: false, error: 'Not in group stage' };
+    }
+
+    // Get group standings
+    const formatHandler = tournamentFormats.factory.create(this.format);
+    const standings = formatHandler.calculateStandings(
+      this.matches,
+      this.players,
+      { ...this.formatConfig, currentStage: 'groups' }
+    );
+
+    // Group players by group
+    const groups = {};
+    standings.forEach((stat) => {
+      if (stat.group) {
+        if (!groups[stat.group]) groups[stat.group] = [];
+        groups[stat.group].push(stat);
+      }
+    });
+
+    // Sort each group by points
+    Object.keys(groups).forEach((groupName) => {
+      groups[groupName].sort((a, b) => b.points - a.points);
+    });
+
+    // Get advancing players (top N from each group)
+    const advancingPerGroup = this.formatConfig.advancingPerGroup || 2;
+    const advancingPlayers = [];
+
+    Object.keys(groups)
+      .sort()
+      .forEach((groupName) => {
+        const groupPlayers = groups[groupName].slice(0, advancingPerGroup);
+        advancingPlayers.push(...groupPlayers.map((p) => p.playerIndex));
+      });
+
+    // Seed playoff bracket
+    const playoffMatches = this.matches.filter((m) => m.stage === 'playoffs');
+
+    // Simple seeding: alternate groups
+    // Group A top → seed 1, Group B top → seed 2, Group A 2nd → seed 3, etc.
+    const seededPlayers = [];
+    for (let i = 0; i < advancingPerGroup; i++) {
+      Object.keys(groups)
+        .sort()
+        .forEach((groupName) => {
+          if (groups[groupName][i]) {
+            seededPlayers.push(groups[groupName][i].playerIndex);
+          }
+        });
+    }
+
+    // Fill playoff bracket first round
+    const firstRoundMatches = playoffMatches.filter((m) => m.round === 1);
+    for (let i = 0; i < firstRoundMatches.length && i * 2 < seededPlayers.length; i++) {
+      firstRoundMatches[i].player1 = seededPlayers[i * 2];
+      firstRoundMatches[i].player2 = seededPlayers[i * 2 + 1] || null;
+      firstRoundMatches[i].isPlaceholder = false;
+      if (seededPlayers[i * 2 + 1] === undefined) {
+        firstRoundMatches[i].isBye = true;
+        firstRoundMatches[i].winner = 1;
+      }
+    }
+
+    // Update current stage
+    this.currentStage = 'playoffs';
+
+    // Invalidate cache
+    this.standingsCache = null;
+    this.standingsCacheHash = null;
+
+    return { success: true, stage: 'playoffs', advancingPlayers };
   }
 
   /**

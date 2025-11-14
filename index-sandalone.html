@@ -92,12 +92,30 @@
         </form>
       </section>
 
+      <!-- Format Selection Section -->
+      <section
+        class="section section--padded"
+        id="formatSelectionSection"
+        aria-labelledby="formatSelectionTitle"
+      >
+        <h2 class="section-title" id="formatSelectionTitle">Choose Tournament Format</h2>
+        <div class="format-grid" id="formatGrid">
+          <!-- Format cards will be dynamically generated -->
+        </div>
+        <button class="btn btn--text" id="backToModeBtn">← Back</button>
+      </section>
+
       <!-- Create Tournament Section -->
       <section
         class="section section--padded"
         id="createSection"
         aria-labelledby="createTitle"
       >
+        <div class="format-header">
+          <button class="btn btn--text btn--small" id="backToFormatBtn">← Change Format</button>
+          <h3 class="format-title" id="selectedFormatTitle"></h3>
+        </div>
+
         <!-- Player Count Selector -->
         <div class="form-group text-center">
           <label for="playerCount" class="form-label">Number of Players:</label>
@@ -119,8 +137,11 @@
           </select>
         </div>
 
-        <!-- Matches Per Player Selector -->
-        <div class="matches-selector">
+        <!-- Format-specific configuration container -->
+        <div id="formatConfigContainer"></div>
+
+        <!-- Matches Per Player Selector (for Round Robin) -->
+        <div class="matches-selector" id="matchesPerPlayerContainer">
           <label for="matchesPerPlayer" class="form-label"
             >Matches Per Player:</label
           >
@@ -180,6 +201,19 @@
         >
           <div class="progress-bar__fill" id="progressFill"></div>
           <div class="progress-text" id="progressText" aria-live="polite"></div>
+        </div>
+
+        <!-- Tournament Info -->
+        <div class="tournament-info" id="tournamentInfo" style="display: none;">
+          <span class="tournament-info__badge" id="formatBadge"></span>
+          <span class="tournament-info__badge" id="stageBadge" style="display: none;"></span>
+        </div>
+
+        <!-- Stage Advancement Button -->
+        <div class="stage-advancement" id="stageAdvancement" style="display: none;">
+          <button class="btn btn--primary" id="advanceStageBtn">
+            <span id="advanceStageText">Advance to Next Round</span>
+          </button>
         </div>
 
         <!-- View Tabs: allow quick switching between Schedule / Standings / Matches -->
@@ -314,6 +348,7 @@
     <!-- Load scripts in order -->
     <script src="js/logger.js"></script>
     <script src="js/config.js"></script>
+    <script src="js/tournament-formats.js"></script>
     <script src="js/localStorage-manager.js"></script>
     <script src="js/tournament.js"></script>
     <script src="js/ui.js"></script>

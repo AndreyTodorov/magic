@@ -22,6 +22,7 @@ class UIManager {
       // Sections
       modeSelector: document.getElementById("modeSelector"),
       joinSection: document.getElementById("joinSection"),
+      formatSelectionSection: document.getElementById("formatSelectionSection"),
       createSection: document.getElementById("createSection"),
       tournamentSection: document.getElementById("tournamentSection"),
       // View tabs
@@ -40,6 +41,14 @@ class UIManager {
       joinSubmitBtn: document.getElementById("joinSubmitBtn"),
       joinError: document.getElementById("joinError"),
 
+      // Format selection
+      formatGrid: document.getElementById("formatGrid"),
+      backToModeBtn: document.getElementById("backToModeBtn"),
+      backToFormatBtn: document.getElementById("backToFormatBtn"),
+      selectedFormatTitle: document.getElementById("selectedFormatTitle"),
+      formatConfigContainer: document.getElementById("formatConfigContainer"),
+      matchesPerPlayerContainer: document.getElementById("matchesPerPlayerContainer"),
+
       playerCount: document.getElementById("playerCount"),
       matchesPerPlayer: document.getElementById("matchesPerPlayer"),
       matchesInfo: document.getElementById("matchesInfo"),
@@ -54,6 +63,12 @@ class UIManager {
 
       progressFill: document.getElementById("progressFill"),
       progressText: document.getElementById("progressText"),
+      tournamentInfo: document.getElementById("tournamentInfo"),
+      formatBadge: document.getElementById("formatBadge"),
+      stageBadge: document.getElementById("stageBadge"),
+      stageAdvancement: document.getElementById("stageAdvancement"),
+      advanceStageBtn: document.getElementById("advanceStageBtn"),
+      advanceStageText: document.getElementById("advanceStageText"),
       gamesPerPlayer: document.getElementById("gamesPerPlayer"),
       scheduleGrid: document.getElementById("scheduleGrid"),
       standingsTable: document.getElementById("standingsTable"),
@@ -151,6 +166,7 @@ class UIManager {
     [
       "modeSelector",
       "joinSection",
+      "formatSelectionSection",
       "createSection",
       "tournamentSection",
     ].forEach((section) => {
@@ -598,6 +614,12 @@ class UIManager {
         return;
       }
 
+      // Skip placeholder matches that haven't been populated yet
+      // (both players are null - means previous round not complete)
+      if (match.isPlaceholder && match.player1 === null && match.player2 === null) {
+        return;
+      }
+
       const card = this.createMatchCard(match, players);
       fragment.appendChild(card);
     });
@@ -640,8 +662,26 @@ class UIManager {
       card.classList.add("completed");
     }
 
-    const p1Name = players[match.player1];
-    const p2Name = players[match.player2];
+    // Handle BYE matches
+    if (match.isBye) {
+      const p1Name = players[match.player1];
+      card.innerHTML = `
+        <div class="match-card__header">
+          <div class="match-number">${match.bracketPosition || `Match ${match.id + 1}`}</div>
+          <div class="badge badge-bye">BYE</div>
+        </div>
+        <div class="match-players">
+          <div class="player-row winner">
+            <div class="player-name">${this.escapeHtml(p1Name)}</div>
+            <div class="bye-text">Advances (BYE)</div>
+          </div>
+        </div>
+      `;
+      return card;
+    }
+
+    const p1Name = players[match.player1] || "TBD";
+    const p2Name = players[match.player2] || "TBD";
     const p1Wins = match.games.filter((g) => g === 1).length;
     const p2Wins = match.games.filter((g) => g === 2).length;
 
@@ -653,9 +693,12 @@ class UIManager {
       )} wins!</div>`;
     }
 
+    // Use bracket position if available (for elimination formats), otherwise use match number
+    const matchLabel = match.bracketPosition || `Match ${match.id + 1}`;
+
     card.innerHTML = `
       <div class="match-card__header">
-        <div class="match-number">Match ${match.id + 1}</div>
+        <div class="match-number">${matchLabel}</div>
         <div class="badge">Best of 3</div>
       </div>
 
@@ -677,14 +720,15 @@ class UIManager {
    */
   createPlayerRow(match, playerName, playerNum, players) {
     const isWinner = match.winner === playerNum;
+    const isTBD = playerName === "TBD";
 
     return `
-      <div class="player-row ${isWinner ? "winner" : ""}">
+      <div class="player-row ${isWinner ? "winner" : ""} ${isTBD ? "tbd" : ""}">
         <div class="player-name">${this.escapeHtml(playerName)}</div>
         <div class="game-score">
-          ${[0, 1, 2]
+          ${!isTBD ? [0, 1, 2]
             .map((gameNum) => this.createGameResult(match, gameNum, playerNum))
-            .join("")}
+            .join("") : '<span class="tbd-text">Pending previous round</span>'}
         </div>
       </div>
     `;
@@ -740,7 +784,13 @@ class UIManager {
    * Render standings table
    * OPTIMIZED: Uses DocumentFragment for batch DOM insertion
    */
-  renderStandings(rankedStats, tiedRanks, players, isComplete = false) {
+  renderStandings(
+    rankedStats,
+    tiedRanks,
+    players,
+    isComplete = false,
+    format = "round-robin"
+  ) {
     const container = this.elements.standingsTable;
     if (!container) return;
 
@@ -749,7 +799,14 @@ class UIManager {
     // Use DocumentFragment to batch DOM operations
     const fragment = document.createDocumentFragment();
     rankedStats.forEach((stat) => {
-      const row = this.createStandingRow(stat, tiedRanks, rankedStats, players, isComplete);
+      const row = this.createStandingRow(
+        stat,
+        tiedRanks,
+        rankedStats,
+        players,
+        isComplete,
+        format
+      );
       fragment.appendChild(row);
     });
     container.appendChild(fragment);
@@ -758,7 +815,14 @@ class UIManager {
   /**
    * Create standing row element
    */
-  createStandingRow(stat, tiedRanks, rankedStats, players, isComplete = false) {
+  createStandingRow(
+    stat,
+    tiedRanks,
+    rankedStats,
+    players,
+    isComplete = false,
+    format = "round-robin"
+  ) {
     const row = document.createElement("div");
     row.className = "standing-row";
     row.setAttribute("role", "button");
@@ -806,26 +870,94 @@ class UIManager {
       "loss"
     );
 
+    // Format-specific record display
+    let recordHtml, detailsHtml;
+
+    if (format === TOURNAMENT_FORMATS.SWISS) {
+      // Swiss: Show W-L and tiebreakers
+      recordHtml = `${stat.wins}-${stat.losses}${
+        stat.draws > 0 ? `-${stat.draws}` : ""
+      } record`;
+      detailsHtml = `
+        OMW%: ${((stat.omw || 0) * 100).toFixed(1)}% |
+        GW%: ${((stat.gwp || 0) * 100).toFixed(1)}% |
+        OGW%: ${((stat.ogw || 0) * 100).toFixed(1)}%
+      `;
+    } else if (
+      format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+      format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION
+    ) {
+      // Elimination: Show W-L and elimination round
+      recordHtml = `${stat.wins}-${stat.losses} matches`;
+      if (stat.roundEliminated || stat.eliminationRound) {
+        const elimRound = stat.roundEliminated || stat.eliminationRound;
+        detailsHtml = `Eliminated in Round ${elimRound}`;
+      } else if (stat.finalPosition) {
+        detailsHtml = `Final Position: ${stat.finalPosition}`;
+      } else {
+        detailsHtml = `${stat.gamesWon}-${stat.gamesLost} games`;
+      }
+    } else if (format === TOURNAMENT_FORMATS.GROUP_STAGE) {
+      // Group Stage: Show group and record
+      recordHtml = `${stat.wins}-${stat.losses} matches`;
+      detailsHtml = stat.group
+        ? `Group ${stat.group} | ${stat.gamesWon}-${stat.gamesLost} games`
+        : `${stat.gamesWon}-${stat.gamesLost} games`;
+    } else {
+      // Round Robin: Show traditional record and quality
+      recordHtml = `${stat.wins}-${stat.losses} matches`;
+      detailsHtml = `${stat.gamesWon}-${stat.gamesLost} games<br>Quality: ${(
+        stat.qualityScore || 0
+      ).toFixed(1)}`;
+    }
+
     row.innerHTML = `
       <div class="standing-rank ${rankClass}${tiedIndicator}">${stat.rank}</div>
       <div class="standing-info">
         <div class="standing-name">${this.escapeHtml(stat.player)}</div>
-        <div class="standing-record">${stat.wins}-${stat.losses} matches</div>
+        <div class="standing-record">${recordHtml}</div>
         <div class="standing-details">
-          ${stat.gamesWon}-${stat.gamesLost} games<br>Quality: ${stat.qualityScore.toFixed(1)}
+          ${detailsHtml}
         </div>
         <div class="standing-breakdown">
-          <div class="breakdown-section">
-            <strong>Points Breakdown:</strong><br>
-            Match Wins: ${stat.wins} × 3 = ${stat.wins * 3} pts<br>
-            Games Won: ${stat.gamesWon} × 1 = ${stat.gamesWon} pts<br>
-            Games Lost: ${stat.gamesLost} × -0.5 = ${(
-      stat.gamesLost * -0.5
-    ).toFixed(1)} pts<br>
-            <strong>Total: ${stat.points.toFixed(1)} pts</strong>
-          </div>
           ${
-            beatenList
+            format === TOURNAMENT_FORMATS.SWISS
+              ? `
+            <div class="breakdown-section">
+              <strong>Swiss Tiebreakers:</strong><br>
+              Match Record: ${stat.wins}-${stat.losses}${
+                stat.draws > 0 ? `-${stat.draws}` : ""
+              } (${stat.points} pts)<br>
+              Opponent Match Win %: ${((stat.omw || 0) * 100).toFixed(1)}%<br>
+              Game Win %: ${((stat.gwp || 0) * 100).toFixed(1)}%<br>
+              Opponent Game Win %: ${((stat.ogw || 0) * 100).toFixed(1)}%<br>
+              Games: ${stat.gamesWon}-${stat.gamesLost}
+            </div>
+          `
+              : format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+                format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION
+              ? `
+            <div class="breakdown-section">
+              <strong>Match Record:</strong><br>
+              Wins: ${stat.wins}<br>
+              Losses: ${stat.losses}<br>
+              Games: ${stat.gamesWon}-${stat.gamesLost}
+            </div>
+          `
+              : `
+            <div class="breakdown-section">
+              <strong>Points Breakdown:</strong><br>
+              Match Wins: ${stat.wins} × 3 = ${stat.wins * 3} pts<br>
+              Games Won: ${stat.gamesWon} × 1 = ${stat.gamesWon} pts<br>
+              Games Lost: ${stat.gamesLost} × -0.5 = ${(
+                stat.gamesLost * -0.5
+              ).toFixed(1)} pts<br>
+              <strong>Total: ${stat.points.toFixed(1)} pts</strong>
+            </div>
+          `
+          }
+          ${
+            beatenList && stat.opponents
               ? `
             <div class="breakdown-section">
               <strong>Victories Against:</strong>
@@ -835,7 +967,7 @@ class UIManager {
               : ""
           }
           ${
-            lostToList
+            lostToList && stat.opponents
               ? `
             <div class="breakdown-section">
               <strong>Losses Against:</strong>
@@ -844,12 +976,21 @@ class UIManager {
           `
               : ""
           }
-          <div class="breakdown-section">
-            <strong>Quality Score:</strong> ${stat.qualityScore.toFixed(1)}<br>
-            <em style="font-size: 0.9em; color: #666;">
-              (Sum of beaten opponents' points)
-            </em>
-          </div>
+          ${
+            stat.qualityScore !== undefined &&
+            format !== TOURNAMENT_FORMATS.SWISS
+              ? `
+            <div class="breakdown-section">
+              <strong>Quality Score:</strong> ${(
+                stat.qualityScore || 0
+              ).toFixed(1)}<br>
+              <em style="font-size: 0.9em; color: #666;">
+                (Sum of beaten opponents' points)
+              </em>
+            </div>
+          `
+              : ""
+          }
         </div>
       </div>
       <div class="standing-points">${stat.points.toFixed(
@@ -899,6 +1040,126 @@ class UIManager {
   }
 
   /**
+   * Update tournament info display (format, stage, round)
+   */
+  updateTournamentInfo(format, currentStage = null, matches = []) {
+    if (!this.elements.tournamentInfo) return;
+
+    // Get format display name
+    const formatHandler = tournamentFormats.factory.create(format);
+    const formatInfo = formatHandler.getFormatInfo();
+
+    // Show tournament info
+    this.elements.tournamentInfo.style.display = "flex";
+
+    // Update format badge
+    if (this.elements.formatBadge) {
+      this.elements.formatBadge.textContent = `📋 ${formatInfo.name}`;
+      this.elements.formatBadge.className = "tournament-info__badge tournament-info__badge--format";
+    }
+
+    // Update stage/round badge if applicable
+    if (this.elements.stageBadge) {
+      let stageText = "";
+
+      if (format === TOURNAMENT_FORMATS.SWISS && matches.length > 0) {
+        // Show current round for Swiss
+        const currentRound = this.getCurrentSwissRound(matches);
+        if (currentRound) {
+          stageText = `Round ${currentRound.round}/${currentRound.totalRounds}`;
+        }
+      } else if (format === TOURNAMENT_FORMATS.GROUP_STAGE) {
+        // Show current stage for group stage
+        stageText = currentStage === "playoffs" ? "🏆 Playoffs" : "📦 Groups";
+      } else if (
+        format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+        format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION
+      ) {
+        // Show current bracket round
+        const currentRound = this.getCurrentEliminationRound(matches);
+        if (currentRound) {
+          stageText = `Round ${currentRound}`;
+        }
+      }
+
+      if (stageText) {
+        this.elements.stageBadge.textContent = stageText;
+        this.elements.stageBadge.className = "tournament-info__badge tournament-info__badge--stage";
+        this.elements.stageBadge.style.display = "inline-block";
+      } else {
+        this.elements.stageBadge.style.display = "none";
+      }
+    }
+  }
+
+  /**
+   * Get current Swiss round from matches
+   */
+  getCurrentSwissRound(matches) {
+    const swissMatches = matches.filter((m) => m.round !== undefined);
+    if (swissMatches.length === 0) return null;
+
+    const totalRounds = Math.max(...swissMatches.map((m) => m.round));
+    const completedMatches = swissMatches.filter((m) => m.winner !== null);
+    const completedRounds = completedMatches.length > 0
+      ? Math.max(...completedMatches.map((m) => m.round))
+      : 0;
+
+    const currentRound = completedRounds < totalRounds ? completedRounds + 1 : totalRounds;
+
+    return { round: currentRound, totalRounds };
+  }
+
+  /**
+   * Get current elimination round
+   */
+  getCurrentEliminationRound(matches) {
+    const bracketMatches = matches.filter(
+      (m) => m.round !== undefined && !m.isPlaceholder
+    );
+    if (bracketMatches.length === 0) return null;
+
+    const incompleteMatches = bracketMatches.filter((m) => m.winner === null);
+    if (incompleteMatches.length === 0) {
+      return Math.max(...bracketMatches.map((m) => m.round));
+    }
+
+    return Math.min(...incompleteMatches.map((m) => m.round));
+  }
+
+  /**
+   * Update stage advancement button visibility and text
+   */
+  updateStageAdvancement(canAdvance, format, currentStage = null) {
+    if (!this.elements.stageAdvancement) return;
+
+    if (!canAdvance) {
+      this.elements.stageAdvancement.style.display = "none";
+      return;
+    }
+
+    // Show button
+    this.elements.stageAdvancement.style.display = "flex";
+
+    // Update button text based on format
+    let buttonText = "Advance to Next Round";
+
+    if (format === TOURNAMENT_FORMATS.SWISS) {
+      buttonText = "🎲 Generate Next Round";
+    } else if (format === TOURNAMENT_FORMATS.GROUP_STAGE) {
+      if (currentStage === "groups" || !currentStage) {
+        buttonText = "🏆 Advance to Playoffs";
+      } else {
+        buttonText = "Advance to Next Round";
+      }
+    }
+
+    if (this.elements.advanceStageText) {
+      this.elements.advanceStageText.textContent = buttonText;
+    }
+  }
+
+  /**
    * Escape HTML to prevent XSS
    * OPTIMIZED: Uses character map instead of creating DOM elements
    */
@@ -937,6 +1198,273 @@ class UIManager {
     document.querySelectorAll(".mode-btn").forEach((btn) => {
       btn.classList.remove("active");
     });
+  }
+
+  /**
+   * Render format selection cards
+   */
+  renderFormatCards() {
+    const formatGrid = this.elements.formatGrid;
+    if (!formatGrid) return;
+
+    // Get all available formats
+    const formats = tournamentFormats.factory.getAllFormats();
+
+    // Clear existing cards
+    formatGrid.innerHTML = "";
+
+    // Create card for each format
+    formats.forEach((formatInfo) => {
+      const card = document.createElement("div");
+      card.className = "format-card";
+      card.dataset.formatType = formatInfo.type;
+      card.setAttribute("role", "button");
+      card.setAttribute("tabindex", "0");
+      card.setAttribute("aria-label", `Select ${formatInfo.name} format`);
+
+      card.innerHTML = `
+        <div class="format-card__icon">${formatInfo.icon}</div>
+        <div class="format-card__name">${formatInfo.name}</div>
+        <div class="format-card__description">${formatInfo.description}</div>
+        <div class="format-card__meta">
+          <div class="format-card__meta-item">
+            <span class="format-card__meta-label">Min Players:</span>
+            <span class="format-card__meta-value">${formatInfo.minPlayers}</span>
+          </div>
+          <div class="format-card__meta-item">
+            <span class="format-card__meta-label">Max Players:</span>
+            <span class="format-card__meta-value">${formatInfo.maxPlayers}</span>
+          </div>
+          ${formatInfo.supportsMultiStage ? '<div class="format-card__meta-item"><span class="format-card__meta-label">Multi-Stage</span><span class="format-card__meta-value">✓</span></div>' : ''}
+        </div>
+      `;
+
+      formatGrid.appendChild(card);
+    });
+  }
+
+  /**
+   * Set selected format and update UI
+   * @param {string} formatType - Format type constant
+   */
+  setSelectedFormat(formatType) {
+    // Store selected format
+    this.selectedFormat = formatType;
+
+    // Update card selection visually
+    document.querySelectorAll(".format-card").forEach((card) => {
+      if (card.dataset.formatType === formatType) {
+        card.classList.add("format-card--selected");
+      } else {
+        card.classList.remove("format-card--selected");
+      }
+    });
+
+    // Get format instance
+    const format = tournamentFormats.factory.create(formatType);
+    const formatInfo = format.getFormatInfo();
+
+    // Update format title
+    if (this.elements.selectedFormatTitle) {
+      this.elements.selectedFormatTitle.textContent = `${formatInfo.icon} ${formatInfo.name}`;
+    }
+
+    // Update player count options based on format requirements
+    this.updatePlayerCountOptions(format);
+
+    // Show/hide format-specific configuration
+    this.renderFormatConfig(format);
+  }
+
+  /**
+   * Update player count dropdown based on format requirements
+   * @param {TournamentFormatBase} format - Format instance
+   */
+  updatePlayerCountOptions(format) {
+    const playerCountSelect = this.elements.playerCount;
+    if (!playerCountSelect) return;
+
+    const currentValue = parseInt(playerCountSelect.value) || APP_CONFIG.DEFAULT_PLAYERS;
+    playerCountSelect.innerHTML = "";
+
+    // Generate options from minPlayers to maxPlayers (capped at 20 for UI)
+    const maxDisplay = Math.min(format.maxPlayers, 20);
+    for (let i = format.minPlayers; i <= maxDisplay; i++) {
+      const option = document.createElement("option");
+      option.value = i;
+      option.textContent = `${i} Player${i !== 1 ? "s" : ""}`;
+
+      // Try to keep current selection if valid
+      if (i === currentValue && i >= format.minPlayers && i <= format.maxPlayers) {
+        option.selected = true;
+      }
+      // Otherwise select a recommended count if available
+      else if (!option.selected && format.getRecommendedPlayerCounts().includes(i)) {
+        option.selected = true;
+      }
+
+      playerCountSelect.appendChild(option);
+    }
+
+    // If no option is selected, select the first recommended count or middle value
+    if (!playerCountSelect.value) {
+      const recommended = format.getRecommendedPlayerCounts();
+      if (recommended.length > 0) {
+        playerCountSelect.value = recommended[0];
+      } else {
+        const midPoint = Math.floor((format.minPlayers + Math.min(format.maxPlayers, 20)) / 2);
+        playerCountSelect.value = midPoint;
+      }
+    }
+  }
+
+  /**
+   * Render format-specific configuration UI
+   * @param {TournamentFormatBase} format - Format instance
+   */
+  renderFormatConfig(format) {
+    const configContainer = this.elements.formatConfigContainer;
+    const matchesContainer = this.elements.matchesPerPlayerContainer;
+
+    if (!configContainer) return;
+
+    // Clear existing config
+    configContainer.innerHTML = "";
+
+    // Show/hide matches per player selector (only for round-robin)
+    if (matchesContainer) {
+      if (format.formatType === "round-robin") {
+        matchesContainer.style.display = "block";
+      } else {
+        matchesContainer.style.display = "none";
+      }
+    }
+
+    // Add format-specific configuration based on format type
+    const playerCount = parseInt(this.elements.playerCount?.value) || APP_CONFIG.DEFAULT_PLAYERS;
+    const defaultConfig = format.getDefaultConfig(playerCount);
+
+    switch (format.formatType) {
+      case "swiss":
+        configContainer.innerHTML = `
+          <div class="form-group text-center">
+            <label for="swissRounds" class="form-label">Number of Rounds:</label>
+            <select id="swissRounds" class="form-select" aria-label="Select number of rounds">
+              ${[3, 4, 5, 6, 7].map(r => `
+                <option value="${r}" ${r === defaultConfig.rounds ? "selected" : ""}>${r} Rounds</option>
+              `).join("")}
+            </select>
+            <div class="matches-info">Recommended: ${defaultConfig.rounds} rounds for ${playerCount} players</div>
+          </div>
+        `;
+        break;
+
+      case "single-elimination":
+        configContainer.innerHTML = `
+          <div class="form-group text-center">
+            <label class="form-label">Bracket Options:</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="thirdPlaceMatch" />
+                <span>Include 3rd Place Match</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="seededBracket" />
+                <span>Use Seeded Bracket (players 1-N)</span>
+              </label>
+            </div>
+          </div>
+        `;
+        break;
+
+      case "double-elimination":
+        configContainer.innerHTML = `
+          <div class="form-group text-center">
+            <label class="form-label">Bracket Options:</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="grandFinalReset" />
+                <span>Grand Finals Reset (if losers bracket wins)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="seededBracket" />
+                <span>Use Seeded Bracket (players 1-N)</span>
+              </label>
+            </div>
+          </div>
+        `;
+        break;
+
+      case "group-stage":
+        const numGroups = defaultConfig.numGroups;
+        configContainer.innerHTML = `
+          <div class="form-group text-center">
+            <label for="numGroups" class="form-label">Number of Groups:</label>
+            <select id="numGroups" class="form-select" aria-label="Select number of groups">
+              ${[2, 3, 4, 6, 8].map(g => `
+                <option value="${g}" ${g === numGroups ? "selected" : ""}>${g} Groups</option>
+              `).join("")}
+            </select>
+          </div>
+          <div class="form-group text-center">
+            <label for="advancingPerGroup" class="form-label">Advancing Per Group:</label>
+            <select id="advancingPerGroup" class="form-select" aria-label="Select advancing per group">
+              ${[1, 2, 3, 4].map(a => `
+                <option value="${a}" ${a === defaultConfig.advancingPerGroup ? "selected" : ""}>${a} Player${a !== 1 ? "s" : ""}</option>
+              `).join("")}
+            </select>
+          </div>
+        `;
+        break;
+    }
+  }
+
+  /**
+   * Get current format configuration from UI
+   * @returns {Object} Format configuration object
+   */
+  getFormatConfig() {
+    if (!this.selectedFormat) return {};
+
+    const format = tournamentFormats.factory.create(this.selectedFormat);
+    const playerCount = parseInt(this.elements.playerCount?.value) || APP_CONFIG.DEFAULT_PLAYERS;
+    const config = format.getDefaultConfig(playerCount);
+
+    // Override with user selections
+    switch (this.selectedFormat) {
+      case "round-robin":
+        config.matchesPerPlayer = parseInt(this.elements.matchesPerPlayer?.value) || config.matchesPerPlayer;
+        break;
+
+      case "swiss":
+        const swissRounds = document.getElementById("swissRounds");
+        if (swissRounds) config.rounds = parseInt(swissRounds.value);
+        break;
+
+      case "single-elimination":
+        const thirdPlace = document.getElementById("thirdPlaceMatch");
+        const seededSingle = document.getElementById("seededBracket");
+        if (thirdPlace) config.thirdPlaceMatch = thirdPlace.checked;
+        if (seededSingle) config.seedingMethod = seededSingle.checked ? "seeded" : "random";
+        break;
+
+      case "double-elimination":
+        const grandFinalReset = document.getElementById("grandFinalReset");
+        const seededDouble = document.getElementById("seededBracket");
+        if (grandFinalReset) config.grandFinalReset = grandFinalReset.checked;
+        if (seededDouble) config.seedingMethod = seededDouble.checked ? "seeded" : "random";
+        break;
+
+      case "group-stage":
+        const numGroups = document.getElementById("numGroups");
+        const advancingPerGroup = document.getElementById("advancingPerGroup");
+        if (numGroups) config.numGroups = parseInt(numGroups.value);
+        if (advancingPerGroup) config.advancingPerGroup = parseInt(advancingPerGroup.value);
+        config.playersPerGroup = Math.floor(playerCount / config.numGroups);
+        break;
+    }
+
+    return config;
   }
 }
 
