@@ -1046,7 +1046,7 @@ class DoubleEliminationFormat extends TournamentFormatBase {
     this.formatType = TOURNAMENT_FORMATS.DOUBLE_ELIMINATION;
     this.formatName = 'Double Elimination';
     this.description = 'Losers get a second chance in the losers bracket';
-    this.minPlayers = 4;
+    this.minPlayers = 3;
     this.maxPlayers = 64;
   }
 

@@ -161,6 +161,11 @@ class TournamentManager {
     // Generate matches using format handler
     this.matches = formatHandler.generateMatches(this.players, this.formatConfig);
 
+    // Set initial stage for multi-stage formats
+    if (this.format === TOURNAMENT_FORMATS.GROUP_STAGE) {
+      this.currentStage = 'groups';
+    }
+
     // For elimination formats, process any auto-wins (BYE matches)
     if (this.format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
         this.format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION) {
