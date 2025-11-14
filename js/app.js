@@ -301,7 +301,6 @@ class App {
       uiManager.updateMatchesPerPlayerOptions(playerCount);
     tournamentManager.playerCount = playerCount;
     tournamentManager.matchesPerPlayer = matchesPerPlayer;
-    uiManager.updateTournamentInfo(playerCount, matchesPerPlayer);
     uiManager.renderPlayerInputs(playerCount);
   }
 
@@ -309,12 +308,10 @@ class App {
    * Handle matches per player change
    */
   handleMatchesPerPlayerChange() {
-    const playerCount = parseInt(uiManager.elements.playerCount.value);
     const matchesPerPlayer = parseInt(
       uiManager.elements.matchesPerPlayer.value
     );
     tournamentManager.matchesPerPlayer = matchesPerPlayer;
-    uiManager.updateTournamentInfo(playerCount, matchesPerPlayer);
   }
 
   /**
