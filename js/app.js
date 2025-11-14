@@ -43,7 +43,9 @@ class App {
     }
 
     // Manually trigger auth state handler to set initial UI state
-    this.handleAuthStateChange(authManager.currentUser);
+    if (typeof authManager !== 'undefined') {
+      this.handleAuthStateChange(authManager.currentUser);
+    }
 
     // Attempt to rejoin tournament
     await this.attemptRejoin();
@@ -80,10 +82,12 @@ class App {
       this.handleForgotPassword()
     );
 
-    // Listen to auth state changes
-    authManager.onAuthStateChange((user) => {
-      this.handleAuthStateChange(user);
-    });
+    // Listen to auth state changes (only if authManager is available)
+    if (typeof authManager !== 'undefined') {
+      authManager.onAuthStateChange((user) => {
+        this.handleAuthStateChange(user);
+      });
+    }
 
     // Mode selection
     document.querySelectorAll(".mode-btn").forEach((btn) => {
@@ -242,7 +246,7 @@ class App {
     // Show auth section by default if not logged in
     // This ensures the login form is visible on initial load
     const authSection = document.getElementById('authSection');
-    if (authSection && !authManager.isSignedIn()) {
+    if (authSection && typeof authManager !== 'undefined' && !authManager.isSignedIn()) {
       authSection.style.display = 'block';
     }
   }
@@ -431,7 +435,7 @@ class App {
 
     // Only add to members list if user is authenticated
     // Unauthenticated users can view and update scores without being members
-    if (authManager.isSignedIn()) {
+    if (typeof authManager !== 'undefined' && authManager.isSignedIn()) {
       try {
         await firebaseManager.joinTournament(code);
         logger.info("App", `Joined as member: ${code}`);
@@ -461,7 +465,7 @@ class App {
     // Show guest indicator if not logged in
     const viewingStatus = document.getElementById('viewingStatus');
     if (viewingStatus) {
-      viewingStatus.style.display = authManager.isSignedIn() ? 'none' : 'flex';
+      viewingStatus.style.display = (typeof authManager !== 'undefined' && authManager.isSignedIn()) ? 'none' : 'flex';
     }
 
     // Start listening to updates
@@ -572,16 +576,30 @@ class App {
 
     // Save to Firebase with format data
     const matchesObject = tournamentManager.getMatchesForFirebase();
-    await firebaseManager.createTournament(code, {
-      players: playerNames,
-      matches: matchesObject,
-      matchesPerPlayer: matchesPerPlayer,
-      format: tournamentManager.format,
-      formatConfig: tournamentManager.formatConfig,
-      currentStage: tournamentManager.currentStage,
-    });
+    logger.debug("App", `Saving tournament ${code} to Firebase...`);
+
+    try {
+      await Promise.race([
+        firebaseManager.createTournament(code, {
+          players: playerNames,
+          matches: matchesObject,
+          matchesPerPlayer: matchesPerPlayer,
+          format: tournamentManager.format,
+          formatConfig: tournamentManager.formatConfig,
+          currentStage: tournamentManager.currentStage,
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Firebase save timeout after 10s')), 10000)
+        )
+      ]);
+      logger.debug("App", `Tournament ${code} saved to Firebase successfully`);
+    } catch (error) {
+      logger.error("App", `Failed to save to Firebase: ${error.message}`);
+      throw error;
+    }
 
     // Update UI
+    logger.debug("App", "Updating UI to show tournament");
     uiManager.showSection("tournamentSection");
     uiManager.displayTournamentCode(code);
     uiManager.elements.gamesPerPlayer.textContent = matchesPerPlayer;
@@ -860,7 +878,7 @@ class App {
     const authSection = document.getElementById('authSection');
     const modeSelector = document.getElementById('modeSelector');
 
-    if (authSection && !authManager.isSignedIn()) {
+    if (authSection && typeof authManager !== 'undefined' && !authManager.isSignedIn()) {
       authSection.style.display = 'block';
     }
 
