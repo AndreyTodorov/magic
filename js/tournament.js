@@ -161,7 +161,24 @@ class TournamentManager {
     // Generate matches using format handler
     this.matches = formatHandler.generateMatches(this.players, this.formatConfig);
 
+    // For elimination formats, process any auto-wins (BYE matches)
+    if (this.format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+        this.format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION) {
+      this.processAutoWins();
+    }
+
     return this.matches;
+  }
+
+  /**
+   * Process auto-wins (BYE matches) and advance winners
+   */
+  processAutoWins() {
+    this.matches.forEach((match) => {
+      if (match.isBye && match.winner !== null) {
+        this.advanceWinnerToNextMatch(match);
+      }
+    });
   }
 
   /**
@@ -210,6 +227,38 @@ class TournamentManager {
     } else {
       this.matches = [];
     }
+
+    // For elimination formats, rebuild bracket state from completed matches
+    if (this.format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+        this.format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION) {
+      this.rebuildBracketState();
+    }
+  }
+
+  /**
+   * Rebuild bracket state from completed matches
+   * This ensures winners are properly advanced to next rounds
+   */
+  rebuildBracketState() {
+    // Process all completed matches in order of rounds
+    const matchesByRound = {};
+    this.matches.forEach((match) => {
+      if (!match.round) return;
+      if (!matchesByRound[match.round]) {
+        matchesByRound[match.round] = [];
+      }
+      matchesByRound[match.round].push(match);
+    });
+
+    // Process rounds in order
+    const rounds = Object.keys(matchesByRound).map(Number).sort((a, b) => a - b);
+    rounds.forEach((round) => {
+      matchesByRound[round].forEach((match) => {
+        if (match.winner !== null || match.isBye) {
+          this.advanceWinnerToNextMatch(match);
+        }
+      });
+    });
   }
 
   /**
@@ -652,12 +701,85 @@ class TournamentManager {
       for (let j = decidedAt + 1; j < APP_CONFIG.GAMES_PER_MATCH; j++) {
         match.games[j] = null;
       }
+
+      // Advance winner to next round in elimination brackets
+      this.advanceWinnerToNextMatch(match);
     } else {
       // No winner yet
       match.winner = null;
+
+      // Clear any advancement if match is no longer decided
+      this.clearAdvancementFromMatch(match);
     }
 
     return { match, updated: true };
+  }
+
+  /**
+   * Advance winner to next match in elimination brackets
+   */
+  advanceWinnerToNextMatch(match) {
+    // Only for elimination formats with feedsInto property
+    if (!match.feedsInto && match.feedsInto !== 0) return;
+    if (match.winner === null) return;
+
+    // Get the next match
+    const nextMatch = this.matches.find((m) => m.id === match.feedsInto);
+    if (!nextMatch) return;
+
+    // Determine which player won
+    const winnerIndex = match.winner === 1 ? match.player1 : match.player2;
+
+    // Determine which position in the next match this winner should occupy
+    // In elimination brackets, matches feed into next round in pairs:
+    // Match 0 and 1 feed into Match 0 of next round (winners go to player1 and player2)
+    // Match 2 and 3 feed into Match 1 of next round, etc.
+
+    // Find all matches that feed into the same next match
+    const feedingMatches = this.matches.filter((m) => m.feedsInto === match.feedsInto);
+    const currentMatchIndexInFeeding = feedingMatches.findIndex((m) => m.id === match.id);
+
+    // First match in the pair goes to player1, second goes to player2
+    if (currentMatchIndexInFeeding === 0) {
+      nextMatch.player1 = winnerIndex;
+    } else if (currentMatchIndexInFeeding === 1) {
+      nextMatch.player2 = winnerIndex;
+    }
+
+    // If both players are now filled, mark as no longer placeholder
+    if (nextMatch.player1 !== null && nextMatch.player2 !== null) {
+      nextMatch.isPlaceholder = false;
+    }
+  }
+
+  /**
+   * Clear advancement when a match result is changed/cleared
+   */
+  clearAdvancementFromMatch(match) {
+    // Only for elimination formats with feedsInto property
+    if (!match.feedsInto && match.feedsInto !== 0) return;
+
+    // Get the next match
+    const nextMatch = this.matches.find((m) => m.id === match.feedsInto);
+    if (!nextMatch) return;
+
+    // Find which player in next match came from this match
+    const potentialWinners = [match.player1, match.player2];
+
+    if (potentialWinners.includes(nextMatch.player1)) {
+      nextMatch.player1 = null;
+    }
+    if (potentialWinners.includes(nextMatch.player2)) {
+      nextMatch.player2 = null;
+    }
+
+    // If either player is now null, mark as placeholder
+    if (nextMatch.player1 === null || nextMatch.player2 === null) {
+      nextMatch.isPlaceholder = true;
+      // Also clear the match result
+      nextMatch.winner = null;
+      nextMatch.games = [null, null, null];
+    }
   }
 
   /**
