@@ -479,11 +479,24 @@ class TournamentManager {
     const rankedStats = sortedStats.map((stat, index) => {
       if (index > 0) {
         const prev = sortedStats[index - 1];
-        const pointsTied = Math.abs(stat.points - prev.points) < 0.01;
-        const qualityTied =
-          Math.abs(stat.qualityScore - prev.qualityScore) < 0.01;
 
-        if (!pointsTied || !qualityTied) {
+        // Check if this player should be tied with previous
+        // For formats that use points (Round Robin, Swiss, Group Stage groups)
+        // For elimination formats, rely on sorting (roundEliminated, wins, etc.)
+        let shouldAdvanceRank = false;
+
+        if (stat.points !== undefined && prev.points !== undefined) {
+          // Points-based formats: tied if points AND quality score are same
+          const pointsTied = Math.abs((stat.points || 0) - (prev.points || 0)) < 0.01;
+          const qualityTied = Math.abs((stat.qualityScore || 0) - (prev.qualityScore || 0)) < 0.01;
+          shouldAdvanceRank = !pointsTied || !qualityTied;
+        } else {
+          // Elimination formats: if already sorted differently, they're not tied
+          // Just advance rank for each new player (unless truly identical stats)
+          shouldAdvanceRank = true;
+        }
+
+        if (shouldAdvanceRank) {
           currentRank = index + 1;
         }
       }
@@ -550,7 +563,47 @@ class TournamentManager {
       });
     }
 
-    // Round Robin, Single/Double Elimination: Use existing tiebreakers
+    // Elimination formats: Rank by bracket position (round eliminated)
+    // Later elimination = better placement
+    // Also applies to Group Stage when in playoffs stage (detected by roundEliminated field)
+    if (format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+        format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION ||
+        (format === TOURNAMENT_FORMATS.GROUP_STAGE && stats.some(s => s.roundEliminated !== undefined))) {
+      return stats.sort((a, b) => {
+        // Safety: ensure both objects exist
+        if (!a || !b) return 0;
+
+        // Primary: roundEliminated (or eliminationRound for double elim)
+        // null/undefined = still in/winner (best), higher round = better
+        const aRound = a.roundEliminated ?? a.eliminationRound ?? 999;
+        const bRound = b.roundEliminated ?? b.eliminationRound ?? 999;
+
+        if (aRound !== bRound) {
+          return bRound - aRound; // Higher round eliminated = better placement
+        }
+
+        // Secondary: Total wins (more wins in elimination = went further)
+        if (b.wins !== a.wins) {
+          return b.wins - a.wins;
+        }
+
+        // Tertiary: Game differential
+        const aGamesWon = a.gamesWon || 0;
+        const aGamesLost = a.gamesLost || 0;
+        const bGamesWon = b.gamesWon || 0;
+        const bGamesLost = b.gamesLost || 0;
+        const aGameDiff = aGamesWon - aGamesLost;
+        const bGameDiff = bGamesWon - bGamesLost;
+        if (bGameDiff !== aGameDiff) {
+          return bGameDiff - aGameDiff;
+        }
+
+        // Final: Total games won
+        return bGamesWon - aGamesWon;
+      });
+    }
+
+    // Round Robin and Group Stage (groups phase): Use points-based tiebreakers
     // Points → Quality Score → Win % → Game differential → Games won
     return stats.sort((a, b) => {
       // Safety: ensure both objects exist
