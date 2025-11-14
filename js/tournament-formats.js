@@ -1282,17 +1282,18 @@ class DoubleEliminationFormat extends TournamentFormatBase {
   }
 
   /**
-   * Generate losers bracket (simplified placeholders)
-   * Full implementation would calculate exact routing
+   * Generate losers bracket with proper match count
+   * For N players, losers bracket needs approximately N-2 matches
    */
   generateLosersBracket(numPlayers, numRounds, startMatchId) {
     const matches = [];
     let matchId = startMatchId;
 
-    // Losers bracket starts with half the players (losers from WB R1)
+    // Losers bracket R1: Receives half the players (losers from WB R1)
+    // They pair up, so we need numPlayers/4 matches
     let playersInRound = Math.floor(numPlayers / 4);
 
-    for (let round = 1; round <= numRounds; round++) {
+    for (let round = 1; round <= numRounds && playersInRound >= 1; round++) {
       for (let i = 0; i < playersInRound; i++) {
         matches.push({
           id: matchId++,
@@ -1304,15 +1305,20 @@ class DoubleEliminationFormat extends TournamentFormatBase {
           games: [null, null, null],
           winner: null,
           isPlaceholder: true,
+          feedsIntoWin: null,
+          feedsIntoLoss: null,
         });
       }
 
-      // Losers bracket size decreases more slowly than winners
+      // Losers bracket progression:
+      // Odd rounds: Winners from previous round advance (same number of matches)
+      // Even rounds: Winners from LB + Losers from WB merge (number may change)
+      // Simplified: decrease by half every 2 rounds
       if (round % 2 === 0) {
         playersInRound = Math.floor(playersInRound / 2);
       }
-
-      if (playersInRound < 1) break;
+      // For odd rounds after R1, we merge with losers from winners bracket
+      // So maintain the count or adjust based on expected merges
     }
 
     return matches;
@@ -1351,11 +1357,13 @@ class DoubleEliminationFormat extends TournamentFormatBase {
         }
 
         // Losers drop to losers bracket
-        // WB R1 losers go to LB R1
-        // WB R2 losers go to LB R2 or R3 depending on structure
+        // Multiple winners bracket matches feed into each losers bracket match
+        // e.g., WR1 matches 0&1 → LR1 match 0, WR1 matches 2&3 → LR1 match 1
         const loserRound = round === 1 ? 1 : (round - 1) * 2;
-        if (losersMatches[loserRound] && losersMatches[loserRound][i]) {
-          match.feedsIntoLoss = losersMatches[loserRound][i].id;
+        const loserMatchIndex = Math.floor(i / 2);
+
+        if (losersMatches[loserRound] && losersMatches[loserRound][loserMatchIndex]) {
+          match.feedsIntoLoss = losersMatches[loserRound][loserMatchIndex].id;
         }
       }
     }

@@ -857,11 +857,42 @@ class TournamentTester {
         this.log(`Note: Losers R2 has ${lr2After} matches (may be expected for 8-player bracket)`);
       }
 
+      // Continue playing all matches to ensure tournament completes properly
+      let safeguard = 0;
+      const maxIterations = 50;
+
+      while (safeguard < maxIterations) {
+        const nextMatch = manager.matches.find(m =>
+          !m.isPlaceholder &&
+          m.player1 !== null &&
+          m.player2 !== null &&
+          m.winner === null
+        );
+
+        if (!nextMatch) break;
+
+        this.playMatch(nextMatch);
+        manager.advanceWinnerToNextMatch(nextMatch);
+        safeguard++;
+      }
+
       // Verify bracket structure
       const totalWinners = [1, 2, 3].reduce((sum, r) => sum + countMatches('winners', r), 0);
       const totalLosers = [1, 2, 3, 4, 5].reduce((sum, r) => sum + countMatches('losers', r), 0);
 
-      this.log(`✓ Bracket state: Winners=${totalWinners} matches, Losers=${totalLosers} matches`);
+      this.log(`✓ Final bracket: Winners=${totalWinners} matches, Losers=${totalLosers} matches`);
+
+      if (totalLosers === 0) {
+        this.log(`ERROR: Losers bracket has 0 matches! Double elimination not working properly!`, 'error');
+      }
+
+      // Check completion
+      const completedMatches = manager.matches.filter(m => m.winner !== null && !m.isPlaceholder).length;
+      this.log(`✓ Completed ${completedMatches} matches total`);
+
+      if (completedMatches < 10) {
+        this.log(`Double elimination with 8 players should have ~13-14 matches, only completed ${completedMatches}`, 'error');
+      }
 
       return true;
     } catch (error) {
