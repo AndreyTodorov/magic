@@ -516,9 +516,15 @@ class TournamentManager {
    * Rank players based on format-specific tiebreakers
    */
   rankPlayersByFormat(stats, format) {
+    // Filter out any null/undefined stats
+    stats = stats.filter(s => s !== null && s !== undefined);
+
     // Swiss format uses: Wins → OMW% → GW% → OGW%
     if (format === TOURNAMENT_FORMATS.SWISS) {
       return stats.sort((a, b) => {
+        // Safety: ensure both objects exist
+        if (!a || !b) return 0;
+
         // Primary: Match wins (points / 3)
         if (b.points !== a.points) return b.points - a.points;
 
@@ -547,6 +553,9 @@ class TournamentManager {
     // Round Robin, Single/Double Elimination: Use existing tiebreakers
     // Points → Quality Score → Win % → Game differential → Games won
     return stats.sort((a, b) => {
+      // Safety: ensure both objects exist
+      if (!a || !b) return 0;
+
       // Primary: Total points
       if (Math.abs(b.points - a.points) > 0.01) {
         return b.points - a.points;
