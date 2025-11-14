@@ -230,7 +230,6 @@ class App {
     const matchesPerPlayer =
       uiManager.updateMatchesPerPlayerOptions(playerCount);
     tournamentManager.matchesPerPlayer = matchesPerPlayer;
-    uiManager.updateTournamentInfo(playerCount, matchesPerPlayer);
     uiManager.renderPlayerInputs(playerCount);
     // Restore or apply previously selected sub-view (matches/schedule/standings)
     uiManager.switchView(uiManager.currentView || "matches");

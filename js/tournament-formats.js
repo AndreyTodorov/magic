@@ -1672,9 +1672,16 @@ class TournamentFormatFactory {
    * @returns {TournamentFormatBase} Format instance
    */
   static create(formatType) {
+    // Handle null/undefined/invalid formats by defaulting to round-robin
+    if (!formatType || typeof formatType !== 'string') {
+      console.warn(`Invalid format type: ${formatType}, defaulting to round-robin`);
+      formatType = APP_CONFIG.FORMATS.DEFAULT;
+    }
+
     const FormatClass = this.formats[formatType];
     if (!FormatClass) {
-      throw new Error(`Unknown format type: ${formatType}`);
+      console.warn(`Unknown format type: ${formatType}, defaulting to round-robin`);
+      return new this.formats[APP_CONFIG.FORMATS.DEFAULT]();
     }
     return new FormatClass();
   }
