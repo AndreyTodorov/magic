@@ -774,6 +774,67 @@ class TournamentTester {
   }
 
   /**
+   * Test Swiss auto-generation of next round
+   */
+  testSwissAutoGeneration() {
+    this.log(`\n=== Testing Swiss Auto-Generation of Next Round ===`);
+
+    try {
+      const manager = new TournamentManager();
+      const players = Array.from({ length: 8 }, (_, i) => `Player ${i + 1}`);
+      manager.createTournament(players, 0, TOURNAMENT_FORMATS.SWISS, { rounds: 3 });
+
+      // Initially: Only Round 1 should be visible
+      let round1Matches = manager.matches.filter(m => m.round === 1 && !m.isPlaceholder);
+      let round2Matches = manager.matches.filter(m => m.round === 2 && !m.isPlaceholder);
+
+      if (round1Matches.length === 4 && round2Matches.length === 0) {
+        this.log(`✓ Initially: Round 1 has 4 matches, Round 2 has 0 (placeholders)`);
+      } else {
+        this.log(`ERROR: Initial state incorrect: R1=${round1Matches.length}, R2=${round2Matches.length}`, 'error');
+        return false;
+      }
+
+      // Complete Round 1 using updateMatchGame (simulates UI behavior)
+      // This should auto-generate Round 2 when the last match completes
+      round1Matches.forEach((match, index) => {
+        manager.updateMatchGame(match.id, 0, 1); // Player 1 wins game 1
+        manager.updateMatchGame(match.id, 1, 1); // Player 1 wins game 2
+
+        if (index === round1Matches.length - 1) {
+          // After last match, Round 2 should be auto-generated
+          this.log(`✓ Completed all Round 1 matches`);
+        }
+      });
+
+      // Check if Round 2 was auto-generated
+      round2Matches = manager.matches.filter(m => m.round === 2 && !m.isPlaceholder);
+
+      if (round2Matches.length === 4) {
+        this.log(`✓ Round 2 auto-generated with 4 matches`);
+      } else {
+        this.log(`ERROR: Round 2 should have 4 matches, found ${round2Matches.length}`, 'error');
+        return false;
+      }
+
+      // Verify Round 2 matches have valid pairings
+      const allPaired = round2Matches.every(m => m.player1 !== null && m.player2 !== null);
+      if (allPaired) {
+        this.log(`✓ All Round 2 matches have valid pairings`);
+      } else {
+        this.log(`ERROR: Some Round 2 matches don't have valid pairings`, 'error');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      this.log(`Swiss auto-generation test failed: ${error.message}`, 'error');
+      console.error(error);
+      return false;
+    }
+  }
+
+  /**
    * Test Double Elimination round visibility (Round 3 losers bracket should appear)
    */
   testDoubleEliminationRoundVisibility() {
@@ -1321,6 +1382,7 @@ class TournamentTester {
     this.testStandingsProgression();
     this.testEliminationBracketProgression();
     this.testSwissRoundVisibility();
+    this.testSwissAutoGeneration();
     this.testDoubleEliminationRoundVisibility();
     this.testDoubleEliminationComplete();
     this.testGroupStagePlayoffsComplete();
