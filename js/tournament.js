@@ -783,6 +783,11 @@ class TournamentManager {
 
       // Advance winner to next round in elimination brackets
       this.advanceWinnerToNextMatch(match);
+
+      // Auto-generate next Swiss round if current round is complete
+      if (this.format === TOURNAMENT_FORMATS.SWISS && match.round) {
+        this.checkAndGenerateNextSwissRound(match.round);
+      }
     } else {
       // No winner yet
       match.winner = null;
@@ -792,6 +797,32 @@ class TournamentManager {
     }
 
     return { match, updated: true };
+  }
+
+  /**
+   * Check if Swiss round is complete and auto-generate next round
+   * @param {number} completedRound - Round number that just had a match completed
+   */
+  checkAndGenerateNextSwissRound(completedRound) {
+    // Get all matches in this round
+    const roundMatches = this.matches.filter(m => m.round === completedRound && !m.isPlaceholder);
+
+    // Check if all matches in this round are complete
+    const allComplete = roundMatches.length > 0 && roundMatches.every(m => m.winner !== null);
+
+    if (allComplete) {
+      // Check if next round exists and needs generation
+      const nextRound = completedRound + 1;
+      const nextRoundMatches = this.matches.filter(m => m.round === nextRound);
+
+      // If next round exists as placeholders, generate pairings
+      if (nextRoundMatches.length > 0 && nextRoundMatches.every(m => m.isPlaceholder)) {
+        const result = this.generateNextSwissRound();
+        if (result.success) {
+          console.log(`Auto-generated Swiss Round ${nextRound} pairings`);
+        }
+      }
+    }
   }
 
   /**
