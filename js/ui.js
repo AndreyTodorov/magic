@@ -1160,6 +1160,82 @@ class UIManager {
   }
 
   /**
+   * Update scoring legend based on tournament format
+   * @param {string} format - Tournament format type
+   */
+  updateScoringLegend(format) {
+    const details = this.elements.scoringLegendDetails;
+    if (!details) return;
+
+    let html = '';
+
+    if (format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+        format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION ||
+        (format === TOURNAMENT_FORMATS.GROUP_STAGE)) {
+      // Elimination formats: No points, bracket-based ranking
+      html = `
+        <div style="margin-bottom: 1rem;">
+          <strong>How the winner is determined:</strong>
+          <p style="margin: 0.5rem 0;">Players advance through bracket rounds by winning matches. The tournament winner is the player who wins the final match.</p>
+        </div>
+
+        <h4>Ranking System</h4>
+        <ul>
+          <li><strong>Primary — Bracket Position:</strong> Players are ranked by how far they advanced in the tournament. Later elimination = better placement.</li>
+          ${format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION ?
+            '<li><strong>Second Chance:</strong> Players who lose in the winners bracket drop to the losers bracket. A second loss eliminates them.</li>' :
+            ''}
+          <li><strong>Secondary — Total Wins:</strong> If eliminated in the same round, more match wins = better rank.</li>
+          <li><strong>Tertiary — Game Differential:</strong> Games won minus games lost (tiebreaker).</li>
+        </ul>
+
+        ${format === TOURNAMENT_FORMATS.GROUP_STAGE ?
+          `<p style="margin-top: 1rem; font-style: italic; font-size: 0.9rem;">
+            Note: Group stage uses points (Match Win: +3 pts, Game Won: +1 pt, Game Lost: -0.5 pts) to determine who advances to playoffs. Playoff rounds use bracket positioning.</p>` :
+          ''}
+      `;
+    } else if (format === TOURNAMENT_FORMATS.SWISS) {
+      // Swiss: Points + complex tiebreakers
+      html = `
+        <h4>Scoring</h4>
+        <ul>
+          <li>Match Win: +3 pts</li>
+          <li>Game Won: +1 pt</li>
+          <li>Game Lost: -0.5 pts</li>
+        </ul>
+
+        <h4>How tiebreaking works</h4>
+        <ul>
+          <li><strong>Primary — Total Points:</strong> Players are ranked by total points (match wins × 3 + games won × 1 + games lost × -0.5).</li>
+          <li><strong>Secondary — OMW% (Opponent Match Win %):</strong> Average match win percentage of all opponents faced.</li>
+          <li><strong>Tertiary — GW% (Game Win %):</strong> Your percentage of games won.</li>
+          <li><strong>Quaternary — OGW% (Opponent Game Win %):</strong> Average game win percentage of all opponents faced.</li>
+        </ul>
+      `;
+    } else {
+      // Round Robin: Points + quality score
+      html = `
+        <h4>Scoring</h4>
+        <ul>
+          <li>Match Win: +3 pts</li>
+          <li>Game Won: +1 pt</li>
+          <li>Game Lost: -0.5 pts</li>
+        </ul>
+
+        <h4>How tiebreaking works</h4>
+        <ul>
+          <li><strong>Primary — Total Points:</strong> Players are ranked by total points (match wins × 3 + games won × 1 + games lost × -0.5).</li>
+          <li><strong>Secondary — Head-to-head:</strong> If two players are tied on points and played each other, the winner of that match is ranked higher.</li>
+          <li><strong>Tertiary — Quality Score:</strong> Sum of match wins of all opponents you defeated (strength of victories).</li>
+          <li><strong>Quaternary — Game Win %:</strong> Percentage of games won.</li>
+        </ul>
+      `;
+    }
+
+    details.innerHTML = html;
+  }
+
+  /**
    * Render standings table
    * OPTIMIZED: Uses DocumentFragment for batch DOM insertion
    */
@@ -1172,6 +1248,9 @@ class UIManager {
   ) {
     const container = this.elements.standingsTable;
     if (!container) return;
+
+    // Update scoring legend for this format
+    this.updateScoringLegend(format);
 
     container.innerHTML = "";
 
@@ -1696,16 +1775,13 @@ class UIManager {
         }
       }
     } else if (format.formatType === TOURNAMENT_FORMATS.SWISS) {
-      // For Swiss, show even numbers (to avoid BYEs) and some key odd numbers
-      // Show options up to 32 players
-      const maxDisplay = Math.min(format.maxPlayers, 32);
-      for (let i = format.minPlayers; i <= maxDisplay; i++) {
-        // Include even numbers (preferred - no BYEs)
-        if (i % 2 === 0) {
-          playerOptions.push(i);
-        }
-        // Also include key odd numbers: 5, 7, 9, 11, 13, 15, etc. (smaller odd numbers)
-        else if (i <= 15 || recommendedCounts.includes(i)) {
+      // For Swiss, only show recommended counts (8, 16, 32) to avoid BYEs
+      // Swiss requires even player counts for best experience
+      playerOptions = recommendedCounts.filter(n => n <= 64);
+      if (playerOptions.length === 0) {
+        // Fallback: only even numbers up to 32
+        const maxDisplay = Math.min(format.maxPlayers, 32);
+        for (let i = format.minPlayers; i <= maxDisplay; i += 2) {
           playerOptions.push(i);
         }
       }

@@ -392,11 +392,11 @@ class SwissFormat extends TournamentFormatBase {
       return baseValidation;
     }
 
-    // Warn about odd player counts (BYE each round)
+    // Require even player counts (no BYEs allowed in Swiss)
     if (numPlayers % 2 === 1) {
       return {
-        isValid: true,
-        warning: `With odd player count, one player will receive a BYE each round. Even numbers recommended: ${this.getRecommendedPlayerCounts().filter(n => n >= numPlayers && n <= 64).slice(0, 3).join(', ')}`
+        isValid: false,
+        error: `Swiss format requires an even number of players to avoid BYE rounds. Recommended counts: ${this.getRecommendedPlayerCounts().join(', ')}`
       };
     }
 
@@ -455,18 +455,21 @@ class SwissFormat extends TournamentFormatBase {
 
     // For subsequent rounds, create placeholder matches that will be
     // populated when previous round completes
+    // Need enough slots for all players (numPlayers / 2, rounded up for odd)
+    const matchesPerRound = Math.ceil(numPlayers / 2);
+
     for (let round = 2; round <= numRounds; round++) {
-      // We'll generate these dynamically later
-      // For now, just track that these rounds exist
-      matches.push({
-        id: matchId++,
-        round: round,
-        player1: null,
-        player2: null,
-        games: [null, null, null],
-        winner: null,
-        isPlaceholder: true,
-      });
+      for (let i = 0; i < matchesPerRound; i++) {
+        matches.push({
+          id: matchId++,
+          round: round,
+          player1: null,
+          player2: null,
+          games: [null, null, null],
+          winner: null,
+          isPlaceholder: true,
+        });
+      }
     }
 
     return matches;
