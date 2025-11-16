@@ -1815,7 +1815,7 @@ body {
 
 .badge-group {
   background: var(--color-accent-blue);
-  color: white;
+  color: black;
 }
 
 .player-row.tbd {
