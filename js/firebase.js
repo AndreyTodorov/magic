@@ -35,7 +35,9 @@ class FirebaseManager {
       // Monitor connection status
       this.monitorConnection();
 
-      console.log("✓ Firebase initialized successfully");
+      if (ENVIRONMENT === 'development') {
+        console.log("✓ Firebase initialized successfully");
+      }
       return true;
     } catch (error) {
       console.error("Firebase initialization error:", error);
@@ -50,7 +52,9 @@ class FirebaseManager {
    */
   initializeAppCheck() {
     if (!APPCHECK_CONFIG.ENABLED) {
-      console.log(`⚠ App Check disabled in ${ENVIRONMENT} mode`);
+      if (ENVIRONMENT === 'development') {
+        console.log(`⚠ App Check disabled in ${ENVIRONMENT} mode`);
+      }
       return;
     }
 
@@ -63,7 +67,9 @@ class FirebaseManager {
 
       const appCheck = firebase.appCheck();
       appCheck.activate(APPCHECK_SITE_KEY, true); // true = auto-refresh
-      console.log('✓ App Check activated');
+      if (ENVIRONMENT === 'development') {
+        console.log('✓ App Check activated');
+      }
     } catch (error) {
       console.error('App Check activation failed:', error);
     }
@@ -111,7 +117,9 @@ class FirebaseManager {
 
       if (isConnected) {
         if (wasDisconnected) {
-          console.log("✓ Reconnected to Firebase");
+          if (ENVIRONMENT === 'development') {
+            console.log("✓ Reconnected to Firebase");
+          }
           // Show user-friendly notification
           const statusText = document.getElementById("statusText");
           if (statusText) {
@@ -122,17 +130,17 @@ class FirebaseManager {
               }
             }, 2000);
           }
-        } else {
-          console.log("✓ Connected to Firebase");
         }
         wasDisconnected = false;
       } else {
-        console.warn("⚠ Disconnected from Firebase");
-        console.warn("Troubleshooting tips:");
-        console.warn("1. Check Firebase Console → Realtime Database → Data (verify database exists)");
-        console.warn("2. Check Firebase Console → Realtime Database → Rules");
-        console.warn("3. Verify database URL in config matches your Firebase region");
-        console.warn("4. Run window.testFirebaseConnection() in console for detailed diagnostics");
+        if (ENVIRONMENT === 'development') {
+          console.warn("⚠ Disconnected from Firebase");
+          console.warn("Troubleshooting tips:");
+          console.warn("1. Check Firebase Console → Realtime Database → Data (verify database exists)");
+          console.warn("2. Check Firebase Console → Realtime Database → Rules");
+          console.warn("3. Verify database URL in config matches your Firebase region");
+          console.warn("4. Run window.testFirebaseConnection() in console for detailed diagnostics");
+        }
         wasDisconnected = true;
       }
     }, (error) => {
@@ -235,7 +243,9 @@ class FirebaseManager {
         .ref(`tournaments/${tournamentCode}`)
         .set(tournamentData);
 
-      console.log("✓ Tournament created:", tournamentCode);
+      if (ENVIRONMENT === 'development') {
+        console.log("✓ Tournament created:", tournamentCode);
+      }
       return true;
     } catch (error) {
       console.error("Error creating tournament:", error);
@@ -265,7 +275,9 @@ class FirebaseManager {
         .ref(`tournaments/${tournamentCode}/members/${this.currentUser.uid}`)
         .set(true);
 
-      console.log("✓ Joined tournament:", tournamentCode);
+      if (ENVIRONMENT === 'development') {
+        console.log("✓ Joined tournament:", tournamentCode);
+      }
       return true;
     } catch (error) {
       console.error("Error joining tournament:", error);
@@ -380,7 +392,9 @@ class FirebaseManager {
     try {
       await this.database.ref(`tournaments/${tournamentCode}`).remove();
 
-      console.log("✓ Tournament deleted:", tournamentCode);
+      if (ENVIRONMENT === 'development') {
+        console.log("✓ Tournament deleted:", tournamentCode);
+      }
       return true;
     } catch (error) {
       console.error("Error deleting tournament:", error);
