@@ -31,12 +31,12 @@ let APPCHECK_SITE_KEY = "APP_CHECK_SITE_KEY";
  * Environment Detection
  * Automatically detects if running in development or production
  */
-let ENVIRONMENT = 'development'; // Set to 'production' when deploying
+let ENVIRONMENT = 'production'; // Default to production
 
 // Detect localhost/development
 if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.includes('127.0.0.1')) {
         ENVIRONMENT = 'development';
     }
 }
