@@ -577,19 +577,26 @@ class UIManager {
 
   /**
    * Render default schedule (Round Robin)
+   * Shows all matches with win/loss status
    */
   renderDefaultSchedule(fragment, players, playerMatchesMap) {
     players.forEach((player, index) => {
       const playerMatches = playerMatchesMap.get(index) || [];
 
-      const opponents = playerMatches.map((m) => {
-        const opponentIndex = m.player1 === index ? m.player2 : m.player1;
-        return players[opponentIndex];
-      });
-
       const allCompleted =
         playerMatches.length > 0 &&
         playerMatches.every((m) => m.winner !== null);
+
+      // Calculate record
+      let wins = 0, losses = 0;
+      playerMatches.forEach((m) => {
+        if (m.winner !== null) {
+          const isPlayer1 = m.player1 === index;
+          const won = m.winner === (isPlayer1 ? 1 : 2);
+          if (won) wins++;
+          else losses++;
+        }
+      });
 
       const scheduleItem = document.createElement("div");
       scheduleItem.className = `schedule-item${
@@ -598,16 +605,43 @@ class UIManager {
 
       const statusHtml = allCompleted
         ? `<div class="player-status">Done</div>`
-        : "";
+        : `<div class="player-status active">${wins}-${losses}</div>`;
+
+      // Build match list with status
+      let matchesHtml = '<div class="match-list">';
+      playerMatches.forEach((m) => {
+        const opponentIndex = m.player1 === index ? m.player2 : m.player1;
+        const opponentName = players[opponentIndex];
+        const isPlayer1 = m.player1 === index;
+        const isWon = m.winner === (isPlayer1 ? 1 : 2);
+        const isLost = m.winner !== null && !isWon;
+        const isPending = m.winner === null;
+
+        let statusIcon = '○';
+        let statusClass = '';
+        if (isWon) {
+          statusIcon = '✓';
+          statusClass = 'win';
+        } else if (isLost) {
+          statusIcon = '✗';
+          statusClass = 'loss';
+        } else if (isPending) {
+          statusIcon = '○';
+          statusClass = 'pending';
+        }
+
+        matchesHtml += `<div class="match-item ${statusClass}">`;
+        matchesHtml += `<span class="match-status">${statusIcon}</span> vs ${this.escapeHtml(opponentName)}`;
+        matchesHtml += '</div>';
+      });
+      matchesHtml += '</div>';
 
       scheduleItem.innerHTML = `
         <div class="schedule-item__title">
           <strong>${this.escapeHtml(player)}</strong>
           ${statusHtml}
         </div>
-        <div class="schedule-item__opponents">vs ${opponents
-          .map((o) => this.escapeHtml(o))
-          .join(", ")}</div>
+        ${matchesHtml}
       `;
 
       fragment.appendChild(scheduleItem);
@@ -624,10 +658,19 @@ class UIManager {
       // Group matches by round/bracket
       const matchesByRound = {};
       let isInLosersBracket = false;
+      let wins = 0, losses = 0;
 
       playerMatches.forEach((m) => {
         if (m.isPlaceholder && m.player1 === null && m.player2 === null) {
           return; // Skip empty placeholders
+        }
+
+        // Count wins/losses
+        if (m.winner !== null) {
+          const isPlayer1 = m.player1 === index;
+          const won = m.winner === (isPlayer1 ? 1 : 2);
+          if (won) wins++;
+          else losses++;
         }
 
         const round = m.round || 1;
@@ -692,15 +735,18 @@ class UIManager {
 
       let statusHtml = "";
       if (isEliminated) {
-        statusHtml = `<div class="player-status eliminated">Eliminated</div>`;
+        statusHtml = `<div class="player-status eliminated">Eliminated (${wins}-${losses})</div>`;
       } else if (isChampion) {
-        statusHtml = `<div class="player-status">Champion 🏆</div>`;
+        statusHtml = `<div class="player-status">🏆 Champion (${wins}-${losses})</div>`;
       } else if (allCompleted) {
         // Completed but not champion = placed (e.g., 2nd, 3rd-4th, etc.)
-        statusHtml = `<div class="player-status">Eliminated</div>`;
+        statusHtml = `<div class="player-status">Eliminated (${wins}-${losses})</div>`;
       } else if (currentRound) {
         const roundName = this.getRoundName(currentRound, rounds.length);
-        statusHtml = `<div class="player-status active">→ ${roundName}</div>`;
+        const bracketInfo = isInLosersBracket ? ' (Losers)' : '';
+        statusHtml = `<div class="player-status active">→ ${roundName}${bracketInfo} (${wins}-${losses})</div>`;
+      } else if (playerMatches.length > 0) {
+        statusHtml = `<div class="player-status active">${wins}-${losses}</div>`;
       }
 
       // Build bracket path display
@@ -722,7 +768,7 @@ class UIManager {
         else if (isPending) matchStatus = '○';
         else matchStatus = '—';
 
-        const bracketLabel = match.bracket === 'losers' ? ' (L)' : '';
+        const bracketLabel = match.bracket === 'losers' ? ' (Losers)' : match.bracket === 'winners' ? ' (Winners)' : '';
 
         pathHtml += `
           <div class="bracket-round ${isPending ? 'active' : ''} ${isWin ? 'win' : ''} ${isLoss ? 'loss' : ''}">
@@ -779,10 +825,19 @@ class UIManager {
       const currentMatches = [];
       const futureMatches = [];
       const pastMatches = [];
+      let wins = 0, losses = 0, draws = 0;
 
       playerMatches.forEach((m) => {
         if (m.isPlaceholder && m.player1 === null && m.player2 === null) {
           return;
+        }
+
+        // Count record
+        if (m.winner !== null) {
+          const isPlayer1 = m.player1 === index;
+          const won = m.winner === (isPlayer1 ? 1 : 2);
+          if (won) wins++;
+          else losses++;
         }
 
         if (m.round < currentRound) {
@@ -804,12 +859,41 @@ class UIManager {
       }`;
 
       const statusHtml = allCompleted
-        ? `<div class="player-status">Done</div>`
+        ? `<div class="player-status">Done (${wins}-${losses})</div>`
         : currentMatches.length > 0
-        ? `<div class="player-status active">→ Round ${currentRound}</div>`
-        : "";
+        ? `<div class="player-status active">→ Round ${currentRound} (${wins}-${losses})</div>`
+        : `<div class="player-status">${wins}-${losses}</div>`;
 
       let matchesHtml = '<div class="swiss-rounds">';
+
+      // Past rounds (completed)
+      if (pastMatches.length > 0) {
+        matchesHtml += '<div class="round-section past">';
+        matchesHtml += '<div class="round-header">Past Rounds</div>';
+
+        // Group by round
+        const pastByRound = {};
+        pastMatches.forEach((m) => {
+          if (!pastByRound[m.round]) pastByRound[m.round] = [];
+          pastByRound[m.round].push(m);
+        });
+
+        Object.keys(pastByRound).sort((a, b) => a - b).forEach((round) => {
+          pastByRound[round].forEach((m) => {
+            const opponentIndex = m.player1 === index ? m.player2 : m.player1;
+            const opponentName = opponentIndex !== null ? players[opponentIndex] : 'BYE';
+            const isPlayer1 = m.player1 === index;
+            const isWon = m.winner === (isPlayer1 ? 1 : 2);
+            const isLost = m.winner !== null && !isWon;
+            const statusIcon = isWon ? '✓' : isLost ? '✗' : '○';
+
+            matchesHtml += `<div class="round-match ${isWon ? 'win' : ''} ${isLost ? 'loss' : ''}">`;
+            matchesHtml += `<span class="match-status">${statusIcon}</span> R${round}: vs ${this.escapeHtml(opponentName)}`;
+            matchesHtml += '</div>';
+          });
+        });
+        matchesHtml += '</div>';
+      }
 
       // Current round (highlighted)
       if (currentMatches.length > 0) {
@@ -818,7 +902,7 @@ class UIManager {
         currentMatches.forEach((m) => {
           const opponentIndex = m.player1 === index ? m.player2 : m.player1;
           const opponentName = opponentIndex !== null ? players[opponentIndex] : 'BYE';
-          matchesHtml += `<div class="round-match">vs ${this.escapeHtml(opponentName)}</div>`;
+          matchesHtml += `<div class="round-match active">vs ${this.escapeHtml(opponentName)}</div>`;
         });
         matchesHtml += '</div>';
       }
@@ -827,7 +911,7 @@ class UIManager {
       if (futureMatches.length > 0) {
         matchesHtml += '<div class="round-section future">';
         matchesHtml += '<div class="round-header">Upcoming Rounds</div>';
-        matchesHtml += '<div class="round-match tbd">Pairings TBD</div>';
+        matchesHtml += `<div class="round-match tbd">${futureMatches.length} more round${futureMatches.length > 1 ? 's' : ''} (pairings TBD)</div>`;
         matchesHtml += '</div>';
       }
 
