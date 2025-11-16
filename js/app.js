@@ -234,6 +234,13 @@ class App {
         }
       }
     });
+
+    // Round navigation buttons (event delegation)
+    document.addEventListener("click", (e) => {
+      if (e.target.matches(".round-nav-btn")) {
+        this.handleRoundNavigation(e.target);
+      }
+    });
   }
 
   /**
@@ -710,6 +717,9 @@ class App {
         tournamentManager.currentStage
       );
     } else if (currentView === "matches") {
+      // Render round navigation for formats with rounds
+      uiManager.renderRoundNavigation(matches, tournamentManager.format);
+      // Render matches (will be filtered by selected round if applicable)
       uiManager.renderMatches(matches, players, tournamentManager.currentStage);
     } else if (currentView === "standings") {
       const { rankedStats, tiedRanks } = tournamentManager.getStandings();
@@ -758,6 +768,22 @@ class App {
       tournamentManager.format,
       tournamentManager.currentStage
     );
+  }
+
+  /**
+   * Handle round navigation button click
+   */
+  handleRoundNavigation(button) {
+    const round = button.dataset.round;
+
+    // Convert 'all' string to 'all', and numeric strings to numbers
+    const selectedRound = round === 'all' ? 'all' : parseInt(round);
+
+    // Update selected round in UI manager
+    uiManager.setSelectedRound(selectedRound);
+
+    // Re-render matches with the new filter
+    this.renderTournament(true);
   }
 
   /**
