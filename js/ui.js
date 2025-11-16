@@ -2091,33 +2091,35 @@ class UIManager {
       }
     }
 
+    // Get format's optimal default player count
+    const formatDefault = format.getDefaultPlayerCount();
+
+    // Determine which value to select (prefer format default for new selections)
+    let selectedValue = null;
+    if (playerOptions.includes(formatDefault)) {
+      selectedValue = formatDefault;
+    } else if (playerOptions.includes(currentValue)) {
+      selectedValue = currentValue;
+    } else if (playerOptions.length > 0) {
+      selectedValue = playerOptions[0];
+    }
+
     // Create option elements
     playerOptions.forEach(count => {
       const option = document.createElement("option");
       option.value = count;
-
-      // Simple display without star indicators
       option.textContent = `${count} Player${count !== 1 ? "s" : ""}`;
 
-      // Try to keep current selection if valid
-      if (count === currentValue) {
-        option.selected = true;
-      }
-      // Otherwise select a recommended count if available
-      else if (!option.selected && recommendedCounts.includes(count)) {
+      if (count === selectedValue) {
         option.selected = true;
       }
 
       playerCountSelect.appendChild(option);
     });
 
-    // If no option is selected, select the first recommended count or first option
-    if (!playerCountSelect.value) {
-      if (recommendedCounts.length > 0 && playerOptions.includes(recommendedCounts[0])) {
-        playerCountSelect.value = recommendedCounts[0];
-      } else if (playerOptions.length > 0) {
-        playerCountSelect.value = playerOptions[0];
-      }
+    // Ensure the value is set
+    if (selectedValue !== null) {
+      playerCountSelect.value = selectedValue;
     }
 
     // Add helpful text showing recommended counts
