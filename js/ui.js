@@ -405,6 +405,7 @@ class UIManager {
         <input
           type="text"
           id="p${i}"
+          name="player-name"
           class="form-input"
           placeholder="Enter name"
           required
