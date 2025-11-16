@@ -389,8 +389,8 @@ class SwissFormat extends TournamentFormatBase {
     this.formatType = TOURNAMENT_FORMATS.SWISS;
     this.formatName = 'Swiss Tournament';
     this.description = 'Pair players with similar records each round';
-    this.minPlayers = 4;
-    this.maxPlayers = 100;
+    this.minPlayers = 8;
+    this.maxPlayers = 64;
   }
 
   getFormatIcon() {
@@ -729,7 +729,7 @@ class SingleEliminationFormat extends TournamentFormatBase {
     this.formatName = 'Single Elimination';
     this.description = 'Traditional bracket tournament - lose once and you\'re out';
     this.minPlayers = 2;
-    this.maxPlayers = 128;
+    this.maxPlayers = 64;
   }
 
   getFormatIcon() {
@@ -1105,7 +1105,7 @@ class DoubleEliminationFormat extends TournamentFormatBase {
     this.formatName = 'Double Elimination';
     this.description = 'Losers get a second chance in the losers bracket';
     this.minPlayers = 4;
-    this.maxPlayers = 64;
+    this.maxPlayers = 32;
   }
 
   getFormatIcon() {
@@ -1570,7 +1570,7 @@ class GroupStageFormat extends TournamentFormatBase {
     this.formatName = 'Group Stage + Playoffs';
     this.description = 'Groups play round-robin, then top players advance to playoffs';
     this.minPlayers = 8;
-    this.maxPlayers = 64;
+    this.maxPlayers = 32;
     this.supportsMultiStage = true;
   }
 
