@@ -54,7 +54,6 @@ class UIManager {
 
       playerCount: document.getElementById("playerCount"),
       matchesPerPlayer: document.getElementById("matchesPerPlayer"),
-      matchesInfo: document.getElementById("matchesInfo"),
       playerInputs: document.getElementById("playerInputs"),
       generateBtn: document.getElementById("generateBtn"),
 
@@ -364,28 +363,6 @@ class UIManager {
     select.selectedIndex = middleIndex;
 
     return validOptions[middleIndex];
-  }
-
-  /**
-   * Update tournament info display
-   */
-  updateTournamentInfo(playerCount, matchesPerPlayer) {
-    const totalMatches = tournamentManager.getTotalMatches(
-      playerCount,
-      matchesPerPlayer
-    );
-
-    if (this.elements.matchesInfo) {
-      this.elements.matchesInfo.innerHTML = `
-        <strong>Tournament Details:</strong><br>
-        ${playerCount} players × ${matchesPerPlayer} ${
-        matchesPerPlayer === 1 ? "match" : "matches"
-      } each =
-        <strong>${totalMatches} total ${
-        totalMatches === 1 ? "match" : "matches"
-      }</strong>
-      `;
-    }
   }
 
   /**
