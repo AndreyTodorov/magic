@@ -7,7 +7,9 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "test:watch": "vitest --watch"
+    "test:watch": "vitest --watch",
+    "test:functional": "node tests/run-all-tests.js",
+    "test:all": "node tests/run-all-tests.js"
   },
   "keywords": [
     "tournament",

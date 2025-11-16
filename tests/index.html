@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magic Mikes - All Tests</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: #1a1a1a;
+      color: #00ff00;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: #0d0d0d;
+      padding: 30px;
+      border: 2px solid #00ff00;
+      border-radius: 8px;
+    }
+
+    h1 {
+      color: #00ff00;
+      margin-bottom: 20px;
+      font-size: 28px;
+      text-align: center;
+      border-bottom: 2px solid #00ff00;
+      padding-bottom: 10px;
+    }
+
+    h2 {
+      color: #00ff00;
+      margin: 20px 0 10px 0;
+      font-size: 20px;
+      border-bottom: 1px solid #00ff00;
+      padding-bottom: 5px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+
+    button {
+      background: #00ff00;
+      color: #000;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      background: #00cc00;
+      transform: scale(1.05);
+    }
+
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    button.secondary {
+      background: #333;
+      color: #00ff00;
+      border: 2px solid #00ff00;
+    }
+
+    button.secondary:hover {
+      background: #444;
+    }
+
+    #output {
+      background: #000;
+      border: 1px solid #00ff00;
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 4px;
+      min-height: 400px;
+      max-height: 600px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 13px;
+    }
+
+    .error {
+      color: #ff0000;
+    }
+
+    .warning {
+      color: #ffaa00;
+    }
+
+    .info {
+      color: #00ff00;
+    }
+
+    .success {
+      color: #00ff00;
+      font-weight: bold;
+    }
+
+    .summary {
+      margin-top: 20px;
+      padding: 20px;
+      background: #1a3a1a;
+      border: 2px solid #00ff00;
+      border-radius: 4px;
+    }
+
+    .summary.error {
+      background: #3a1a1a;
+      border-color: #ff0000;
+    }
+
+    .summary h2 {
+      color: #00ff00;
+      margin-bottom: 10px;
+      margin-top: 0;
+    }
+
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+    }
+
+    .stat-label {
+      color: #aaa;
+    }
+
+    .stat-value {
+      color: #00ff00;
+      font-weight: bold;
+    }
+
+    .stat-value.error {
+      color: #ff0000;
+    }
+
+    .stat-value.warning {
+      color: #ffaa00;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #00ff00;
+      font-size: 16px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #00ff00;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .test-group {
+      margin: 15px 0;
+      padding: 15px;
+      background: #0a0a0a;
+      border-left: 4px solid #00ff00;
+    }
+
+    .test-group.failed {
+      border-left-color: #ff0000;
+    }
+
+    .export-section {
+      margin-top: 20px;
+      padding: 15px;
+      background: #0a0a0a;
+      border: 1px solid #00ff00;
+      border-radius: 4px;
+    }
+
+    .export-section h3 {
+      color: #00ff00;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .export-section textarea {
+      width: 100%;
+      min-height: 150px;
+      background: #000;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      border-radius: 4px;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎮 MAGIC MIKES - COMPREHENSIVE TEST SUITE 🎮</h1>
+
+    <div class="controls">
+      <button id="runAllTests" onclick="runAllTests()">▶️ RUN ALL TESTS</button>
+      <button id="runFunctionalTests" class="secondary" onclick="runFunctionalTests()">🔧 FUNCTIONAL TESTS ONLY</button>
+      <button id="exportResults" class="secondary" onclick="exportResults()" disabled>📋 EXPORT FOR CLAUDE</button>
+      <button id="clearOutput" class="secondary" onclick="clearOutput()">🗑️ CLEAR OUTPUT</button>
+    </div>
+
+    <div id="loading" style="display: none;" class="loading">
+      <div class="spinner"></div>
+      Running tests...
+    </div>
+
+    <div id="summary" style="display: none;" class="summary">
+      <h2>Test Results Summary</h2>
+      <div class="stat">
+        <span class="stat-label">Duration:</span>
+        <span class="stat-value" id="duration">-</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Total Tests:</span>
+        <span class="stat-value" id="totalTests">-</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Passed:</span>
+        <span class="stat-value" id="passedTests">-</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Failed:</span>
+        <span class="stat-value" id="failedTests">-</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Errors:</span>
+        <span class="stat-value" id="errorCount">-</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Warnings:</span>
+        <span class="stat-value" id="warningCount">-</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Status:</span>
+        <span class="stat-value" id="status">-</span>
+      </div>
+    </div>
+
+    <div id="output"></div>
+
+    <div id="exportSection" class="export-section hidden">
+      <h3>Test Results for Claude Code</h3>
+      <p style="color: #aaa; margin-bottom: 10px;">Copy this output to provide to Claude Code for debugging:</p>
+      <textarea id="claudeOutput" readonly></textarea>
+      <button onclick="copyToClipboard()" style="margin-top: 10px;">📋 Copy to Clipboard</button>
+    </div>
+  </div>
+
+  <!-- Load dependencies in correct order -->
+  <script src="../js/config.js"></script>
+  <script src="../js/logger.js"></script>
+  <script src="../js/tournament-formats.js"></script>
+  <script src="../js/tournament.js"></script>
+  <script src="functional.test.js"></script>
+
+  <script>
+    const outputDiv = document.getElementById('output');
+    const loadingDiv = document.getElementById('loading');
+    const summaryDiv = document.getElementById('summary');
+    const exportSection = document.getElementById('exportSection');
+    const exportButton = document.getElementById('exportResults');
+    const runAllButton = document.getElementById('runAllTests');
+    const runFunctionalButton = document.getElementById('runFunctionalTests');
+
+    // Test results storage
+    let testResults = {
+      functional: null,
+      timestamp: null,
+      logs: []
+    };
+
+    // Override console.log to capture output
+    const originalLog = console.log;
+    const originalError = console.error;
+
+    console.log = function(...args) {
+      originalLog.apply(console, args);
+      const message = args.join(' ');
+      testResults.logs.push({ type: 'log', message, timestamp: new Date().toISOString() });
+
+      const div = document.createElement('div');
+
+      // Color code based on log level
+      if (message.includes('[ERROR]') || message.includes('❌')) {
+        div.className = 'error';
+      } else if (message.includes('[WARNING]') || message.includes('⚠️')) {
+        div.className = 'warning';
+      } else if (message.includes('✅') || message.includes('PASSED')) {
+        div.className = 'success';
+      } else {
+        div.className = 'info';
+      }
+
+      div.textContent = message;
+      outputDiv.appendChild(div);
+
+      // Auto-scroll to bottom
+      outputDiv.scrollTop = outputDiv.scrollHeight;
+    };
+
+    console.error = function(...args) {
+      originalError.apply(console, args);
+      const message = args.join(' ');
+      testResults.logs.push({ type: 'error', message, timestamp: new Date().toISOString() });
+
+      const div = document.createElement('div');
+      div.className = 'error';
+      div.textContent = 'ERROR: ' + message;
+      outputDiv.appendChild(div);
+      outputDiv.scrollTop = outputDiv.scrollHeight;
+    };
+
+    function clearOutput() {
+      outputDiv.innerHTML = '';
+      testResults.logs = [];
+      summaryDiv.style.display = 'none';
+      exportSection.classList.add('hidden');
+      exportButton.disabled = true;
+      console.log('Output cleared. Ready for new test run.');
+    }
+
+    async function runFunctionalTests() {
+      clearOutput();
+      loadingDiv.style.display = 'block';
+      runAllButton.disabled = true;
+      runFunctionalButton.disabled = true;
+
+      // Small delay to let UI update
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      try {
+        console.log('╔════════════════════════════════════════════════════════╗');
+        console.log('║          FUNCTIONAL TESTS - TOURNAMENT LOGIC            ║');
+        console.log('╚════════════════════════════════════════════════════════╝\n');
+
+        const tester = new TournamentTester();
+        const results = tester.runAllTests();
+
+        testResults.functional = results;
+        testResults.timestamp = new Date().toISOString();
+
+        updateSummary(results);
+
+      } catch (error) {
+        console.log('\n❌ FATAL ERROR:', error.message);
+        console.error(error);
+        testResults.functional = { passed: false, errors: [error.message], warnings: [], duration: 0 };
+        updateSummary(testResults.functional);
+      } finally {
+        loadingDiv.style.display = 'none';
+        runAllButton.disabled = false;
+        runFunctionalButton.disabled = false;
+        exportButton.disabled = false;
+      }
+    }
+
+    async function runAllTests() {
+      // For now, we'll just run functional tests
+      // In the future, this could integrate with vitest results
+      await runFunctionalTests();
+    }
+
+    function updateSummary(results) {
+      summaryDiv.style.display = 'block';
+
+      document.getElementById('duration').textContent = results.duration + 's';
+      document.getElementById('totalTests').textContent = '-';
+      document.getElementById('passedTests').textContent = results.passed ? 'All' : '-';
+      document.getElementById('failedTests').textContent = results.passed ? '0' : results.errors.length;
+
+      const errorCountEl = document.getElementById('errorCount');
+      errorCountEl.textContent = results.errors.length;
+      errorCountEl.className = results.errors.length > 0 ? 'stat-value error' : 'stat-value';
+
+      const warningCountEl = document.getElementById('warningCount');
+      warningCountEl.textContent = results.warnings.length;
+      warningCountEl.className = results.warnings.length > 0 ? 'stat-value warning' : 'stat-value';
+
+      const statusEl = document.getElementById('status');
+      if (results.passed) {
+        statusEl.textContent = '✅ ALL PASSED';
+        statusEl.className = 'stat-value';
+        summaryDiv.classList.remove('error');
+      } else {
+        statusEl.textContent = '❌ FAILED';
+        statusEl.className = 'stat-value error';
+        summaryDiv.classList.add('error');
+      }
+
+      // Show export section
+      exportSection.classList.remove('hidden');
+      generateClaudeOutput();
+    }
+
+    function generateClaudeOutput() {
+      const output = {
+        testRun: {
+          timestamp: testResults.timestamp,
+          type: 'Magic Mikes Tournament Tests',
+          environment: 'Browser',
+          userAgent: navigator.userAgent
+        },
+        summary: {
+          duration: testResults.functional?.duration || 0,
+          totalErrors: testResults.functional?.errors.length || 0,
+          totalWarnings: testResults.functional?.warnings.length || 0,
+          passed: testResults.functional?.passed || false
+        },
+        errors: testResults.functional?.errors || [],
+        warnings: testResults.functional?.warnings || [],
+        logs: testResults.logs
+      };
+
+      const formattedOutput = JSON.stringify(output, null, 2);
+      document.getElementById('claudeOutput').value = formattedOutput;
+
+      // Also create a human-readable summary
+      const humanReadable = `
+=============================================================================
+MAGIC MIKES TOURNAMENT - TEST RESULTS
+=============================================================================
+
+TEST RUN: ${testResults.timestamp}
+DURATION: ${testResults.functional?.duration || 0}s
+STATUS: ${testResults.functional?.passed ? '✅ PASSED' : '❌ FAILED'}
+
+SUMMARY:
+- Errors: ${testResults.functional?.errors.length || 0}
+- Warnings: ${testResults.functional?.warnings.length || 0}
+
+${testResults.functional?.errors.length > 0 ? `
+ERRORS:
+${testResults.functional.errors.map((e, i) => `${i + 1}. ${e.message}`).join('\n')}
+` : ''}
+
+${testResults.functional?.warnings.length > 0 ? `
+WARNINGS:
+${testResults.functional.warnings.map((w, i) => `${i + 1}. ${w.message}`).join('\n')}
+` : ''}
+
+=============================================================================
+DETAILED LOGS:
+=============================================================================
+
+${testResults.logs.map(l => `[${l.timestamp}] ${l.type.toUpperCase()}: ${l.message}`).join('\n')}
+
+=============================================================================
+JSON OUTPUT (for Claude Code):
+=============================================================================
+
+${formattedOutput}
+`;
+
+      // Store both formats
+      testResults.humanReadable = humanReadable;
+    }
+
+    function exportResults() {
+      if (!testResults.humanReadable) {
+        generateClaudeOutput();
+      }
+
+      // Download as text file
+      const blob = new Blob([testResults.humanReadable], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `magic-mikes-test-results-${Date.now()}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      console.log('\n✅ Test results exported successfully!');
+    }
+
+    function copyToClipboard() {
+      const textarea = document.getElementById('claudeOutput');
+      textarea.select();
+      document.execCommand('copy');
+      console.log('✅ Copied to clipboard!');
+    }
+
+    // Show ready message
+    console.log('═'.repeat(60));
+    console.log('Test runner loaded successfully.');
+    console.log('Click "RUN ALL TESTS" to begin comprehensive testing.');
+    console.log('Click "EXPORT FOR CLAUDE" after tests to get debugging output.');
+    console.log('═'.repeat(60));
+  </script>
+</body>
+</html>
