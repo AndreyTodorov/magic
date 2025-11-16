@@ -1042,7 +1042,7 @@ npm install
 **Last Updated:** 2025-01-16
 
 **For Questions:**
-- Check [README.md](README.md) for project overview
+- Check [README.md](../README.md) for project overview
 - Check [TESTING.md](TESTING.md) for testing guide
 - Check [FIREBASE_RULES.md](FIREBASE_RULES.md) for database rules
 - Open a GitHub issue for bugs/features

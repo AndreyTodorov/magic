@@ -147,7 +147,7 @@ Go to Realtime Database → Rules tab and paste:
 
 Click **Publish**.
 
-> **Note:** These are permissive rules for development. See [FIREBASE_RULES.md](FIREBASE_RULES.md) for production-ready secure rules.
+> **Note:** These are permissive rules for development. See [FIREBASE_RULES.md](docs/FIREBASE_RULES.md) for production-ready secure rules.
 
 **4. Enable Authentication**
 
@@ -801,8 +801,8 @@ open index-sandalone.html
 **Get Help:**
 1. Run diagnostics: `window.testFirebaseConnection()`
 2. Export logs: `window.mmLogger.exportLogs()`
-3. Check [TESTING.md](TESTING.md) for common issues
-4. Review [LOCAL-DEV.md](LOCAL-DEV.md) for development setup
+3. Check [TESTING.md](docs/TESTING.md) for common issues
+4. Review [LOCAL-DEV.md](docs/LOCAL-DEV.md) for development setup
 5. Open GitHub issue with:
    - Error messages from console
    - Diagnostic output
@@ -812,9 +812,9 @@ open index-sandalone.html
 ## Documentation
 
 - **[README.md](README.md)** - This file - overall project documentation
-- **[LOCAL-DEV.md](LOCAL-DEV.md)** - Local development setup and workflows
-- **[TESTING.md](TESTING.md)** - Comprehensive testing guide
-- **[FIREBASE_RULES.md](FIREBASE_RULES.md)** - Production database security rules
+- **[LOCAL-DEV.md](docs/LOCAL-DEV.md)** - Local development setup and workflows
+- **[TESTING.md](docs/TESTING.md)** - Comprehensive testing guide
+- **[FIREBASE_RULES.md](docs/FIREBASE_RULES.md)** - Production database security rules
 - **[CLAUDE.md](CLAUDE.md)** - AI coding assistant guide for Claude Code
 
 ## Browser Compatibility
@@ -850,11 +850,11 @@ open index-sandalone.html
 1. Fork the repository
 2. Clone your fork
 3. Create a feature branch: `git checkout -b feature/amazing-feature`
-4. See [LOCAL-DEV.md](LOCAL-DEV.md) for development setup
+4. See [LOCAL-DEV.md](docs/LOCAL-DEV.md) for development setup
 
 ### Development Workflow
 
-1. Write tests first (see [TESTING.md](TESTING.md))
+1. Write tests first (see [TESTING.md](docs/TESTING.md))
 2. Implement feature
 3. Run tests: `npm test`
 4. Check coverage: `npm run test:coverage`
