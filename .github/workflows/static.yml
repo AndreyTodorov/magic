@@ -55,6 +55,10 @@ jobs:
           sed -i 's|FIREBASE_APP_ID|'"${FIREBASE_APP_ID}"'|g' js/config.js
           sed -i 's|APP_CHECK_SITE_KEY|'"${APP_CHECK_SITE_KEY}"'|g' js/config.js
 
+          # Ensure environment is set to production (redundant but safe)
+          # This line ensures ENVIRONMENT is explicitly 'production' even if auto-detection fails
+          sed -i "s|let ENVIRONMENT = 'production';|let ENVIRONMENT = 'production'; // Deployed via GitHub Actions|g" js/config.js
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
