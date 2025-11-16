@@ -1511,22 +1511,25 @@ class UIManager {
           ''}
       `;
     } else if (format === TOURNAMENT_FORMATS.SWISS) {
-      // Swiss: Points + complex tiebreakers
+      // Swiss: Match wins only (games are tiebreakers)
       html = `
         <h4>Scoring</h4>
         <ul>
           <li>Match Win: +3 pts</li>
-          <li>Game Won: +1 pt</li>
-          <li>Game Lost: -0.5 pts</li>
+          <li>Match Loss: 0 pts</li>
+          <li>Individual Games: 0 pts (used for tiebreakers only)</li>
         </ul>
 
         <h4>How tiebreaking works</h4>
         <ul>
-          <li><strong>Primary — Total Points:</strong> Players are ranked by total points (match wins × 3 + games won × 1 + games lost × -0.5).</li>
-          <li><strong>Secondary — OMW% (Opponent Match Win %):</strong> Average match win percentage of all opponents faced.</li>
-          <li><strong>Tertiary — GW% (Game Win %):</strong> Your percentage of games won.</li>
+          <li><strong>Primary — Match Wins:</strong> Players are ranked by total match wins (3 points per match win).</li>
+          <li><strong>Secondary — OMW% (Opponent Match Win %):</strong> Average match win percentage of all opponents faced. Rewards playing stronger opponents.</li>
+          <li><strong>Tertiary — GW% (Game Win %):</strong> Your percentage of individual games won (used as tiebreaker, not for points).</li>
           <li><strong>Quaternary — OGW% (Opponent Game Win %):</strong> Average game win percentage of all opponents faced.</li>
         </ul>
+
+        <p style="margin-top: 1rem; font-style: italic; font-size: 0.9rem;">
+          Note: Swiss format focuses on match wins. Individual game results only matter for tiebreakers and pairing strength-of-schedule calculations.</p>
       `;
     } else {
       // Round Robin: Points + quality score
