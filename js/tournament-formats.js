@@ -1573,8 +1573,8 @@ class GroupStageFormat extends TournamentFormatBase {
         { numGroups: 2, playersPerGroup: 4, advancingPerGroup: 2, description: '2 groups of 4, top 2 advance → 4-player playoffs' }
       ],
       12: [
-        { numGroups: 4, playersPerGroup: 3, advancingPerGroup: 1, description: '4 groups of 3, top 1 advances → 4-player playoffs' },
-        { numGroups: 3, playersPerGroup: 4, advancingPerGroup: 2, description: '3 groups of 4, top 2 advance → 8-player playoffs (uneven groups)' }
+        { numGroups: 4, playersPerGroup: 3, advancingPerGroup: 1, description: '4 groups of 3, winner only → 4-player playoffs' },
+        { numGroups: 2, playersPerGroup: 6, advancingPerGroup: 2, description: '2 groups of 6, top 2 advance → 4-player playoffs' }
       ],
       16: [
         { numGroups: 4, playersPerGroup: 4, advancingPerGroup: 2, description: '4 groups of 4, top 2 advance → 8-player playoffs (recommended)' },
@@ -1844,7 +1844,7 @@ class GroupStageFormat extends TournamentFormatBase {
 
     // Assign players to their groups and calculate stats
     groupMatches.forEach((match) => {
-      if (!match.player1 || match.player2 === null) return;
+      if (match.player1 === null || match.player2 === null) return;
 
       // Mark group membership
       stats[match.player1].group = match.group;
