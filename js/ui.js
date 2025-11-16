@@ -2076,25 +2076,37 @@ class UIManager {
         break;
 
       case "group-stage":
-        const numGroups = defaultConfig.numGroups;
-        configContainer.innerHTML = `
-          <div class="form-group text-center">
-            <label for="numGroups" class="form-label">Number of Groups:</label>
-            <select id="numGroups" class="form-select" aria-label="Select number of groups">
-              ${[2, 3, 4, 6, 8].map(g => `
-                <option value="${g}" ${g === numGroups ? "selected" : ""}>${g} Groups</option>
-              `).join("")}
-            </select>
-          </div>
-          <div class="form-group text-center">
-            <label for="advancingPerGroup" class="form-label">Advancing Per Group:</label>
-            <select id="advancingPerGroup" class="form-select" aria-label="Select advancing per group">
-              ${[1, 2, 3, 4].map(a => `
-                <option value="${a}" ${a === defaultConfig.advancingPerGroup ? "selected" : ""}>${a} Player${a !== 1 ? "s" : ""}</option>
-              `).join("")}
-            </select>
-          </div>
-        `;
+        // Get valid configurations for this player count
+        const playerCount = parseInt(this.elements.playerCount?.value) || APP_CONFIG.DEFAULT_PLAYERS;
+        const formatHandler = tournamentFormats.factory.create('group-stage');
+        const validConfigs = formatHandler.getValidConfigurations(playerCount);
+
+        if (validConfigs.length === 0) {
+          configContainer.innerHTML = `
+            <div class="form-group text-center">
+              <p class="error-message">⚠️ No optimal configurations available for ${playerCount} players. Recommended player counts: 8, 12, 16, 20, 24, or 32.</p>
+            </div>
+          `;
+        } else {
+          // Find default selection (first config matches defaults)
+          const defaultIndex = validConfigs.findIndex(c =>
+            c.numGroups === defaultConfig.numGroups &&
+            c.advancingPerGroup === defaultConfig.advancingPerGroup
+          );
+
+          configContainer.innerHTML = `
+            <div class="form-group text-center">
+              <label for="groupStageConfig" class="form-label">Tournament Structure:</label>
+              <select id="groupStageConfig" class="form-select" aria-label="Select group stage configuration">
+                ${validConfigs.map((cfg, idx) => `
+                  <option value="${idx}" ${idx === Math.max(0, defaultIndex) ? "selected" : ""}>
+                    ${cfg.description}
+                  </option>
+                `).join("")}
+              </select>
+            </div>
+          `;
+        }
         break;
     }
   }
@@ -2136,11 +2148,19 @@ class UIManager {
         break;
 
       case "group-stage":
-        const numGroups = document.getElementById("numGroups");
-        const advancingPerGroup = document.getElementById("advancingPerGroup");
-        if (numGroups) config.numGroups = parseInt(numGroups.value);
-        if (advancingPerGroup) config.advancingPerGroup = parseInt(advancingPerGroup.value);
-        config.playersPerGroup = Math.floor(playerCount / config.numGroups);
+        const groupStageConfig = document.getElementById("groupStageConfig");
+        if (groupStageConfig) {
+          const formatHandler = tournamentFormats.factory.create('group-stage');
+          const validConfigs = formatHandler.getValidConfigurations(playerCount);
+          const selectedIndex = parseInt(groupStageConfig.value);
+
+          if (validConfigs[selectedIndex]) {
+            const selectedConfig = validConfigs[selectedIndex];
+            config.numGroups = selectedConfig.numGroups;
+            config.playersPerGroup = selectedConfig.playersPerGroup;
+            config.advancingPerGroup = selectedConfig.advancingPerGroup;
+          }
+        }
         break;
     }
 

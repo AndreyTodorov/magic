@@ -1552,17 +1552,74 @@ class GroupStageFormat extends TournamentFormatBase {
   }
 
   getRecommendedPlayerCounts() {
-    return [12, 16, 24, 32];
+    return [8, 12, 16, 20, 24, 32];
+  }
+
+  /**
+   * Get valid group configurations for a given player count
+   * Returns array of {numGroups, playersPerGroup, advancingPerGroup, description}
+   * Only returns configurations where:
+   * - Total advancing is a power of 2 (4, 8, 16, 32)
+   * - Groups have 4-6 players (or 3-8 as acceptable range)
+   * - Advancing per group is 1-2
+   * - Less than 50% of group advances
+   */
+  getValidConfigurations(numPlayers) {
+    const configs = [];
+
+    // Define optimal configurations per player count
+    const optimalConfigs = {
+      8: [
+        { numGroups: 2, playersPerGroup: 4, advancingPerGroup: 2, description: '2 groups of 4, top 2 advance → 4-player playoffs' }
+      ],
+      12: [
+        { numGroups: 4, playersPerGroup: 3, advancingPerGroup: 1, description: '4 groups of 3, top 1 advances → 4-player playoffs' },
+        { numGroups: 3, playersPerGroup: 4, advancingPerGroup: 2, description: '3 groups of 4, top 2 advance → 8-player playoffs (uneven groups)' }
+      ],
+      16: [
+        { numGroups: 4, playersPerGroup: 4, advancingPerGroup: 2, description: '4 groups of 4, top 2 advance → 8-player playoffs (recommended)' },
+        { numGroups: 4, playersPerGroup: 4, advancingPerGroup: 1, description: '4 groups of 4, winner only → 4-player playoffs (exclusive)' }
+      ],
+      20: [
+        { numGroups: 4, playersPerGroup: 5, advancingPerGroup: 2, description: '4 groups of 5, top 2 advance → 8-player playoffs (recommended)' },
+        { numGroups: 4, playersPerGroup: 5, advancingPerGroup: 1, description: '4 groups of 5, winner only → 4-player playoffs' }
+      ],
+      24: [
+        { numGroups: 4, playersPerGroup: 6, advancingPerGroup: 2, description: '4 groups of 6, top 2 advance → 8-player playoffs (recommended)' },
+        { numGroups: 4, playersPerGroup: 6, advancingPerGroup: 1, description: '4 groups of 6, winner only → 4-player playoffs (exclusive)' },
+        { numGroups: 8, playersPerGroup: 3, advancingPerGroup: 1, description: '8 groups of 3, winner only → 8-player playoffs' }
+      ],
+      32: [
+        { numGroups: 8, playersPerGroup: 4, advancingPerGroup: 2, description: '8 groups of 4, top 2 advance → 16-player playoffs (recommended)' },
+        { numGroups: 8, playersPerGroup: 4, advancingPerGroup: 1, description: '8 groups of 4, winner only → 8-player playoffs (exclusive)' },
+        { numGroups: 4, playersPerGroup: 8, advancingPerGroup: 2, description: '4 groups of 8, top 2 advance → 8-player playoffs' }
+      ]
+    };
+
+    return optimalConfigs[numPlayers] || [];
   }
 
   getDefaultConfig(numPlayers) {
-    // Try to create balanced groups of 4 players each
-    const numGroups = Math.floor(numPlayers / 4);
+    // Get first valid configuration
+    const validConfigs = this.getValidConfigurations(numPlayers);
+
+    if (validConfigs.length > 0) {
+      const config = validConfigs[0];
+      return {
+        numGroups: config.numGroups,
+        playersPerGroup: config.playersPerGroup,
+        advancingPerGroup: config.advancingPerGroup,
+        currentStage: 'groups',
+      };
+    }
+
+    // Fallback for non-standard player counts
+    const numGroups = Math.max(2, Math.floor(numPlayers / 4));
     return {
-      numGroups: Math.max(2, Math.min(numGroups, 8)),
-      playersPerGroup: 4,
+      numGroups,
+      playersPerGroup: Math.floor(numPlayers / numGroups),
       advancingPerGroup: 2,
-      currentStage: 'groups', // 'groups' or 'playoffs'
+      currentStage: 'groups',
     };
   }
 
@@ -1587,6 +1644,26 @@ class GroupStageFormat extends TournamentFormatBase {
       return {
         isValid: false,
         error: 'Cannot advance all players from group',
+      };
+    }
+
+    // Check if total advancing players is a power of 2
+    const totalAdvancing = config.numGroups * config.advancingPerGroup;
+    const isPowerOf2 = (n) => n > 0 && (n & (n - 1)) === 0;
+
+    if (!isPowerOf2(totalAdvancing)) {
+      return {
+        isValid: false,
+        error: `Total advancing players (${totalAdvancing}) must be a power of 2 (4, 8, 16, 32) for single elimination playoffs`,
+      };
+    }
+
+    // Warn if more than 50% advance
+    const advancePercent = (config.advancingPerGroup / config.playersPerGroup) * 100;
+    if (advancePercent > 50) {
+      return {
+        isValid: false,
+        error: `Too many players advancing (${advancePercent.toFixed(0)}%). Maximum 50% of each group should advance.`,
       };
     }
 
