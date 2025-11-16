@@ -1819,7 +1819,7 @@ class GroupStageFormat extends TournamentFormatBase {
       stat.qualityScore = stat.opponents.beaten.reduce((sum, oppIdx) => {
         // Safety check: ensure opponent index is valid
         if (oppIdx !== null && oppIdx !== undefined && stats[oppIdx]) {
-          return sum + stats[oppIdx].wins;
+          return sum + stats[oppIdx].points;
         }
         return sum;
       }, 0);
