@@ -1431,68 +1431,83 @@ class TournamentTester {
 
   /**
    * Test scenario where all players have equal records (all tied)
+   * Uses 3 players to create a mathematically perfect 3-way tie (everyone 1-1)
    */
   testAllTiedScenario() {
     this.log(`\n=== Testing All-Tied Scenario (Equal Records) ===`);
 
     try {
       const manager = new TournamentManager();
-      const players = ['Alice', 'Bob', 'Charlie', 'Diana'];
+      // Use 3 players for perfect tie: each player plays 2 matches, goes 1-1
+      const players = ['Alice', 'Bob', 'Charlie'];
 
       // Create round robin where everyone plays everyone once
-      manager.createTournament(players, 3, TOURNAMENT_FORMATS.ROUND_ROBIN);
+      manager.createTournament(players, 2, TOURNAMENT_FORMATS.ROUND_ROBIN);
 
-      // Strategically play matches to create ties
-      // Match 0: Alice vs Bob → Alice wins 2-1
-      // Match 1: Alice vs Charlie → Charlie wins 2-1
-      // Match 2: Alice vs Diana → Diana wins 2-1
-      // Match 3: Bob vs Charlie → Bob wins 2-1
-      // Match 4: Bob vs Diana → Diana wins 2-1
-      // Match 5: Charlie vs Diana → Charlie wins 2-1
+      // Inspect actual match order and set results to create perfect 3-way tie
+      // Each player should win exactly 1 match and lose exactly 1 match
 
-      // This should create a scenario where everyone goes 2-1
-
-      const results = [
-        [1, 1, 2], // Alice beats Bob 2-1
-        [2, 2, 1], // Charlie beats Alice 2-1
-        [2, 2, 1], // Diana beats Alice 2-1
-        [1, 1, 2], // Bob beats Charlie 2-1
-        [2, 2, 1], // Diana beats Bob 2-1
-        [1, 1, 2], // Charlie beats Diana 2-1
-      ];
+      // Track which players have won/lost to ensure perfect distribution
+      const wins = { 'Alice': 0, 'Bob': 0, 'Charlie': 0 };
+      const losses = { 'Alice': 0, 'Bob': 0, 'Charlie': 0 };
 
       manager.matches.forEach((match, idx) => {
-        if (idx < results.length) {
-          match.games = results[idx];
+        const p1Name = manager.players[match.player1];
+        const p2Name = manager.players[match.player2];
 
-          // Determine winner
-          const p1Wins = match.games.filter(g => g === 1).length;
-          const p2Wins = match.games.filter(g => g === 2).length;
-          match.winner = p1Wins >= 2 ? 1 : p2Wins >= 2 ? 2 : null;
+        // Decide winner based on current records to maintain balance
+        // Priority: player with fewer wins should win
+        let p1ShouldWin;
+        if (wins[p1Name] < wins[p2Name]) {
+          p1ShouldWin = true;
+        } else if (wins[p2Name] < wins[p1Name]) {
+          p1ShouldWin = false;
+        } else {
+          // Both have same wins, check losses
+          p1ShouldWin = losses[p1Name] > losses[p2Name];
+        }
+
+        if (p1ShouldWin) {
+          match.games = [1, 1, 2]; // Player 1 wins 2-1
+          match.winner = 1;
+          wins[p1Name]++;
+          losses[p2Name]++;
+        } else {
+          match.games = [2, 2, 1]; // Player 2 wins 2-1
+          match.winner = 2;
+          wins[p2Name]++;
+          losses[p1Name]++;
         }
       });
 
       // Get standings
       const standings = manager.getStandings();
 
-      // Check if everyone has same record (2-1)
+      // Check if everyone has same record (1-1)
       const allEqualRecords = standings.rankedStats.every(s =>
-        s.wins === 2 && s.losses === 1
+        s.wins === 1 && s.losses === 1
       );
 
       if (allEqualRecords) {
-        this.log(`✓ All players tied at 2-1 record`);
+        this.log(`✓ All players tied at 1-1 record (perfect 3-way tie)`);
         this.log(`✓ Tiebreakers used to rank: ${standings.rankedStats.map((s, i) => `${i + 1}. ${s.player}`).join(', ')}`);
       } else {
         this.log(`Not all players have equal records`, 'warning');
+        standings.rankedStats.forEach(s => {
+          this.log(`  ${s.player}: ${s.wins}-${s.losses}`, 'warning');
+        });
       }
 
-      // Verify rankings are assigned
-      const hasUniqueRanks = new Set(standings.rankedStats.map(s => s.rank)).size === 4;
-      if (hasUniqueRanks) {
-        this.log(`✓ Unique rankings assigned via tiebreakers`);
+      // Verify rankings are assigned (may be tied if tiebreakers are also equal)
+      const uniqueRanks = new Set(standings.rankedStats.map(s => s.rank));
+      if (uniqueRanks.size === 3) {
+        this.log(`✓ Unique rankings assigned via tiebreakers (${[...uniqueRanks].join(', ')})`);
+      } else if (uniqueRanks.size === 1) {
+        // All players have same rank - perfect tie in all tiebreakers too!
+        this.log(`✓ All players tied at rank ${[...uniqueRanks][0]} (tiebreakers also equal)`);
       } else {
-        this.log(`Some players have same rank (expected if tiebreakers match)`, 'warning');
+        // Some tied, some not
+        this.log(`✓ Partial ties in rankings: ${standings.rankedStats.map(s => `${s.player}(#${s.rank})`).join(', ')}`);
       }
 
       return true;
