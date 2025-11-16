@@ -1130,8 +1130,12 @@ class UIManager {
 
     // Get unique stages and playoff rounds
     const hasGroups = matches.some(m => m.stage === 'groups');
+    const groupMatches = matches.filter(m => m.stage === 'groups');
     const playoffMatches = matches.filter(m => m.stage === 'playoffs');
     const playoffRounds = [...new Set(playoffMatches.map(m => m.round).filter(r => r !== undefined))].sort((a, b) => a - b);
+
+    // Check if groups are complete (all group matches have winners)
+    const groupsComplete = groupMatches.length > 0 && groupMatches.every(m => m.winner !== null);
 
     // Show navigation
     navContainer.style.display = 'block';
@@ -1145,7 +1149,7 @@ class UIManager {
     // Create navigation buttons
     const fragment = document.createDocumentFragment();
 
-    // Groups button
+    // Groups button (always enabled)
     if (hasGroups) {
       const groupsBtn = document.createElement('button');
       groupsBtn.className = 'round-nav-btn stage-nav-btn' + (this.selectedStage === 'groups' ? ' active' : '');
@@ -1159,7 +1163,16 @@ class UIManager {
       playoffRounds.forEach(round => {
         const btn = document.createElement('button');
         const isSelected = this.selectedStage === 'playoffs' && this.selectedRound === round;
+
+        // Check if this round is unlocked (groups complete and round has active matches)
+        const roundMatches = playoffMatches.filter(m => m.round === round);
+        const roundUnlocked = groupsComplete && roundMatches.some(m => !m.isPlaceholder);
+
         btn.className = 'round-nav-btn stage-nav-btn' + (isSelected ? ' active' : '');
+        if (!roundUnlocked) {
+          btn.classList.add('disabled');
+          btn.disabled = true;
+        }
 
         // Get playoff round label
         const label = this.getRoundLabel(round, playoffRounds.length, TOURNAMENT_FORMATS.SINGLE_ELIMINATION);
@@ -1348,9 +1361,15 @@ class UIManager {
     // Use bracket position if available (for elimination formats), otherwise use match number
     const matchLabel = match.bracketPosition || `Match ${match.id + 1}`;
 
+    // Add group label for Group Stage matches
+    const groupLabel = match.group && match.stage === 'groups'
+      ? `<div class="badge badge-group">Group ${match.group}</div>`
+      : '';
+
     card.innerHTML = `
       <div class="match-card__header">
         <div class="match-number">${matchLabel}</div>
+        ${groupLabel}
         <div class="badge">Best of 3</div>
       </div>
 

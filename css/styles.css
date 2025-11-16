@@ -1739,9 +1739,19 @@ body {
   transform: translate(-1px, -1px);
 }
 
-.round-nav-btn:disabled {
-  opacity: 0.5;
+.round-nav-btn:disabled,
+.round-nav-btn.disabled {
+  opacity: 0.4;
   cursor: not-allowed;
+  background: #f0f0f0;
+  color: #999;
+  pointer-events: none;
+}
+
+.round-nav-btn:disabled:hover,
+.round-nav-btn.disabled:hover {
+  transform: none;
+  box-shadow: 2px 2px 0px var(--color-border);
 }
 
 /* === MATCHES CONTAINER === */
@@ -1801,6 +1811,11 @@ body {
 
 .badge-bye {
   background: var(--color-accent-green);
+}
+
+.badge-group {
+  background: var(--color-accent-blue);
+  color: white;
 }
 
 .player-row.tbd {
