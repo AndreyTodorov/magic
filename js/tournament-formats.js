@@ -348,6 +348,7 @@ class RoundRobinFormat extends TournamentFormatBase {
 
   /**
    * Calculate quality score for a player based on opponents beaten
+   * Quality score = sum of beaten opponents' points
    */
   calculateQualityScore(playerIndex, allStats) {
     const stat = allStats[playerIndex];
@@ -356,11 +357,6 @@ class RoundRobinFormat extends TournamentFormatBase {
     // Add points from each opponent beaten
     stat.opponents.beaten.forEach((oppIndex) => {
       qualityScore += allStats[oppIndex].points;
-    });
-
-    // Subtract points from opponents who beat this player
-    stat.opponents.lostTo.forEach((oppIndex) => {
-      qualityScore -= allStats[oppIndex].points * 0.5;
     });
 
     return qualityScore;
