@@ -119,15 +119,16 @@ magic-mikes-tournament/
 Scripts **must** be loaded in this exact order (see HTML files):
 
 ```html
-<script src="js/config.js"></script>
-<script src="js/logger.js"></script>
-<script src="js/firebase.js"></script>         <!-- OR localStorage-manager.js -->
-<script src="js/tournament.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/app.js"></script>
+
+<script src="../js/config.js"></script>
+<script src="../js/logger.js"></script>
+<script src="../js/firebase.js"></script>         <!-- OR localStorage-manager.js -->
+<script src="../js/tournament.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/app.js"></script>
 <script>
-  const app = new App();
-  app.init();
+    const app = new App();
+    app.init();
 </script>
 ```
 
