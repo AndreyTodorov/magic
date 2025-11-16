@@ -19,6 +19,9 @@ js/config.local.js
 coverage/
 .nyc_output/
 
+# Test results (auto-generated)
+tests/test-results.json
+
 # Logs
 *.log
 npm-debug.log*
