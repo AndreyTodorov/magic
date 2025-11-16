@@ -27,10 +27,14 @@ class AuthManager {
         this.onAuthChangeCallbacks.forEach(callback => callback(user));
 
         if (user) {
-          console.log("✓ User authenticated:", user.email || user.uid);
+          if (ENVIRONMENT === 'development') {
+            console.log("✓ User authenticated:", user.email || user.uid);
+          }
           resolve(user);
         } else {
-          console.log("No user signed in");
+          if (ENVIRONMENT === 'development') {
+            console.log("No user signed in");
+          }
           resolve(null);
         }
       });

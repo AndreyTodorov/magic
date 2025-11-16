@@ -16,7 +16,9 @@ class LocalStorageManager {
    * Initialize (mock - always succeeds)
    */
   async initialize() {
-    console.log("✓ LocalStorage mode initialized (offline mode)");
+    if (ENVIRONMENT === 'development') {
+      console.log("✓ LocalStorage mode initialized (offline mode)");
+    }
     this.updateConnectionStatus(true);
     return true;
   }
@@ -78,7 +80,9 @@ class LocalStorageManager {
     tournaments[tournamentCode] = tournamentData;
     this.saveAllTournaments(tournaments);
 
-    console.log("✓ Tournament created (local):", tournamentCode);
+    if (ENVIRONMENT === 'development') {
+      console.log("✓ Tournament created (local):", tournamentCode);
+    }
     return true;
   }
 
@@ -99,7 +103,9 @@ class LocalStorageManager {
     tournaments[tournamentCode].members[this.currentUser.uid] = true;
     this.saveAllTournaments(tournaments);
 
-    console.log("✓ Joined tournament (local):", tournamentCode);
+    if (ENVIRONMENT === 'development') {
+      console.log("✓ Joined tournament (local):", tournamentCode);
+    }
     return true;
   }
 
@@ -203,7 +209,9 @@ class LocalStorageManager {
     delete tournaments[tournamentCode];
     this.saveAllTournaments(tournaments);
 
-    console.log("✓ Tournament deleted (local):", tournamentCode);
+    if (ENVIRONMENT === 'development') {
+      console.log("✓ Tournament deleted (local):", tournamentCode);
+    }
     return true;
   }
 
@@ -230,7 +238,9 @@ class LocalStorageManager {
   clearAllTournaments() {
     localStorage.removeItem(this.storageKey);
     this.listeners.clear();
-    console.log("✓ All local tournaments cleared");
+    if (ENVIRONMENT === 'development') {
+      console.log("✓ All local tournaments cleared");
+    }
   }
 
   /**
@@ -248,7 +258,9 @@ class LocalStorageManager {
     link.click();
 
     URL.revokeObjectURL(url);
-    console.log("✓ Tournaments exported");
+    if (ENVIRONMENT === 'development') {
+      console.log("✓ Tournaments exported");
+    }
   }
 
   /**
@@ -262,7 +274,9 @@ class LocalStorageManager {
         try {
           const tournaments = JSON.parse(e.target.result);
           this.saveAllTournaments(tournaments);
-          console.log("✓ Tournaments imported");
+          if (ENVIRONMENT === 'development') {
+            console.log("✓ Tournaments imported");
+          }
           resolve(true);
         } catch (error) {
           console.error("Import failed:", error);
@@ -284,11 +298,15 @@ if (
   FIREBASE_CONFIG.apiKey !== "FIREBASE_API_KEY"
 ) {
   // Use real Firebase
-  console.log("🔥 Using Firebase mode");
+  if (ENVIRONMENT === 'development') {
+    console.log("🔥 Using Firebase mode");
+  }
   firebaseManager = new FirebaseManager();
 } else {
   // Use LocalStorage fallback
-  console.log("💾 Using LocalStorage mode (offline)");
+  if (ENVIRONMENT === 'development') {
+    console.log("💾 Using LocalStorage mode (offline)");
+  }
   firebaseManager = new LocalStorageManager();
 
   // Add dev tools to window for debugging
@@ -301,8 +319,10 @@ if (
     },
   };
 
-  console.log("%cDev Tools Available:", "color: green; font-weight: bold");
-  console.log("• window.devTools.viewTournaments() - View all tournaments");
-  console.log("• window.devTools.clearTournaments() - Clear all data");
-  console.log("• window.devTools.exportTournaments() - Download backup");
+  if (ENVIRONMENT === 'development') {
+    console.log("%cDev Tools Available:", "color: green; font-weight: bold");
+    console.log("• window.devTools.viewTournaments() - View all tournaments");
+    console.log("• window.devTools.clearTournaments() - Clear all data");
+    console.log("• window.devTools.exportTournaments() - Download backup");
+  }
 }

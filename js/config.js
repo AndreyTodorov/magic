@@ -44,7 +44,9 @@ if (typeof window !== 'undefined') {
 // Override with local config if it exists (for local development)
 if (typeof FIREBASE_CONFIG_OVERRIDE !== 'undefined') {
     FIREBASE_CONFIG = FIREBASE_CONFIG_OVERRIDE;
-    console.log('✓ Using local Firebase configuration');
+    if (ENVIRONMENT === 'development') {
+        console.log('✓ Using local Firebase configuration');
+    }
 }
 
 if (typeof APPCHECK_SITE_KEY_OVERRIDE !== 'undefined') {
@@ -55,7 +57,10 @@ if (typeof ENVIRONMENT_OVERRIDE !== 'undefined') {
     ENVIRONMENT = ENVIRONMENT_OVERRIDE;
 }
 
-console.log(`🌍 Environment: ${ENVIRONMENT}`);
+// Only log environment in development
+if (ENVIRONMENT === 'development') {
+    console.log(`🌍 Environment: ${ENVIRONMENT}`);
+}
 
 // Debug helper: check if config is properly initialized
 if (typeof window !== 'undefined') {
@@ -78,8 +83,8 @@ if (typeof window !== 'undefined') {
         }
     };
 
-    // Auto-run on load
-    setTimeout(() => window.debugFirebaseConfig(), 100);
+    // Debug function available but not auto-run
+    // Run manually: window.debugFirebaseConfig()
 }
 
 /**

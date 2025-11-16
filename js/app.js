@@ -1032,12 +1032,16 @@ class App {
     if (!savedCode || isExpired) {
       if (isExpired && savedCode) {
         this.clearTournamentSession();
-        console.log("Tournament session expired");
+        if (ENVIRONMENT === 'development') {
+          console.log("Tournament session expired");
+        }
       }
       return;
     }
 
-    console.log("🔄 Attempting to rejoin tournament...");
+    if (ENVIRONMENT === 'development') {
+      console.log("🔄 Attempting to rejoin tournament...");
+    }
 
     try {
       // Check if tournament still exists
@@ -1047,11 +1051,15 @@ class App {
         // Rejoin tournament
         uiManager.elements.tournamentCode.value = savedCode;
         await this.joinTournament(savedCode);
-        console.log("✓ Automatically rejoined tournament:", savedCode);
+        if (ENVIRONMENT === 'development') {
+          console.log("✓ Automatically rejoined tournament:", savedCode);
+        }
       } else {
         // Tournament no longer exists
         this.clearTournamentSession();
-        console.log("Tournament no longer exists");
+        if (ENVIRONMENT === 'development') {
+          console.log("Tournament no longer exists");
+        }
       }
     } catch (error) {
       console.error("Error rejoining tournament:", error);
