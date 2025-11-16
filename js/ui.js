@@ -969,11 +969,17 @@ class UIManager {
   /**
    * Render round/stage navigation for tournaments with rounds
    */
-  renderRoundNavigation(matches, format) {
+  renderRoundNavigation(matches, format, currentStage = null) {
     const navContainer = this.elements.roundNavigation;
     const buttonsContainer = this.elements.roundNavigationButtons;
 
     if (!navContainer || !buttonsContainer) return;
+
+    // Group Stage: Show stage navigation (Groups, playoff rounds)
+    if (format === TOURNAMENT_FORMATS.GROUP_STAGE) {
+      this.renderStageNavigation(matches, currentStage);
+      return;
+    }
 
     // Determine if this format needs round navigation
     const needsNavigation = format === TOURNAMENT_FORMATS.SWISS ||
@@ -1030,6 +1036,61 @@ class UIManager {
   }
 
   /**
+   * Render stage navigation for Group Stage tournaments
+   */
+  renderStageNavigation(matches, currentStage) {
+    const navContainer = this.elements.roundNavigation;
+    const buttonsContainer = this.elements.roundNavigationButtons;
+
+    if (!navContainer || !buttonsContainer) return;
+
+    // Get unique stages and playoff rounds
+    const hasGroups = matches.some(m => m.stage === 'groups');
+    const playoffMatches = matches.filter(m => m.stage === 'playoffs');
+    const playoffRounds = [...new Set(playoffMatches.map(m => m.round).filter(r => r !== undefined))].sort((a, b) => a - b);
+
+    // Show navigation
+    navContainer.style.display = 'block';
+    buttonsContainer.innerHTML = '';
+
+    // Initialize selected stage if not set
+    if (this.selectedStage === undefined) {
+      this.selectedStage = currentStage || 'groups';
+    }
+
+    // Create navigation buttons
+    const fragment = document.createDocumentFragment();
+
+    // Groups button
+    if (hasGroups) {
+      const groupsBtn = document.createElement('button');
+      groupsBtn.className = 'round-nav-btn stage-nav-btn' + (this.selectedStage === 'groups' ? ' active' : '');
+      groupsBtn.textContent = '📦 Groups';
+      groupsBtn.dataset.stage = 'groups';
+      fragment.appendChild(groupsBtn);
+    }
+
+    // Playoff round buttons
+    if (playoffRounds.length > 0) {
+      playoffRounds.forEach(round => {
+        const btn = document.createElement('button');
+        const isSelected = this.selectedStage === 'playoffs' && this.selectedRound === round;
+        btn.className = 'round-nav-btn stage-nav-btn' + (isSelected ? ' active' : '');
+
+        // Get playoff round label
+        const label = this.getRoundLabel(round, playoffRounds.length, TOURNAMENT_FORMATS.SINGLE_ELIMINATION);
+        btn.textContent = `🏆 ${label}`;
+        btn.dataset.stage = 'playoffs';
+        btn.dataset.round = round;
+
+        fragment.appendChild(btn);
+      });
+    }
+
+    buttonsContainer.appendChild(fragment);
+  }
+
+  /**
    * Get human-readable label for a round
    */
   getRoundLabel(round, totalRounds, format) {
@@ -1059,6 +1120,16 @@ class UIManager {
   }
 
   /**
+   * Set selected stage for Group Stage tournaments
+   */
+  setSelectedStage(stage, round = null) {
+    this.selectedStage = stage;
+    if (round !== null) {
+      this.selectedRound = round;
+    }
+  }
+
+  /**
    * Render all matches
    * OPTIMIZED: Uses DocumentFragment for batch DOM insertion
    */
@@ -1076,13 +1147,25 @@ class UIManager {
         return;
       }
 
-      // For multi-stage formats (Group Stage + Playoffs), only show matches from current stage
-      if (currentStage && match.stage && match.stage !== currentStage) {
+      // For multi-stage formats (Group Stage + Playoffs), filter by selected stage
+      if (match.stage && this.selectedStage !== undefined && this.selectedStage !== null) {
+        // If a specific stage is selected, only show matches from that stage
+        if (match.stage !== this.selectedStage) {
+          return;
+        }
+        // For playoff stage, also filter by round if selected
+        if (this.selectedStage === 'playoffs' && this.selectedRound !== null && this.selectedRound !== 'all') {
+          if (match.round !== this.selectedRound) {
+            return;
+          }
+        }
+      } else if (currentStage && match.stage && match.stage !== currentStage) {
+        // Fallback: use currentStage if selectedStage is not set
         return;
       }
 
-      // Filter by selected round if set
-      if (this.selectedRound !== null && this.selectedRound !== 'all') {
+      // Filter by selected round if set (for non-stage tournaments)
+      if (!match.stage && this.selectedRound !== null && this.selectedRound !== 'all') {
         if (match.round !== this.selectedRound) {
           return;
         }
@@ -1614,7 +1697,15 @@ class UIManager {
    * Update stage advancement button visibility and text
    */
   updateStageAdvancement(canAdvance, format, currentStage = null) {
-    if (!this.elements.stageAdvancement) return;
+    if (!this.elements.stageAdvancement) {
+      // Try to get the element if it wasn't cached
+      const elem = document.getElementById('stageAdvancement');
+      if (elem) {
+        this.elements.stageAdvancement = elem;
+      } else {
+        return;
+      }
+    }
 
     if (!canAdvance) {
       this.elements.stageAdvancement.style.display = "none";
