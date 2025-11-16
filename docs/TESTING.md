@@ -765,6 +765,6 @@ Run tests after any changes to:
 
 ## Questions or Issues?
 
-- Check [README.md](README.md) for project overview
+- Check [README.md](../README.md) for project overview
 - See [LOCAL-DEV.md](LOCAL-DEV.md) for development setup
-- Review [CLAUDE.md](CLAUDE.md) for architecture details
+- Review [CLAUDE.md](../CLAUDE.md) for architecture details

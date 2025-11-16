@@ -40,7 +40,7 @@ xdg-open index-sandalone.html
 
 For tournaments where multiple people need to access the same data:
 
-1. Set up Firebase (see [LOCAL-DEV.md](LOCAL-DEV.md) for detailed instructions)
+1. Set up Firebase (see [LOCAL-DEV.md](docs/LOCAL-DEV.md) for detailed instructions)
 2. Update `js/config.js` with your Firebase credentials
 3. Start a local server:
 
@@ -60,8 +60,8 @@ npx http-server -p 8000
 
 ## Documentation
 
-- **[LOCAL-DEV.md](LOCAL-DEV.md)** - Local development setup, Firebase configuration, debugging, and troubleshooting
-- **[TESTING.md](TESTING.md)** - Comprehensive testing guide with unit, integration, and functional tests
+- **[LOCAL-DEV.md](docs/LOCAL-DEV.md)** - Local development setup, Firebase configuration, debugging, and troubleshooting
+- **[TESTING.md](docs/TESTING.md)** - Comprehensive testing guide with unit, integration, and functional tests
 - **[CLAUDE.md](CLAUDE.md)** - Architecture reference for AI assistants (Claude Code)
 
 ## Architecture Overview
@@ -276,7 +276,7 @@ npm run test:all
 - **Functional Tests**: All tournament formats and configurations
 - **Total**: 190+ test scenarios
 
-See [TESTING.md](TESTING.md) for detailed testing documentation.
+See [TESTING.md](docs/TESTING.md) for detailed testing documentation.
 
 ## Browser Compatibility
 
@@ -376,7 +376,7 @@ Track active issues and planned features in [docs/ISSUES.md](docs/ISSUES.md):
 
 ## Troubleshooting
 
-See [LOCAL-DEV.md](LOCAL-DEV.md) for comprehensive troubleshooting:
+See [LOCAL-DEV.md](docs/LOCAL-DEV.md) for comprehensive troubleshooting:
 
 - Data not saving → Check localStorage enabled
 - CORS errors → Use local server instead of `file://` protocol
