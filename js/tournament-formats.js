@@ -140,6 +140,18 @@ class TournamentFormatBase {
   getRecommendedPlayerCounts() {
     return [];
   }
+
+  /**
+   * Get default/optimal player count for this format
+   * @returns {number} Default player count
+   */
+  getDefaultPlayerCount() {
+    const recommended = this.getRecommendedPlayerCounts();
+    if (recommended.length > 0) {
+      return recommended[0]; // First recommended is usually the best default
+    }
+    return APP_CONFIG.DEFAULT_PLAYERS;
+  }
 }
 
 /**
@@ -162,6 +174,10 @@ class RoundRobinFormat extends TournamentFormatBase {
 
   getRecommendedPlayerCounts() {
     return [4, 6, 7, 8];
+  }
+
+  getDefaultPlayerCount() {
+    return 8; // 8 players is ideal for round robin tournaments
   }
 
   getDefaultConfig(numPlayers) {
@@ -747,6 +763,10 @@ class SingleEliminationFormat extends TournamentFormatBase {
     return [4, 8, 16, 32, 64];
   }
 
+  getDefaultPlayerCount() {
+    return 8; // 8 players creates a perfect 3-round bracket
+  }
+
   getDefaultConfig(numPlayers) {
     return {
       seedingMethod: 'random', // 'random' or 'seeded'
@@ -1117,6 +1137,10 @@ class DoubleEliminationFormat extends TournamentFormatBase {
 
   getRecommendedPlayerCounts() {
     return [4, 8, 16, 32];
+  }
+
+  getDefaultPlayerCount() {
+    return 8; // 8 players creates a manageable double elimination bracket
   }
 
   getDefaultConfig(numPlayers) {
