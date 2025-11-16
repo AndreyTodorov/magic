@@ -660,10 +660,14 @@ class TournamentManager {
     const formatHandler = tournamentFormats.factory.create(this.format);
 
     // Calculate standings using format-specific method
+    // For multi-stage formats, include current stage in config
+    const configWithStage = this.currentStage
+      ? { ...this.formatConfig, currentStage: this.currentStage }
+      : this.formatConfig;
     const stats = formatHandler.calculateStandings(
       this.matches,
       this.players,
-      this.formatConfig
+      configWithStage
     );
 
     // Rank players based on format-specific tiebreakers
@@ -1235,6 +1239,7 @@ class TournamentManager {
 
     // Update current stage
     this.currentStage = 'playoffs';
+    this.formatConfig.currentStage = 'playoffs';
 
     // Invalidate cache
     this.standingsCache = null;

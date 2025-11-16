@@ -1839,6 +1839,7 @@ class GroupStageFormat extends TournamentFormatBase {
       losses: 0,
       gamesWon: 0,
       gamesLost: 0,
+      points: 0,
       roundEliminated: null,
       matchesPlayed: 0,
       opponents: { beaten: [], lostTo: [] },
@@ -1873,6 +1874,7 @@ class GroupStageFormat extends TournamentFormatBase {
 
       stats[winner].wins++;
       stats[loser].losses++;
+      stats[winner].points += 3; // 3 points per match win
       stats[winner].matchesPlayed++;
       stats[loser].matchesPlayed++;
 
@@ -1885,8 +1887,6 @@ class GroupStageFormat extends TournamentFormatBase {
         stats[loser].roundEliminated = match.round;
       }
     });
-
-    // No points calculation for playoffs - ranking is by bracket position
 
     return stats;
   }

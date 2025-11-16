@@ -1477,9 +1477,7 @@ class UIManager {
           }
         </div>
       </div>
-      <div class="standing-points">${stat.points.toFixed(
-        1
-      )}<span style="font-size: 0.6em; color: #999;">pts</span></div>
+      <div class="standing-points">${stat.points !== undefined ? stat.points.toFixed(1) : '0.0'}<span style="font-size: 0.6em; color: #999;">pts</span></div>
     `;
 
     return row;
