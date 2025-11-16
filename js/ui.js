@@ -2237,7 +2237,7 @@ class UIManager {
 
       case "group-stage":
         // Get valid configurations for this player count
-        const playerCount = parseInt(this.elements.playerCount?.value) || APP_CONFIG.DEFAULT_PLAYERS;
+        // playerCount already declared at function scope (line 2184)
         const formatHandler = tournamentFormats.factory.create('group-stage');
         const validConfigs = formatHandler.getValidConfigurations(playerCount);
 
