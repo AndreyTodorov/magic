@@ -192,7 +192,8 @@ body {
   border-radius: var(--radius-full);
   flex-shrink: 0;
   border: 2px solid #000000;
-  transition: all var(--transition-base);
+  transition: width var(--transition-base), height var(--transition-base);
+  will-change: opacity;
 }
 
 .connection-status.minimized .status-dot {
@@ -202,12 +203,12 @@ body {
 
 .status-dot.connected {
   background: #ffffff;
-  animation: pulse 2s infinite;
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .status-dot.disconnected {
   background: #ffffff;
-  animation: pulse 0.3s infinite;
+  animation: pulse 1s ease-in-out infinite;
 }
 
 .status-dot.local {
