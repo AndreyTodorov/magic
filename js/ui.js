@@ -1104,9 +1104,33 @@ class UIManager {
     fragment.appendChild(allBtn);
 
     // Add round buttons
-    rounds.forEach(round => {
+    rounds.forEach((round, index) => {
       const btn = document.createElement('button');
       btn.className = 'round-nav-btn' + (this.selectedRound === round ? ' active' : '');
+
+      // Check if this round is unlocked (for elimination formats)
+      const isElimination = format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+                            format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION;
+
+      let roundUnlocked = true;
+      if (isElimination && index > 0) {
+        // For elimination formats, check if previous round is complete
+        const previousRound = rounds[index - 1];
+        const previousRoundMatches = matches.filter(m => m.round === previousRound && !m.isBye);
+        const previousRoundComplete = previousRoundMatches.length > 0 &&
+                                     previousRoundMatches.every(m => m.winner !== null);
+
+        // Round is unlocked if previous round is complete OR current round has non-placeholder matches
+        const currentRoundMatches = matches.filter(m => m.round === round);
+        const hasActiveMatches = currentRoundMatches.some(m => !m.isPlaceholder);
+
+        roundUnlocked = previousRoundComplete || hasActiveMatches;
+      }
+
+      if (!roundUnlocked) {
+        btn.classList.add('disabled');
+        btn.disabled = true;
+      }
 
       // Get round label based on format
       const label = this.getRoundLabel(round, rounds.length, format);
