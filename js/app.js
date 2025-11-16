@@ -718,7 +718,7 @@ class App {
       );
     } else if (currentView === "matches") {
       // Render round navigation for formats with rounds
-      uiManager.renderRoundNavigation(matches, tournamentManager.format);
+      uiManager.renderRoundNavigation(matches, tournamentManager.format, tournamentManager.currentStage);
       // Render matches (will be filtered by selected round if applicable)
       uiManager.renderMatches(matches, players, tournamentManager.currentStage);
     } else if (currentView === "standings") {
@@ -774,13 +774,23 @@ class App {
    * Handle round navigation button click
    */
   handleRoundNavigation(button) {
-    const round = button.dataset.round;
+    // Check if this is a stage navigation button (Group Stage format)
+    if (button.dataset.stage) {
+      const stage = button.dataset.stage;
+      const round = button.dataset.round ? parseInt(button.dataset.round) : null;
 
-    // Convert 'all' string to 'all', and numeric strings to numbers
-    const selectedRound = round === 'all' ? 'all' : parseInt(round);
+      // Update selected stage in UI manager
+      uiManager.setSelectedStage(stage, round);
+    } else {
+      // Regular round navigation
+      const round = button.dataset.round;
 
-    // Update selected round in UI manager
-    uiManager.setSelectedRound(selectedRound);
+      // Convert 'all' string to 'all', and numeric strings to numbers
+      const selectedRound = round === 'all' ? 'all' : parseInt(round);
+
+      // Update selected round in UI manager
+      uiManager.setSelectedRound(selectedRound);
+    }
 
     // Re-render matches with the new filter
     this.renderTournament(true);
