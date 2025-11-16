@@ -12,6 +12,9 @@ class UIManager {
     // Tracks whether the user explicitly collapsed/expanded the tournament code
     // null = no explicit user action yet, true = user collapsed, false = user expanded
     this.codeDisplayUserCollapsed = null;
+    // Track the currently selected round/stage for filtering matches
+    this.selectedRound = null;
+    this.selectedStage = null;
   }
 
   /**
@@ -76,6 +79,9 @@ class UIManager {
       // Scoring legend (expandable explanation)
       scoringLegend: document.getElementById("scoringLegend"),
       scoringLegendDetails: document.getElementById("scoringLegendDetails"),
+      // Round/stage navigation
+      roundNavigation: document.getElementById("roundNavigation"),
+      roundNavigationButtons: document.getElementById("roundNavigationButtons"),
     };
 
     // Restore saved view (if any)
@@ -960,6 +966,98 @@ class UIManager {
   }
 
   /**
+   * Render round/stage navigation for tournaments with rounds
+   */
+  renderRoundNavigation(matches, format) {
+    const navContainer = this.elements.roundNavigation;
+    const buttonsContainer = this.elements.roundNavigationButtons;
+
+    if (!navContainer || !buttonsContainer) return;
+
+    // Determine if this format needs round navigation
+    const needsNavigation = format === TOURNAMENT_FORMATS.SWISS ||
+                           format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+                           format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION;
+
+    if (!needsNavigation || matches.length === 0) {
+      navContainer.style.display = 'none';
+      return;
+    }
+
+    // Get all unique rounds from matches
+    const rounds = [...new Set(matches.map(m => m.round).filter(r => r !== undefined))].sort((a, b) => a - b);
+
+    if (rounds.length <= 1) {
+      // No need for navigation if there's only one round
+      navContainer.style.display = 'none';
+      return;
+    }
+
+    // Show navigation
+    navContainer.style.display = 'block';
+    buttonsContainer.innerHTML = '';
+
+    // Set default selected round if not set
+    if (this.selectedRound === null) {
+      this.selectedRound = rounds[0];
+    }
+
+    // Create navigation buttons
+    const fragment = document.createDocumentFragment();
+
+    // Add "All" button for showing all rounds
+    const allBtn = document.createElement('button');
+    allBtn.className = 'round-nav-btn' + (this.selectedRound === 'all' ? ' active' : '');
+    allBtn.textContent = 'All Rounds';
+    allBtn.dataset.round = 'all';
+    fragment.appendChild(allBtn);
+
+    // Add round buttons
+    rounds.forEach(round => {
+      const btn = document.createElement('button');
+      btn.className = 'round-nav-btn' + (this.selectedRound === round ? ' active' : '');
+
+      // Get round label based on format
+      const label = this.getRoundLabel(round, rounds.length, format);
+      btn.textContent = label;
+      btn.dataset.round = round;
+
+      fragment.appendChild(btn);
+    });
+
+    buttonsContainer.appendChild(fragment);
+  }
+
+  /**
+   * Get human-readable label for a round
+   */
+  getRoundLabel(round, totalRounds, format) {
+    if (format === TOURNAMENT_FORMATS.SWISS) {
+      return `Round ${round}`;
+    }
+
+    if (format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION || format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION) {
+      // Calculate elimination stage names
+      const remainingRounds = totalRounds - round + 1;
+
+      if (remainingRounds === 1) return 'Finals';
+      if (remainingRounds === 2) return 'Semifinals';
+      if (remainingRounds === 3) return 'Quarterfinals';
+
+      return `Round ${round}`;
+    }
+
+    return `Round ${round}`;
+  }
+
+  /**
+   * Set the selected round for filtering matches
+   */
+  setSelectedRound(round) {
+    this.selectedRound = round;
+  }
+
+  /**
    * Render all matches
    * OPTIMIZED: Uses DocumentFragment for batch DOM insertion
    */
@@ -980,6 +1078,13 @@ class UIManager {
       // For multi-stage formats (Group Stage + Playoffs), only show matches from current stage
       if (currentStage && match.stage && match.stage !== currentStage) {
         return;
+      }
+
+      // Filter by selected round if set
+      if (this.selectedRound !== null && this.selectedRound !== 'all') {
+        if (match.round !== this.selectedRound) {
+          return;
+        }
       }
 
       // Skip matches that aren't ready to be displayed:

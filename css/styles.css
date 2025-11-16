@@ -1697,6 +1697,53 @@ body {
   border: 2px solid var(--color-border);
 }
 
+/* === ROUND NAVIGATION === */
+.round-navigation {
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.round-navigation__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  justify-content: center;
+}
+
+.round-nav-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: white;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: clamp(0.85rem, 2vw, 0.95rem);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 2px 2px 0px var(--color-border);
+  min-width: 80px;
+}
+
+.round-nav-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px var(--color-border);
+}
+
+.round-nav-btn.active {
+  background: var(--color-primary);
+  color: white;
+  box-shadow: 3px 3px 0px var(--color-border);
+  transform: translate(-1px, -1px);
+}
+
+.round-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* === MATCHES CONTAINER === */
 .matches-container {
   display: grid;
