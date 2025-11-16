@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tournament Scoring Tests</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #output {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .summary {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .summary.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .summary.failure {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .loading {
+      color: #666;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Tournament Scoring Tests</h1>
+    <p class="subtitle">Automated tests for scoring and quality score calculations</p>
+
+    <button id="runTests">Run All Tests</button>
+
+    <div id="summary"></div>
+
+    <div id="output"></div>
+  </div>
+
+  <!-- Load tournament code -->
+  <script src="../js/config.js"></script>
+  <script src="../js/logger.js"></script>
+  <script src="../js/tournament-formats.js"></script>
+
+  <!-- Load tests -->
+  <script src="scoring-tests.js"></script>
+
+  <script>
+    const outputEl = document.getElementById('output');
+    const summaryEl = document.getElementById('summary');
+    const runButton = document.getElementById('runTests');
+
+    // Capture console output
+    const originalLog = console.log;
+    const originalError = console.error;
+
+    function captureConsole() {
+      let output = '';
+
+      console.log = (...args) => {
+        const message = args.join(' ');
+        output += message + '\n';
+        outputEl.textContent = output;
+        originalLog.apply(console, args);
+      };
+
+      console.error = (...args) => {
+        const message = args.join(' ');
+        output += message + '\n';
+        outputEl.textContent = output;
+        originalError.apply(console, args);
+      };
+
+      return () => {
+        console.log = originalLog;
+        console.error = originalError;
+      };
+    }
+
+    // Run tests on button click
+    runButton.addEventListener('click', async () => {
+      runButton.disabled = true;
+      outputEl.textContent = '';
+      summaryEl.innerHTML = '<p class="loading">Running tests...</p>';
+
+      const restoreConsole = captureConsole();
+
+      try {
+        const results = await ScoringTests.runAll();
+
+        // Show summary
+        if (results.failed === 0) {
+          summaryEl.innerHTML = `
+            <div class="summary success">
+              ✅ All ${results.total} tests passed!
+            </div>
+          `;
+        } else {
+          summaryEl.innerHTML = `
+            <div class="summary failure">
+              ❌ ${results.failed} of ${results.total} tests failed
+            </div>
+          `;
+        }
+      } catch (error) {
+        summaryEl.innerHTML = `
+          <div class="summary failure">
+            ❌ Test execution error: ${error.message}
+          </div>
+        `;
+        console.error('Test execution error:', error);
+      } finally {
+        restoreConsole();
+        runButton.disabled = false;
+      }
+    });
+
+    // Show initial message
+    outputEl.textContent = 'Click "Run All Tests" to start testing...';
+  </script>
+</body>
+</html>
