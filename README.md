@@ -34,22 +34,37 @@ xdg-open index-sandalone.html
 
 ### Firebase Mode (Multi-Device Sync)
 
-1. Set up Firebase (see [docs/FIREBASE-SETUP.md](docs/FIREBASE-SETUP.md))
-2. Update [js/config.js](js/config.js) with your credentials
-3. Start a local server:
+**Quick Setup:**
+
+1. Create Firebase project at [console.firebase.google.com](https://console.firebase.google.com/)
+2. Enable Realtime Database (Start in test mode initially)
+3. Enable Authentication → Email/Password
+4. Add your Firebase config to GitHub Secrets (for deployment) or `js/config.local.js` (for local dev)
+5. Start a local server:
 
 ```bash
-# Auto-detect available server
-./start-server.sh          # Mac/Linux
-start-server.bat           # Windows
-
-# Or manually
-python3 -m http.server 8000
+python3 -m http.server 8000    # Python
 # or
-npx http-server -p 8000
+npx http-server -p 8000        # Node.js
 ```
 
-4. Open http://localhost:8000
+6. Open http://localhost:8000
+
+**Database Rules:** Set in Firebase Console → Realtime Database → Rules:
+```json
+{
+  "rules": {
+    "tournaments": {
+      "$tournamentId": {
+        ".read": true,
+        ".write": true
+      }
+    }
+  }
+}
+```
+
+See [FIREBASE_RULES.md](FIREBASE_RULES.md) for production-ready secure rules.
 
 ## Testing
 
@@ -83,13 +98,13 @@ The application has comprehensive test coverage:
 - **Integration Tests**: App class and component interactions
 - **E2E Scenarios**: Complete user workflows and edge cases
 
-See [docs/TESTING.md](docs/TESTING.md) for detailed testing documentation.
+See [TESTING.md](TESTING.md) for detailed testing documentation.
 
 ## Documentation
 
 - **[CLAUDE.md](CLAUDE.md)** - Architecture and development guide
-- **[docs/TESTING.md](docs/TESTING.md)** - Testing guide and best practices
-- **[docs/FIREBASE-SETUP.md](docs/FIREBASE-SETUP.md)** - Firebase configuration (if needed)
+- **[TESTING.md](TESTING.md)** - Testing guide and best practices
+- **[FIREBASE_RULES.md](FIREBASE_RULES.md)** - Secure database rules for production
 
 ## Architecture
 
@@ -126,24 +141,33 @@ See [CLAUDE.md](CLAUDE.md) for detailed architecture documentation.
 5. Game Differential
 6. Total Games Won
 
-## Browser DevTools
+## Troubleshooting
 
-Open the browser console (F12) for debugging tools:
+**Firebase connection issues?** Open browser console (F12) and run:
 
 ```javascript
-// View all tournaments
-window.devTools.viewTournaments();
+window.testFirebaseConnection()    // Test database access
+window.debugFirebaseConfig()       // Verify config loaded
+```
 
-// Clear all data
-window.devTools.clearTournaments();
+**Common fixes:**
+- **Disconnected:** Check database exists in Firebase Console
+- **Permission denied:** Update database rules (see Firebase Mode section above)
+- **Wrong region:** Verify `FIREBASE_DATABASE_URL` matches your Firebase region
 
-// Export backup
-window.devTools.exportTournaments();
+**Still not working?** Use standalone mode: open `index-sandalone.html` (works offline)
 
-// Logger commands
-window.mmLogger.setLevel(3); // Set log level (0-4)
-window.mmLogger.getHistory(); // View log history
-window.mmLogger.exportLogs(); // Download logs
+## Browser DevTools
+
+```javascript
+// Data management
+window.devTools.viewTournaments()
+window.devTools.clearTournaments()
+window.devTools.exportTournaments()
+
+// Logging
+window.mmLogger.setLevel(3)        // 0-4: none/error/warn/info/debug
+window.mmLogger.exportLogs()
 ```
 
 ## Development

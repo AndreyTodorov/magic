@@ -20,25 +20,18 @@ class FirebaseManager {
    */
   async initialize() {
     try {
-      // Initialize Firebase app
       this.app = firebase.initializeApp(FIREBASE_CONFIG);
       this.database = firebase.database();
       this.auth = firebase.auth();
       this.isInitialized = true;
 
-      // Initialize App Check for security
       this.initializeAppCheck();
-
-      // Setup anonymous authentication
       await this.setupAuthentication();
-
-      // Monitor connection status
       this.monitorConnection();
 
-      console.log("✓ Firebase initialized successfully");
       return true;
     } catch (error) {
-      console.error("Firebase initialization error:", error);
+      console.error("Firebase initialization failed:", error);
       this.isInitialized = false;
       return false;
     }
@@ -49,23 +42,18 @@ class FirebaseManager {
    * Automatically enabled in production, disabled in development
    */
   initializeAppCheck() {
-    if (!APPCHECK_CONFIG.ENABLED) {
-      console.log(`⚠ App Check disabled in ${ENVIRONMENT} mode`);
-      return;
-    }
+    if (!APPCHECK_CONFIG.ENABLED) return;
 
     try {
-      // Check if App Check SDK is loaded
       if (!firebase.appCheck) {
-        console.warn('⚠ App Check SDK not loaded. Add script to index.html for production.');
+        console.warn('⚠ App Check SDK not loaded');
         return;
       }
 
       const appCheck = firebase.appCheck();
-      appCheck.activate(APPCHECK_SITE_KEY, true); // true = auto-refresh
-      console.log('✓ App Check activated');
+      appCheck.activate(APPCHECK_SITE_KEY, true);
     } catch (error) {
-      console.error('App Check activation failed:', error);
+      console.error('App Check failed:', error);
     }
   }
 
@@ -111,8 +99,6 @@ class FirebaseManager {
 
       if (isConnected) {
         if (wasDisconnected) {
-          console.log("✓ Reconnected to Firebase");
-          // Show user-friendly notification
           const statusText = document.getElementById("statusText");
           if (statusText) {
             statusText.textContent = "Reconnected";
@@ -122,27 +108,18 @@ class FirebaseManager {
               }
             }, 2000);
           }
-        } else {
-          console.log("✓ Connected to Firebase");
         }
         wasDisconnected = false;
       } else {
-        console.warn("⚠ Disconnected from Firebase");
-        console.warn("Troubleshooting tips:");
-        console.warn("1. Check Firebase Console → Realtime Database → Data (verify database exists)");
-        console.warn("2. Check Firebase Console → Realtime Database → Rules");
-        console.warn("3. Verify database URL in config matches your Firebase region");
-        console.warn("4. Run window.testFirebaseConnection() in console for detailed diagnostics");
+        if (!wasDisconnected) {
+          console.warn("⚠ Disconnected - Run window.testFirebaseConnection() for help");
+        }
         wasDisconnected = true;
       }
     }, (error) => {
-      console.error("❌ Firebase connection monitoring failed:", error);
-      console.error("Error code:", error.code);
-      console.error("Error message:", error.message);
-
+      console.error("❌ Firebase connection error:", error.code, error.message);
       if (error.code === 'PERMISSION_DENIED') {
-        console.error("⚠️ PERMISSION DENIED - Check your database rules!");
-        console.error("Expected rules:", DATABASE_RULES);
+        console.error("Check database rules in Firebase Console");
       }
     });
   }
@@ -234,8 +211,6 @@ class FirebaseManager {
       await this.database
         .ref(`tournaments/${tournamentCode}`)
         .set(tournamentData);
-
-      console.log("✓ Tournament created:", tournamentCode);
       return true;
     } catch (error) {
       console.error("Error creating tournament:", error);
@@ -264,8 +239,6 @@ class FirebaseManager {
       await this.database
         .ref(`tournaments/${tournamentCode}/members/${this.currentUser.uid}`)
         .set(true);
-
-      console.log("✓ Joined tournament:", tournamentCode);
       return true;
     } catch (error) {
       console.error("Error joining tournament:", error);
@@ -379,8 +352,6 @@ class FirebaseManager {
 
     try {
       await this.database.ref(`tournaments/${tournamentCode}`).remove();
-
-      console.log("✓ Tournament deleted:", tournamentCode);
       return true;
     } catch (error) {
       console.error("Error deleting tournament:", error);
@@ -413,66 +384,47 @@ const firebaseManager = new FirebaseManager();
 // Global debugging helper
 if (typeof window !== 'undefined') {
   window.testFirebaseConnection = async function() {
-    console.log('=== Firebase Connection Diagnostics ===');
-
-    // Check initialization
-    console.log('Firebase initialized:', firebaseManager.isInitialized);
-    console.log('Current user:', firebaseManager.currentUser?.email || firebaseManager.currentUser?.uid || 'None');
+    console.log('=== Firebase Diagnostics ===');
+    console.log('Initialized:', firebaseManager.isInitialized);
+    console.log('User:', firebaseManager.currentUser?.email || 'None');
 
     if (!firebaseManager.isInitialized) {
-      console.error('❌ Firebase not initialized!');
+      console.error('❌ Not initialized');
       return;
     }
 
-    // Test database read access
-    console.log('Testing database read access...');
+    // Test read
     try {
-      const testRef = firebaseManager.database.ref('.info/connected');
-      const snapshot = await testRef.once('value');
-      console.log('✓ Can read .info/connected:', snapshot.val());
-    } catch (error) {
-      console.error('❌ Cannot read .info/connected:', error.code, error.message);
+      const ref = firebaseManager.database.ref('.info/connected');
+      const snap = await ref.once('value');
+      console.log('✓ Read access:', snap.val() ? 'Connected' : 'Disconnected');
+    } catch (e) {
+      console.error('❌ Read failed:', e.code);
     }
 
-    // Test tournaments path access
-    console.log('Testing tournaments path access...');
+    // Test tournaments path
     try {
-      const tournamentsRef = firebaseManager.database.ref('tournaments');
-      const snapshot = await tournamentsRef.limitToFirst(1).once('value');
-      console.log('✓ Can read tournaments path');
-      console.log('Tournaments found:', snapshot.numChildren());
-    } catch (error) {
-      console.error('❌ Cannot read tournaments path:', error.code, error.message);
-
-      if (error.code === 'PERMISSION_DENIED') {
-        console.error('\n⚠️  PERMISSION DENIED ERROR');
-        console.error('Your database rules are blocking access.');
-        console.error('\nRequired rules:');
-        console.error(DATABASE_RULES);
-        console.error('\nTo fix:');
-        console.error('1. Go to Firebase Console → Realtime Database → Rules');
-        console.error('2. Replace existing rules with the rules shown above');
-        console.error('3. Click "Publish"');
+      const ref = firebaseManager.database.ref('tournaments');
+      await ref.limitToFirst(1).once('value');
+      console.log('✓ Tournaments path accessible');
+    } catch (e) {
+      console.error('❌ Tournaments access failed:', e.code);
+      if (e.code === 'PERMISSION_DENIED') {
+        console.error('Fix: Update database rules in Firebase Console');
+        console.log('See FIREBASE_RULES.md or README.md for rules');
       }
     }
 
-    // Test write access
-    console.log('Testing write access...');
+    // Test write
     try {
       const testCode = 'TEST' + Date.now();
-      await firebaseManager.database.ref(`tournaments/${testCode}`).set({
-        test: true,
-        timestamp: Date.now()
-      });
-      console.log('✓ Can write to database');
-
-      // Clean up
+      await firebaseManager.database.ref(`tournaments/${testCode}`).set({ test: true });
       await firebaseManager.database.ref(`tournaments/${testCode}`).remove();
-      console.log('✓ Can delete from database');
-    } catch (error) {
-      console.error('❌ Cannot write to database:', error.code, error.message);
+      console.log('✓ Write access works');
+    } catch (e) {
+      console.error('❌ Write failed:', e.code);
     }
 
-    console.log('=================================');
+    console.log('==========================');
   };
 }
