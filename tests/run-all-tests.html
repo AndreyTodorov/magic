@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Tournament Tests</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 1400px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    h2 {
+      color: #555;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #eee;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    button.secondary {
+      background: #2196F3;
+    }
+    button.secondary:hover {
+      background: #0b7dda;
+    }
+    #output {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .summary {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 18px;
+    }
+    .summary.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .summary.failure {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .summary.partial {
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeaa7;
+    }
+    .loading {
+      color: #666;
+      font-style: italic;
+    }
+    .test-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .stat-card {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 4px;
+      border-left: 4px solid #4CAF50;
+    }
+    .stat-card.failed {
+      border-left-color: #f44336;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #333;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Tournament Test Suite</h1>
+    <p class="subtitle">Comprehensive testing for all tournament formats and configurations</p>
+
+    <div class="button-group">
+      <button id="runAllTests">▶ Run All Tests</button>
+      <button id="runScoringTests" class="secondary">Run Scoring Tests Only</button>
+      <button id="runStructureTests" class="secondary">Run Structure Tests Only</button>
+      <button id="clearOutput" class="secondary">Clear Output</button>
+    </div>
+
+    <div id="summary"></div>
+
+    <div class="test-stats" id="stats" style="display: none;">
+      <div class="stat-card">
+        <div class="stat-label">Total Tests</div>
+        <div class="stat-value" id="totalTests">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Passed</div>
+        <div class="stat-value" id="passedTests" style="color: #4CAF50;">0</div>
+      </div>
+      <div class="stat-card failed">
+        <div class="stat-label">Failed</div>
+        <div class="stat-value" id="failedTests" style="color: #f44336;">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pass Rate</div>
+        <div class="stat-value" id="passRate">0%</div>
+      </div>
+    </div>
+
+    <h2>Test Output</h2>
+    <div id="output">Waiting to run tests...</div>
+  </div>
+
+  <!-- Load tournament code -->
+  <script src="../js/config.js"></script>
+  <script src="../js/logger.js"></script>
+  <script src="../js/tournament-formats.js"></script>
+
+  <!-- Load test suites -->
+  <script src="scoring-tests.js"></script>
+  <script src="tournament-structure-tests.js"></script>
+
+  <script>
+    const outputEl = document.getElementById('output');
+    const summaryEl = document.getElementById('summary');
+    const statsEl = document.getElementById('stats');
+    const runAllBtn = document.getElementById('runAllTests');
+    const runScoringBtn = document.getElementById('runScoringTests');
+    const runStructureBtn = document.getElementById('runStructureTests');
+    const clearBtn = document.getElementById('clearOutput');
+
+    // Capture console output
+    const originalLog = console.log;
+    const originalError = console.error;
+    let consoleOutput = '';
+
+    function captureConsole() {
+      consoleOutput = '';
+
+      console.log = (...args) => {
+        const message = args.join(' ');
+        consoleOutput += message + '\n';
+        outputEl.textContent = consoleOutput;
+        // Scroll to bottom
+        outputEl.scrollTop = outputEl.scrollHeight;
+        originalLog.apply(console, args);
+      };
+
+      console.error = (...args) => {
+        const message = args.join(' ');
+        consoleOutput += message + '\n';
+        outputEl.textContent = consoleOutput;
+        outputEl.scrollTop = outputEl.scrollHeight;
+        originalError.apply(console, args);
+      };
+
+      return () => {
+        console.log = originalLog;
+        console.error = originalError;
+      };
+    }
+
+    function disableButtons(disabled) {
+      runAllBtn.disabled = disabled;
+      runScoringBtn.disabled = disabled;
+      runStructureBtn.disabled = disabled;
+    }
+
+    function updateStats(scoringResults, structureResults) {
+      const totalPassed = (scoringResults?.passed || 0) + (structureResults?.passed || 0);
+      const totalFailed = (scoringResults?.failed || 0) + (structureResults?.failed || 0);
+      const total = totalPassed + totalFailed;
+
+      if (total > 0) {
+        statsEl.style.display = 'grid';
+        document.getElementById('totalTests').textContent = total;
+        document.getElementById('passedTests').textContent = totalPassed;
+        document.getElementById('failedTests').textContent = totalFailed;
+        document.getElementById('passRate').textContent =
+          ((totalPassed / total) * 100).toFixed(1) + '%';
+      }
+    }
+
+    function showSummary(scoringResults, structureResults) {
+      const totalPassed = (scoringResults?.passed || 0) + (structureResults?.passed || 0);
+      const totalFailed = (scoringResults?.failed || 0) + (structureResults?.failed || 0);
+      const total = totalPassed + totalFailed;
+
+      let summaryClass = 'success';
+      let summaryText = '';
+
+      if (totalFailed === 0) {
+        summaryClass = 'success';
+        summaryText = `✅ All ${total} tests passed!`;
+      } else if (totalPassed === 0) {
+        summaryClass = 'failure';
+        summaryText = `❌ All ${total} tests failed`;
+      } else {
+        summaryClass = 'partial';
+        summaryText = `⚠️ ${totalFailed} of ${total} tests failed`;
+      }
+
+      summaryEl.innerHTML = `<div class="summary ${summaryClass}">${summaryText}</div>`;
+    }
+
+    // Run all tests
+    runAllBtn.addEventListener('click', async () => {
+      disableButtons(true);
+      outputEl.textContent = '';
+      summaryEl.innerHTML = '<p class="loading">Running all tests...</p>';
+      statsEl.style.display = 'none';
+
+      const restoreConsole = captureConsole();
+
+      try {
+        console.log('🚀 Running Complete Test Suite\n');
+        console.log('=' .repeat(60));
+
+        const scoringResults = await ScoringTests.runAll();
+        console.log('\n' + '='.repeat(60) + '\n');
+
+        const structureResults = await TournamentStructureTests.runAll();
+
+        updateStats(scoringResults, structureResults);
+        showSummary(scoringResults, structureResults);
+      } catch (error) {
+        summaryEl.innerHTML = `
+          <div class="summary failure">
+            ❌ Test execution error: ${error.message}
+          </div>
+        `;
+        console.error('Test execution error:', error);
+      } finally {
+        restoreConsole();
+        disableButtons(false);
+      }
+    });
+
+    // Run scoring tests only
+    runScoringBtn.addEventListener('click', async () => {
+      disableButtons(true);
+      outputEl.textContent = '';
+      summaryEl.innerHTML = '<p class="loading">Running scoring tests...</p>';
+      statsEl.style.display = 'none';
+
+      const restoreConsole = captureConsole();
+
+      try {
+        const scoringResults = await ScoringTests.runAll();
+        updateStats(scoringResults, null);
+        showSummary(scoringResults, null);
+      } catch (error) {
+        summaryEl.innerHTML = `
+          <div class="summary failure">
+            ❌ Test execution error: ${error.message}
+          </div>
+        `;
+        console.error('Test execution error:', error);
+      } finally {
+        restoreConsole();
+        disableButtons(false);
+      }
+    });
+
+    // Run structure tests only
+    runStructureBtn.addEventListener('click', async () => {
+      disableButtons(true);
+      outputEl.textContent = '';
+      summaryEl.innerHTML = '<p class="loading">Running structure tests...</p>';
+      statsEl.style.display = 'none';
+
+      const restoreConsole = captureConsole();
+
+      try {
+        const structureResults = await TournamentStructureTests.runAll();
+        updateStats(null, structureResults);
+        showSummary(null, structureResults);
+      } catch (error) {
+        summaryEl.innerHTML = `
+          <div class="summary failure">
+            ❌ Test execution error: ${error.message}
+          </div>
+        `;
+        console.error('Test execution error:', error);
+      } finally {
+        restoreConsole();
+        disableButtons(false);
+      }
+    });
+
+    // Clear output
+    clearBtn.addEventListener('click', () => {
+      outputEl.textContent = 'Waiting to run tests...';
+      summaryEl.innerHTML = '';
+      statsEl.style.display = 'none';
+      consoleOutput = '';
+    });
+  </script>
+</body>
+</html>
