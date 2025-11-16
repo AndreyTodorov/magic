@@ -710,6 +710,10 @@ class App {
     const isComplete = progress.completed === progress.total && progress.total > 0;
 
     if (currentView === "schedule") {
+      // Hide round navigation in schedule view
+      if (uiManager.elements.roundNavigation) {
+        uiManager.elements.roundNavigation.style.display = 'none';
+      }
       uiManager.renderSchedule(
         players,
         matches,
@@ -722,6 +726,10 @@ class App {
       // Render matches (will be filtered by selected round if applicable)
       uiManager.renderMatches(matches, players, tournamentManager.currentStage);
     } else if (currentView === "standings") {
+      // Hide round navigation in standings view
+      if (uiManager.elements.roundNavigation) {
+        uiManager.elements.roundNavigation.style.display = 'none';
+      }
       const { rankedStats, tiedRanks } = tournamentManager.getStandings();
       uiManager.renderStandings(
         rankedStats,
