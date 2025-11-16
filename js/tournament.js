@@ -685,8 +685,10 @@ class TournamentManager {
    * Calculate tournament progress
    */
   getProgress() {
-    const completed = this.matches.filter((m) => m.winner !== null).length;
-    const total = this.matches.length;
+    // Filter out placeholder matches (future rounds in elimination tournaments)
+    const activeMatches = this.matches.filter((m) => !m.isPlaceholder);
+    const completed = activeMatches.filter((m) => m.winner !== null).length;
+    const total = activeMatches.length;
     return {
       completed,
       total,
