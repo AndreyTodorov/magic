@@ -30,4 +30,5 @@ vitest.config.js.timestamp-*
 Thumbs.db
 *.swp
 *.swo
-*~
+*~test-output.txt
+full-test.log
