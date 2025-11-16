@@ -73,6 +73,31 @@ if (typeof window !== 'undefined') {
     };
 }
 
+// Debug helper: check if config is properly initialized
+if (typeof window !== 'undefined') {
+    window.debugFirebaseConfig = function() {
+        console.log('=== Firebase Configuration Debug ===');
+        console.log('Environment:', ENVIRONMENT);
+        console.log('Config keys present:', Object.keys(FIREBASE_CONFIG));
+        console.log('Database URL:', FIREBASE_CONFIG.databaseURL);
+        console.log('Project ID:', FIREBASE_CONFIG.projectId);
+        console.log('Auth Domain:', FIREBASE_CONFIG.authDomain);
+        console.log('Has placeholders:', FIREBASE_CONFIG.apiKey.includes('FIREBASE_'));
+        console.log('App Check Enabled:', APPCHECK_CONFIG.ENABLED);
+        console.log('Auth Mode:', AUTH_CONFIG.MODE);
+        console.log('================================');
+
+        if (FIREBASE_CONFIG.apiKey.includes('FIREBASE_')) {
+            console.error('⚠️ CONFIGURATION ERROR: Firebase config contains placeholders!');
+            console.error('The GitHub Actions secrets may not be configured correctly.');
+            console.error('Expected values but got:', FIREBASE_CONFIG.apiKey);
+        }
+    };
+
+    // Auto-run on load
+    setTimeout(() => window.debugFirebaseConfig(), 100);
+}
+
 /**
  * Recommended Database Rules
  * Copy and paste into Firebase Console > Realtime Database > Rules
