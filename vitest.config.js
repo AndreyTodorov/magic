@@ -11,6 +11,7 @@ export default defineConfig({
       include: ['js/**/*.js'],
       exclude: ['js/firebase.js'] // Exclude Firebase integration from coverage
     },
-    include: ['tests/**/*.test.js']
+    include: ['tests/**/*.test.js'],
+    exclude: ['tests/functional.test.js'] // Exclude browser-based functional tests from vitest
   }
 });

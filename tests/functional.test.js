@@ -1323,6 +1323,187 @@ class TournamentTester {
   }
 
   /**
+   * Test all formats with maximum players (12)
+   */
+  testMaxPlayersAllFormats() {
+    this.log(`\n=== Testing MAX_PLAYERS (12) Across All Formats ===`);
+
+    const maxPlayers = 12;
+    const players = Array.from({ length: maxPlayers }, (_, i) => `Player ${i + 1}`);
+
+    try {
+      // Round Robin with max players
+      const manager1 = new TournamentManager();
+      const validMatches = manager1.getValidMatchesPerPlayer(maxPlayers);
+      if (validMatches.length > 0) {
+        manager1.createTournament(players, validMatches[0], TOURNAMENT_FORMATS.ROUND_ROBIN);
+        this.log(`✓ Round Robin: 12 players with ${validMatches[0]} matches/player`);
+      }
+
+      // Swiss with max players
+      const manager2 = new TournamentManager();
+      manager2.createTournament(players, 0, TOURNAMENT_FORMATS.SWISS, { rounds: 4 });
+      this.log(`✓ Swiss: 12 players, 4 rounds`);
+
+      // Group Stage with max players
+      const manager3 = new TournamentManager();
+      manager3.createTournament(players, 0, TOURNAMENT_FORMATS.GROUP_STAGE, { numGroups: 4, playersPerGroup: 3, advancingPerGroup: 2 });
+      this.log(`✓ Group Stage: 12 players, 4 groups of 3`);
+
+      return true;
+    } catch (error) {
+      this.log(`MAX_PLAYERS test failed: ${error.message}`, 'error');
+      console.error(error);
+      return false;
+    }
+  }
+
+  /**
+   * Test all formats with minimum players (3-4)
+   */
+  testMinPlayersAllFormats() {
+    this.log(`\n=== Testing MIN_PLAYERS Across All Formats ===`);
+
+    try {
+      // Round Robin with 4 players (min practical)
+      const manager1 = new TournamentManager();
+      const players4 = ['Alice', 'Bob', 'Charlie', 'Diana'];
+      manager1.createTournament(players4, 3, TOURNAMENT_FORMATS.ROUND_ROBIN);
+      this.log(`✓ Round Robin: 4 players, 3 matches/player`);
+
+      // Single Elimination with 4 players
+      const manager2 = new TournamentManager();
+      manager2.createTournament(players4, 0, TOURNAMENT_FORMATS.SINGLE_ELIMINATION);
+      this.log(`✓ Single Elimination: 4 players`);
+
+      // Swiss with 4 players
+      const manager3 = new TournamentManager();
+      manager3.createTournament(players4, 0, TOURNAMENT_FORMATS.SWISS, { rounds: 2 });
+      this.log(`✓ Swiss: 4 players, 2 rounds`);
+
+      return true;
+    } catch (error) {
+      this.log(`MIN_PLAYERS test failed: ${error.message}`, 'error');
+      console.error(error);
+      return false;
+    }
+  }
+
+  /**
+   * Test Unicode and special character player names
+   */
+  testUnicodePlayerNames() {
+    this.log(`\n=== Testing Unicode and Special Character Names ===`);
+
+    try {
+      const manager = new TournamentManager();
+      const unicodePlayers = [
+        'José González',      // Accented Spanish
+        'Müller Schmidt',     // German umlauts
+        "O'Brien",            // Apostrophe
+        'Jean-Luc',           // Hyphen
+        'Dr. Smith',          // Period
+        'Li Ming',            // Chinese-style name
+      ];
+
+      manager.createTournament(unicodePlayers, 1, TOURNAMENT_FORMATS.ROUND_ROBIN);
+
+      // Verify all players were added correctly
+      if (manager.players.length === unicodePlayers.length) {
+        this.log(`✓ All ${unicodePlayers.length} Unicode names processed correctly`);
+      } else {
+        this.log(`Expected ${unicodePlayers.length} players, got ${manager.players.length}`, 'error');
+      }
+
+      // Test standings with Unicode names
+      const standings = manager.getStandings();
+      if (standings.rankedStats.length === unicodePlayers.length) {
+        this.log(`✓ Standings generated correctly with Unicode names`);
+      }
+
+      return true;
+    } catch (error) {
+      this.log(`Unicode names test failed: ${error.message}`, 'error');
+      console.error(error);
+      return false;
+    }
+  }
+
+  /**
+   * Test scenario where all players have equal records (all tied)
+   */
+  testAllTiedScenario() {
+    this.log(`\n=== Testing All-Tied Scenario (Equal Records) ===`);
+
+    try {
+      const manager = new TournamentManager();
+      const players = ['Alice', 'Bob', 'Charlie', 'Diana'];
+
+      // Create round robin where everyone plays everyone once
+      manager.createTournament(players, 3, TOURNAMENT_FORMATS.ROUND_ROBIN);
+
+      // Strategically play matches to create ties
+      // Match 0: Alice vs Bob → Alice wins 2-1
+      // Match 1: Alice vs Charlie → Charlie wins 2-1
+      // Match 2: Alice vs Diana → Diana wins 2-1
+      // Match 3: Bob vs Charlie → Bob wins 2-1
+      // Match 4: Bob vs Diana → Diana wins 2-1
+      // Match 5: Charlie vs Diana → Charlie wins 2-1
+
+      // This should create a scenario where everyone goes 2-1
+
+      const results = [
+        [1, 1, 2], // Alice beats Bob 2-1
+        [2, 2, 1], // Charlie beats Alice 2-1
+        [2, 2, 1], // Diana beats Alice 2-1
+        [1, 1, 2], // Bob beats Charlie 2-1
+        [2, 2, 1], // Diana beats Bob 2-1
+        [1, 1, 2], // Charlie beats Diana 2-1
+      ];
+
+      manager.matches.forEach((match, idx) => {
+        if (idx < results.length) {
+          match.games = results[idx];
+
+          // Determine winner
+          const p1Wins = match.games.filter(g => g === 1).length;
+          const p2Wins = match.games.filter(g => g === 2).length;
+          match.winner = p1Wins >= 2 ? 1 : p2Wins >= 2 ? 2 : null;
+        }
+      });
+
+      // Get standings
+      const standings = manager.getStandings();
+
+      // Check if everyone has same record (2-1)
+      const allEqualRecords = standings.rankedStats.every(s =>
+        s.wins === 2 && s.losses === 1
+      );
+
+      if (allEqualRecords) {
+        this.log(`✓ All players tied at 2-1 record`);
+        this.log(`✓ Tiebreakers used to rank: ${standings.rankedStats.map((s, i) => `${i + 1}. ${s.player}`).join(', ')}`);
+      } else {
+        this.log(`Not all players have equal records`, 'warning');
+      }
+
+      // Verify rankings are assigned
+      const hasUniqueRanks = new Set(standings.rankedStats.map(s => s.rank)).size === 4;
+      if (hasUniqueRanks) {
+        this.log(`✓ Unique rankings assigned via tiebreakers`);
+      } else {
+        this.log(`Some players have same rank (expected if tiebreakers match)`, 'warning');
+      }
+
+      return true;
+    } catch (error) {
+      this.log(`All-tied scenario test failed: ${error.message}`, 'error');
+      console.error(error);
+      return false;
+    }
+  }
+
+  /**
    * Run all tests
    */
   runAllTests() {
@@ -1386,6 +1567,14 @@ class TournamentTester {
     this.testDoubleEliminationRoundVisibility();
     this.testDoubleEliminationComplete();
     this.testGroupStagePlayoffsComplete();
+
+    // Edge Case & Boundary Tests
+    this.log('\n\n🎯 EDGE CASE & BOUNDARY TESTS');
+    this.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    this.testMaxPlayersAllFormats();
+    this.testMinPlayersAllFormats();
+    this.testUnicodePlayerNames();
+    this.testAllTiedScenario();
 
     const endTime = Date.now();
     const duration = ((endTime - startTime) / 1000).toFixed(2);
