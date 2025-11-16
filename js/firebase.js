@@ -128,7 +128,21 @@ class FirebaseManager {
         wasDisconnected = false;
       } else {
         console.warn("⚠ Disconnected from Firebase");
+        console.warn("Troubleshooting tips:");
+        console.warn("1. Check Firebase Console → Realtime Database → Data (verify database exists)");
+        console.warn("2. Check Firebase Console → Realtime Database → Rules");
+        console.warn("3. Verify database URL in config matches your Firebase region");
+        console.warn("4. Run window.testFirebaseConnection() in console for detailed diagnostics");
         wasDisconnected = true;
+      }
+    }, (error) => {
+      console.error("❌ Firebase connection monitoring failed:", error);
+      console.error("Error code:", error.code);
+      console.error("Error message:", error.message);
+
+      if (error.code === 'PERMISSION_DENIED') {
+        console.error("⚠️ PERMISSION DENIED - Check your database rules!");
+        console.error("Expected rules:", DATABASE_RULES);
       }
     });
   }
@@ -395,3 +409,70 @@ class FirebaseManager {
 
 // Create global instance
 const firebaseManager = new FirebaseManager();
+
+// Global debugging helper
+if (typeof window !== 'undefined') {
+  window.testFirebaseConnection = async function() {
+    console.log('=== Firebase Connection Diagnostics ===');
+
+    // Check initialization
+    console.log('Firebase initialized:', firebaseManager.isInitialized);
+    console.log('Current user:', firebaseManager.currentUser?.email || firebaseManager.currentUser?.uid || 'None');
+
+    if (!firebaseManager.isInitialized) {
+      console.error('❌ Firebase not initialized!');
+      return;
+    }
+
+    // Test database read access
+    console.log('Testing database read access...');
+    try {
+      const testRef = firebaseManager.database.ref('.info/connected');
+      const snapshot = await testRef.once('value');
+      console.log('✓ Can read .info/connected:', snapshot.val());
+    } catch (error) {
+      console.error('❌ Cannot read .info/connected:', error.code, error.message);
+    }
+
+    // Test tournaments path access
+    console.log('Testing tournaments path access...');
+    try {
+      const tournamentsRef = firebaseManager.database.ref('tournaments');
+      const snapshot = await tournamentsRef.limitToFirst(1).once('value');
+      console.log('✓ Can read tournaments path');
+      console.log('Tournaments found:', snapshot.numChildren());
+    } catch (error) {
+      console.error('❌ Cannot read tournaments path:', error.code, error.message);
+
+      if (error.code === 'PERMISSION_DENIED') {
+        console.error('\n⚠️  PERMISSION DENIED ERROR');
+        console.error('Your database rules are blocking access.');
+        console.error('\nRequired rules:');
+        console.error(DATABASE_RULES);
+        console.error('\nTo fix:');
+        console.error('1. Go to Firebase Console → Realtime Database → Rules');
+        console.error('2. Replace existing rules with the rules shown above');
+        console.error('3. Click "Publish"');
+      }
+    }
+
+    // Test write access
+    console.log('Testing write access...');
+    try {
+      const testCode = 'TEST' + Date.now();
+      await firebaseManager.database.ref(`tournaments/${testCode}`).set({
+        test: true,
+        timestamp: Date.now()
+      });
+      console.log('✓ Can write to database');
+
+      // Clean up
+      await firebaseManager.database.ref(`tournaments/${testCode}`).remove();
+      console.log('✓ Can delete from database');
+    } catch (error) {
+      console.error('❌ Cannot write to database:', error.code, error.message);
+    }
+
+    console.log('=================================');
+  };
+}
