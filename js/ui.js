@@ -61,10 +61,13 @@ class UIManager {
       codeDisplay: document.getElementById("codeDisplay"),
       displayCode: document.getElementById("displayCode"),
       copyCodeBtn: document.getElementById("copyCodeBtn"),
+      lockTournamentBtn: document.getElementById("lockTournamentBtn"),
+      lockBtnText: document.getElementById("lockBtnText"),
       leaveTournamentBtn: document.getElementById("leaveTournamentBtn"),
 
       progressFill: document.getElementById("progressFill"),
       progressText: document.getElementById("progressText"),
+      lockedIndicator: document.getElementById("lockedIndicator"),
       tournamentInfo: document.getElementById("tournamentInfo"),
       formatBadge: document.getElementById("formatBadge"),
       stageBadge: document.getElementById("stageBadge"),
@@ -1367,10 +1370,16 @@ class UIManager {
       ? `<div class="badge badge-group">Group ${match.group}</div>`
       : '';
 
+    // Add locked indicator if tournament is locked
+    const lockedBadge = tournamentManager.locked && match.winner === null
+      ? `<div class="badge badge-locked" style="background-color: #f39c12; color: white;">🔒 Locked</div>`
+      : '';
+
     card.innerHTML = `
       <div class="match-card__header">
         <div class="match-number">${matchLabel}</div>
         ${groupLabel}
+        ${lockedBadge}
         <div class="badge">Best of 3</div>
       </div>
 
@@ -1424,9 +1433,12 @@ class UIManager {
       canPlay = false;
     }
 
+    // Check if tournament is locked
+    const isLocked = tournamentManager.locked;
+
     const isWin = match.games[gameNum] === playerNum;
     const isLoss = match.games[gameNum] !== null && !isWin;
-    const disabled = !canPlay && match.games[gameNum] === null;
+    const disabled = (!canPlay && match.games[gameNum] === null) || isLocked;
 
     const classes = [
       "game-result",
@@ -1446,7 +1458,7 @@ class UIManager {
         data-game-num="${gameNum}"
         data-player-num="${playerNum}"
         aria-label="Game ${gameNum + 1}: ${label}"
-        ${disabled && match.games[gameNum] === null ? "disabled" : ""}>
+        ${disabled ? "disabled" : ""}>
         ${label}
       </button>
     `;

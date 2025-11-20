@@ -11,6 +11,7 @@ class TournamentManager {
     this.matchesPerPlayer = 3;
     this.currentTournamentCode = null;
     this.isCreator = false;
+    this.locked = false; // Tournament lock state
     // Cache for standings calculations (improves mobile performance)
     this.standingsCache = null;
     this.standingsCacheHash = null;
@@ -28,6 +29,7 @@ class TournamentManager {
     this.matches = [];
     this.currentTournamentCode = null;
     this.isCreator = false;
+    this.locked = false;
     this.standingsCache = null;
     this.standingsCacheHash = null;
     this.format = APP_CONFIG.FORMATS.DEFAULT;
@@ -200,6 +202,7 @@ class TournamentManager {
       matchesPerPlayer: this.matchesPerPlayer,
     };
     this.currentStage = tournamentData.currentStage || null;
+    this.locked = tournamentData.locked || false;
 
     // Convert Firebase object to array
     if (tournamentData.matches) {
@@ -1279,6 +1282,21 @@ class TournamentManager {
     this.standingsCacheHash = null;
 
     return { success: true, stage: 'playoffs', advancingPlayers };
+  }
+
+  /**
+   * Check if all matches in the tournament are complete
+   */
+  isTournamentComplete() {
+    if (!this.matches || this.matches.length === 0) {
+      return false;
+    }
+
+    // For elimination formats, only check non-placeholder matches
+    const relevantMatches = this.matches.filter(m => !m.isPlaceholder);
+
+    // All relevant matches must have a winner
+    return relevantMatches.every(match => match.winner !== null);
   }
 
   /**

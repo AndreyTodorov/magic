@@ -153,6 +153,11 @@ class App {
       uiManager.copyTournamentCode()
     );
 
+    // Lock/unlock tournament
+    uiManager.elements.lockTournamentBtn?.addEventListener("click", () =>
+      this.handleLockToggle()
+    );
+
     // Leave tournament
     uiManager.elements.leaveTournamentBtn?.addEventListener("click", () =>
       this.handleLeaveTournament()
@@ -600,6 +605,7 @@ class App {
           format: tournamentManager.format,
           formatConfig: tournamentManager.formatConfig,
           currentStage: tournamentManager.currentStage,
+          locked: false,
         }),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Firebase save timeout after 10s')), 10000)
@@ -786,6 +792,9 @@ class App {
       tournamentManager.format,
       tournamentManager.currentStage
     );
+
+    // Update lock button
+    this.updateLockButton();
   }
 
   /**
@@ -818,6 +827,15 @@ class App {
    * Record game result
    */
   async recordGame(matchId, gameNum, winner) {
+    // Check if tournament is locked
+    if (tournamentManager.locked) {
+      uiManager.showAlert(
+        "Tournament is locked. Only the creator can unlock it to allow changes.",
+        "warning"
+      );
+      return;
+    }
+
     const result = tournamentManager.updateMatchGame(matchId, gameNum, winner);
 
     if (result.error) {
@@ -841,9 +859,28 @@ class App {
     // Update Firebase with all matches (includes bracket advancements)
     try {
       const matchesObject = tournamentManager.getMatchesForFirebase();
+      const updates = { matches: matchesObject };
+
+      // Auto-lock tournament if completed
+      if (tournamentManager.isTournamentComplete() && !tournamentManager.locked) {
+        tournamentManager.locked = true;
+        updates.locked = true;
+        logger.info("App", "Tournament completed - auto-locking");
+
+        // Show notification to creator
+        if (tournamentManager.isCreator) {
+          setTimeout(() => {
+            uiManager.showAlert(
+              "Tournament completed! It has been automatically locked. You can unlock it if needed.",
+              "success"
+            );
+          }, 500); // Small delay to let match update alert show first
+        }
+      }
+
       await firebaseManager.updateTournament(
         tournamentManager.currentTournamentCode,
-        { matches: matchesObject }
+        updates
       );
     } catch (error) {
       logger.error("App", "Failed to update matches", error);
@@ -892,6 +929,81 @@ class App {
     }
 
     return false;
+  }
+
+  /**
+   * Handle lock/unlock tournament toggle
+   */
+  async handleLockToggle() {
+    if (!tournamentManager.isCreator) {
+      uiManager.showAlert("Only the tournament creator can lock/unlock the tournament", "warning");
+      return;
+    }
+
+    const newLockState = !tournamentManager.locked;
+    const action = newLockState ? "lock" : "unlock";
+
+    if (!confirm(`Are you sure you want to ${action} this tournament?${newLockState ? " This will prevent all players from recording match results." : ""}`)) {
+      return;
+    }
+
+    try {
+      // Update local state
+      tournamentManager.locked = newLockState;
+
+      // Update Firebase
+      await firebaseManager.updateTournament(
+        tournamentManager.currentTournamentCode,
+        { locked: newLockState }
+      );
+
+      // Update UI
+      this.updateLockButton();
+
+      uiManager.showAlert(
+        `Tournament ${newLockState ? "locked" : "unlocked"} successfully`,
+        "success"
+      );
+
+      logger.info("App", `Tournament ${action}ed by creator`);
+    } catch (error) {
+      logger.error("App", `Failed to ${action} tournament`, error);
+      // Revert local state on error
+      tournamentManager.locked = !newLockState;
+      uiManager.showAlert(`Error ${action}ing tournament. Please try again.`, "error");
+    }
+  }
+
+  /**
+   * Update lock button visibility and text
+   */
+  updateLockButton() {
+    const lockBtn = uiManager.elements.lockTournamentBtn;
+    const lockBtnText = uiManager.elements.lockBtnText;
+    const lockedIndicator = uiManager.elements.lockedIndicator;
+
+    if (!lockBtn || !lockBtnText) return;
+
+    // Only show lock button to creator
+    if (tournamentManager.isCreator) {
+      lockBtn.style.display = "inline-block";
+
+      // Update button text and style based on lock state
+      if (tournamentManager.locked) {
+        lockBtnText.textContent = "🔓 Unlock Tournament";
+        lockBtn.className = "btn btn--success btn--small";
+      } else {
+        lockBtnText.textContent = "🔒 Lock Tournament";
+        lockBtn.className = "btn btn--warning btn--small";
+      }
+    } else {
+      lockBtn.style.display = "none";
+    }
+
+    // Show/hide locked indicator banner
+    if (lockedIndicator) {
+      lockedIndicator.style.display = tournamentManager.locked ? "block" : "none";
+    }
   }
 
   /**
