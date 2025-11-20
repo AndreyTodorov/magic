@@ -188,6 +188,9 @@
         <!-- Tournament Header -->
         <div class="header-bar">
           <div class="header-bar__actions">
+            <button class="btn btn--warning btn--small" id="lockTournamentBtn" style="display: none;">
+              <span id="lockBtnText">🔒 Lock Tournament</span>
+            </button>
             <button class="btn btn--danger btn--small" id="leaveTournamentBtn">
               Leave Tournament
             </button>
@@ -201,6 +204,11 @@
         >
           <div class="progress-bar__fill" id="progressFill"></div>
           <div class="progress-text" id="progressText" aria-live="polite"></div>
+        </div>
+
+        <!-- Locked Indicator -->
+        <div class="alert alert--warning" id="lockedIndicator" style="display: none; margin-bottom: var(--spacing-md);">
+          🔒 <strong>Tournament Locked:</strong> Match results cannot be changed. Only the creator can unlock.
         </div>
 
         <!-- Tournament Info -->
