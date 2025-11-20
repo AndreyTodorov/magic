@@ -91,6 +91,9 @@ class FirebaseManager {
       }
     }
 
+    // Set initial current user
+    this.currentUser = authManager.currentUser;
+
     // Update currentUser when auth state changes
     authManager.onAuthStateChange((user) => {
       this.currentUser = user;

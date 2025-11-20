@@ -452,6 +452,12 @@ class App {
 
     // Check if current user is the tournament creator
     if (typeof authManager !== 'undefined' && authManager.isSignedIn()) {
+      // Ensure current user is loaded in firebaseManager before checking creator status
+      if (!firebaseManager.currentUser) {
+        await authManager.authReadyPromise;
+        firebaseManager.currentUser = authManager.currentUser;
+      }
+
       tournamentManager.isCreator = await firebaseManager.isCreator(code);
       logger.info("App", `Joined as ${tournamentManager.isCreator ? "creator" : "member"}: ${code}`);
 
