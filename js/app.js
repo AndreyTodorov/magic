@@ -619,13 +619,24 @@ class App {
       uiManager.elements.matchesPerPlayer.value
     ) || formatConfig.matchesPerPlayer || 3;
 
+    // Get timer configuration from UI
+    const enableTimers = document.getElementById('enableTimers')?.checked || false;
+    const timerConfig = {
+      enabled: enableTimers,
+      defaultTimeMinutes: enableTimers ? parseInt(document.getElementById('defaultTimeMinutes')?.value || APP_CONFIG.TIMER.DEFAULT_TIME_MINUTES) : APP_CONFIG.TIMER.DEFAULT_TIME_MINUTES,
+      defaultBufferSeconds: enableTimers ? parseInt(document.getElementById('defaultBufferSeconds')?.value || APP_CONFIG.TIMER.DEFAULT_BUFFER_SECONDS) : APP_CONFIG.TIMER.DEFAULT_BUFFER_SECONDS,
+      defaultIncrementSeconds: enableTimers ? parseInt(document.getElementById('defaultIncrementSeconds')?.value || APP_CONFIG.TIMER.DEFAULT_INCREMENT_SECONDS) : APP_CONFIG.TIMER.DEFAULT_INCREMENT_SECONDS,
+    };
+    logger.debug("App", `Timer config:`, timerConfig);
+
     // Generate matches using selected format
     logger.debug("App", `Generating matches for ${playerNames.length} players`);
     tournamentManager.createTournament(
       playerNames,
       matchesPerPlayer,
       selectedFormat,
-      formatConfig
+      formatConfig,
+      timerConfig
     );
     logger.debug("App", `Generated ${tournamentManager.matches.length} matches`);
 
@@ -647,6 +658,7 @@ class App {
           format: tournamentManager.format,
           formatConfig: tournamentManager.formatConfig,
           currentStage: tournamentManager.currentStage,
+          timerConfig: tournamentManager.timerConfig,
           locked: false,
         }),
         new Promise((_, reject) =>
@@ -1135,6 +1147,9 @@ class App {
     // Clear session
     this.clearTournamentSession();
 
+    // Clean up all timers
+    this.cleanupTimers();
+
     // Unsubscribe from updates
     if (this.unsubscribeTournament) {
       this.unsubscribeTournament();
@@ -1347,6 +1362,328 @@ class App {
     } else {
       alert('Error: ' + result.error);
     }
+  }
+
+  /**
+   * Handle timer action button clicks
+   */
+  handleTimerAction(button) {
+    const action = button.dataset.action;
+    const matchId = parseInt(button.dataset.matchId);
+
+    if (isNaN(matchId)) return;
+
+    const match = tournamentManager.getMatch(matchId);
+    if (!match || !match.timer) return;
+
+    switch (action) {
+      case 'start':
+        this.startMatchTimer(matchId);
+        break;
+      case 'pause':
+        this.pauseMatchTimer(matchId);
+        break;
+      case 'resume':
+        this.resumeMatchTimer(matchId);
+        break;
+      case 'switch':
+        this.switchActivePlayer(matchId);
+        break;
+      case 'settings':
+        this.showTimerSettings(matchId);
+        break;
+    }
+  }
+
+  /**
+   * Start a match timer
+   */
+  async startMatchTimer(matchId) {
+    const match = tournamentManager.getMatch(matchId);
+    if (!match || !match.timer) return;
+
+    const timer = match.timer;
+
+    // Initialize timer state
+    timer.startedAt = Date.now();
+    timer.activePlayer = 1; // Player 1 starts
+    timer.isPaused = false;
+    timer.lastTickTime = Date.now();
+
+    // Start with buffer if configured
+    if (timer.bufferMs > 0) {
+      timer.bufferActive = true;
+    }
+
+    // Start the timer interval
+    this.startTimerInterval(matchId);
+
+    // Update Firebase
+    await this.updateMatchTimer(matchId);
+  }
+
+  /**
+   * Pause a match timer
+   */
+  async pauseMatchTimer(matchId) {
+    const match = tournamentManager.getMatch(matchId);
+    if (!match || !match.timer) return;
+
+    match.timer.isPaused = true;
+
+    // Stop the timer interval
+    this.stopTimerInterval(matchId);
+
+    // Update Firebase
+    await this.updateMatchTimer(matchId);
+  }
+
+  /**
+   * Resume a match timer
+   */
+  async resumeMatchTimer(matchId) {
+    const match = tournamentManager.getMatch(matchId);
+    if (!match || !match.timer) return;
+
+    const timer = match.timer;
+    timer.isPaused = false;
+    timer.lastTickTime = Date.now();
+
+    // Restart the timer interval
+    this.startTimerInterval(matchId);
+
+    // Update Firebase
+    await this.updateMatchTimer(matchId);
+  }
+
+  /**
+   * Switch active player (pass the turn)
+   */
+  async switchActivePlayer(matchId) {
+    const match = tournamentManager.getMatch(matchId);
+    if (!match || !match.timer || match.timer.isPaused) return;
+
+    const timer = match.timer;
+
+    // Add increment to current player's time
+    if (timer.incrementMs > 0) {
+      if (timer.activePlayer === 1) {
+        timer.player1TimeMs += timer.incrementMs;
+      } else if (timer.activePlayer === 2) {
+        timer.player2TimeMs += timer.incrementMs;
+      }
+    }
+
+    // Switch active player
+    timer.activePlayer = timer.activePlayer === 1 ? 2 : 1;
+    timer.lastTickTime = Date.now();
+    timer.bufferActive = false; // Disable buffer after first turn
+
+    // Update Firebase
+    await this.updateMatchTimer(matchId);
+  }
+
+  /**
+   * Start timer interval for a match
+   */
+  startTimerInterval(matchId) {
+    // Clear any existing interval
+    this.stopTimerInterval(matchId);
+
+    // Create new interval
+    const interval = setInterval(() => {
+      this.tickMatchTimer(matchId);
+    }, APP_CONFIG.TIMER.TICK_INTERVAL);
+
+    this.timerIntervals.set(matchId, interval);
+  }
+
+  /**
+   * Stop timer interval for a match
+   */
+  stopTimerInterval(matchId) {
+    const interval = this.timerIntervals.get(matchId);
+    if (interval) {
+      clearInterval(interval);
+      this.timerIntervals.delete(matchId);
+    }
+  }
+
+  /**
+   * Tick timer (update countdown)
+   */
+  async tickMatchTimer(matchId) {
+    const match = tournamentManager.getMatch(matchId);
+    if (!match || !match.timer || match.timer.isPaused) {
+      this.stopTimerInterval(matchId);
+      return;
+    }
+
+    const timer = match.timer;
+    const now = Date.now();
+    const elapsed = now - timer.lastTickTime;
+    timer.lastTickTime = now;
+
+    // Handle buffer countdown
+    if (timer.bufferActive) {
+      timer.bufferMs -= elapsed;
+      if (timer.bufferMs <= 0) {
+        timer.bufferMs = 0;
+        timer.bufferActive = false;
+      }
+
+      // Update UI only (don't sync to Firebase for every tick)
+      this.updateTimerDisplay(matchId);
+      return;
+    }
+
+    // Countdown active player's time
+    if (timer.activePlayer === 1) {
+      timer.player1TimeMs -= elapsed;
+      if (timer.player1TimeMs <= 0) {
+        timer.player1TimeMs = 0;
+        await this.handleTimeExpiration(matchId, 1);
+      }
+    } else if (timer.activePlayer === 2) {
+      timer.player2TimeMs -= elapsed;
+      if (timer.player2TimeMs <= 0) {
+        timer.player2TimeMs = 0;
+        await this.handleTimeExpiration(matchId, 2);
+      }
+    }
+
+    // Update UI only (don't sync to Firebase for every tick)
+    this.updateTimerDisplay(matchId);
+  }
+
+  /**
+   * Handle time expiration (auto-loss)
+   */
+  async handleTimeExpiration(matchId, playerNum) {
+    const match = tournamentManager.getMatch(matchId);
+    if (!match || !match.timer) return;
+
+    // Stop timer
+    this.stopTimerInterval(matchId);
+    match.timer.isPaused = true;
+    match.timer.timeExpiredPlayer = playerNum;
+
+    // Auto-loss: opponent wins
+    const winner = playerNum === 1 ? 2 : 1;
+
+    // Set match result (2-0 for opponent)
+    match.games = [winner, winner, null];
+    match.winner = winner;
+
+    // Update Firebase with final state
+    try {
+      const matchesObject = tournamentManager.getMatchesForFirebase();
+      await firebaseManager.updateTournament(
+        tournamentManager.currentTournamentCode,
+        { matches: matchesObject }
+      );
+
+      // Show alert
+      uiManager.showAlert(
+        `Time expired for Player ${playerNum}! Player ${winner} wins by timeout.`,
+        'warning',
+        7000
+      );
+
+      logger.info('Timer', `Match ${matchId}: Player ${playerNum} time expired`);
+    } catch (error) {
+      logger.error('Timer', `Failed to update match after timeout: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update timer display in UI (local only, no Firebase)
+   */
+  updateTimerDisplay(matchId) {
+    const match = tournamentManager.getMatch(matchId);
+    if (!match || !match.timer) return;
+
+    const timer = match.timer;
+    const matchCard = document.querySelector(`[data-match-id="${matchId}"]`);
+    if (!matchCard) return;
+
+    // Update player 1 time
+    const p1TimeEl = matchCard.querySelector('.timer-time[data-player="1"]');
+    if (p1TimeEl) {
+      p1TimeEl.textContent = uiManager.formatTime(timer.player1TimeMs);
+    }
+
+    // Update player 2 time
+    const p2TimeEl = matchCard.querySelector('.timer-time[data-player="2"]');
+    if (p2TimeEl) {
+      p2TimeEl.textContent = uiManager.formatTime(timer.player2TimeMs);
+    }
+
+    // Update buffer display
+    if (timer.bufferActive) {
+      const bufferEl = matchCard.querySelector('.timer-buffer');
+      if (bufferEl) {
+        bufferEl.textContent = `Buffer: ${uiManager.formatTime(timer.bufferMs)}`;
+      }
+    }
+
+    // Update active clock highlight
+    const clocks = matchCard.querySelectorAll('.timer-clock');
+    clocks.forEach((clock, idx) => {
+      const isActive = (idx === 0 && timer.activePlayer === 1 && !timer.isPaused) ||
+                       (idx === 1 && timer.activePlayer === 2 && !timer.isPaused);
+      if (isActive) {
+        clock.classList.add('active');
+      } else {
+        clock.classList.remove('active');
+      }
+    });
+  }
+
+  /**
+   * Update match timer in Firebase
+   */
+  async updateMatchTimer(matchId) {
+    try {
+      const matchesObject = tournamentManager.getMatchesForFirebase();
+      await firebaseManager.updateTournament(
+        tournamentManager.currentTournamentCode,
+        { matches: matchesObject }
+      );
+    } catch (error) {
+      logger.error('Timer', `Failed to update timer state: ${error.message}`);
+    }
+  }
+
+  /**
+   * Show timer settings dialog
+   */
+  showTimerSettings(matchId) {
+    const match = tournamentManager.getMatch(matchId);
+    if (!match || !match.timer) return;
+
+    // TODO: Implement timer settings dialog
+    // For now, just show current config
+    const timer = match.timer;
+    const config = `
+Timer Configuration:
+- Player 1 Time: ${uiManager.formatTime(timer.player1TimeMs)}
+- Player 2 Time: ${uiManager.formatTime(timer.player2TimeMs)}
+- Increment: ${timer.incrementMs / 1000}s
+- Buffer: ${timer.bufferMs / 1000}s
+    `.trim();
+
+    alert(config);
+  }
+
+  /**
+   * Clean up all timer intervals when leaving tournament
+   */
+  cleanupTimers() {
+    this.timerIntervals.forEach((interval, matchId) => {
+      clearInterval(interval);
+    });
+    this.timerIntervals.clear();
   }
 
   /**
