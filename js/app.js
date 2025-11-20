@@ -452,14 +452,21 @@ class App {
 
     // Check if current user is the tournament creator
     console.log("🔍 JOIN: Starting creator check");
+
+    // Wait for auth to be ready before checking sign-in status
+    if (typeof authManager !== 'undefined') {
+      console.log("🔍 JOIN: Waiting for auth ready...");
+      await authManager.authReadyPromise;
+      console.log("🔍 JOIN: Auth ready, currentUser:", authManager.currentUser?.uid || "none");
+    }
+
     if (typeof authManager !== 'undefined' && authManager.isSignedIn()) {
-      // Ensure current user is loaded in firebaseManager before checking creator status
+      // Ensure current user is loaded in firebaseManager
       if (!firebaseManager.currentUser) {
-        console.log("🔍 JOIN: Waiting for auth ready...");
-        await authManager.authReadyPromise;
         firebaseManager.currentUser = authManager.currentUser;
       }
 
+      console.log("🔍 JOIN: User is signed in, checking creator status...");
       console.log("🔍 JOIN: Current user:", firebaseManager.currentUser?.uid);
       tournamentManager.isCreator = await firebaseManager.isCreator(code);
       console.log("🔍 JOIN: Creator check result:", tournamentManager.isCreator);
