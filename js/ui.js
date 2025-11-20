@@ -671,147 +671,193 @@ class UIManager {
   }
 
   /**
-   * Render elimination bracket schedule (shows progression path)
+   * Render elimination bracket schedule (shows bracket tree visualization)
    */
   renderEliminationSchedule(fragment, players, playerMatchesMap) {
-    players.forEach((player, index) => {
-      const playerMatches = playerMatchesMap.get(index) || [];
+    // Instead of showing individual player schedules, show the full bracket tree
+    // This is more intuitive for elimination tournaments
 
-      // Group matches by round/bracket
-      const matchesByRound = {};
-      let isInLosersBracket = false;
-      let wins = 0, losses = 0;
-
-      playerMatches.forEach((m) => {
-        if (m.isPlaceholder && m.player1 === null && m.player2 === null) {
-          return; // Skip empty placeholders
-        }
-
-        // Count wins/losses
-        if (m.winner !== null) {
-          const isPlayer1 = m.player1 === index;
-          const won = m.winner === (isPlayer1 ? 1 : 2);
-          if (won) wins++;
-          else losses++;
-        }
-
-        const round = m.round || 1;
-        if (!matchesByRound[round]) matchesByRound[round] = [];
-        matchesByRound[round].push(m);
-
-        // Check if player is in losers bracket
-        if (m.bracket === 'losers') {
-          isInLosersBracket = true;
+    // Get all matches for the bracket
+    const allMatches = [];
+    playerMatchesMap.forEach((matches) => {
+      matches.forEach((m) => {
+        if (!allMatches.find((existing) => existing.id === m.id)) {
+          allMatches.push(m);
         }
       });
-
-      // Find player's current status
-      let isEliminated = false;
-      let currentRound = null;
-      const rounds = Object.keys(matchesByRound).map(Number).sort((a, b) => a - b);
-
-      for (const round of rounds) {
-        const roundMatches = matchesByRound[round];
-        const hasUnfinished = roundMatches.some((m) => m.winner === null);
-
-        if (hasUnfinished) {
-          currentRound = round;
-          break;
-        }
-
-        // Check if lost this round
-        const lost = roundMatches.some((m) => {
-          const isPlayer1 = m.player1 === index;
-          return m.winner !== null && m.winner !== (isPlayer1 ? 1 : 2);
-        });
-
-        // Check if this loss was in losers bracket (means elimination in double elim)
-        const inLosersBracket = roundMatches.some((m) => m.bracket === 'losers');
-
-        if (lost && inLosersBracket) {
-          isEliminated = true;
-        }
-      }
-
-      const allCompleted =
-        playerMatches.length > 0 &&
-        playerMatches.every((m) => m.winner !== null || m.isPlaceholder);
-
-      const scheduleItem = document.createElement("div");
-      scheduleItem.className = `schedule-item${
-        allCompleted ? " completed" : ""
-      }${isEliminated ? " eliminated" : ""}`;
-
-      // Determine if this player is the champion
-      // Champion = won all matches AND won the final round
-      let isChampion = false;
-      if (allCompleted && !isEliminated && rounds.length > 0) {
-        const finalRound = rounds[rounds.length - 1];
-        const finalMatches = matchesByRound[finalRound];
-        if (finalMatches && finalMatches.length > 0) {
-          const finalMatch = finalMatches[0];
-          const isWin = finalMatch.winner === (finalMatch.player1 === index ? 1 : 2);
-          isChampion = isWin;
-        }
-      }
-
-      let statusHtml = "";
-      if (isEliminated) {
-        statusHtml = `<div class="player-status eliminated">Eliminated (${wins}-${losses})</div>`;
-      } else if (isChampion) {
-        statusHtml = `<div class="player-status">🏆 Champion (${wins}-${losses})</div>`;
-      } else if (allCompleted) {
-        // Completed but not champion = placed (e.g., 2nd, 3rd-4th, etc.)
-        statusHtml = `<div class="player-status">Eliminated (${wins}-${losses})</div>`;
-      } else if (currentRound) {
-        const roundName = this.getRoundName(currentRound, rounds.length);
-        const bracketInfo = isInLosersBracket ? ' (Losers)' : '';
-        statusHtml = `<div class="player-status active">→ ${roundName}${bracketInfo} (${wins}-${losses})</div>`;
-      } else if (playerMatches.length > 0) {
-        statusHtml = `<div class="player-status active">${wins}-${losses}</div>`;
-      }
-
-      // Build bracket path display
-      let pathHtml = '<div class="bracket-path">';
-      rounds.forEach((round, idx) => {
-        const roundMatches = matchesByRound[round];
-        const match = roundMatches[0]; // Should only be one match per round per player
-        const opponentIndex = match.player1 === index ? match.player2 : match.player1;
-        const opponentName = opponentIndex !== null ? players[opponentIndex] : 'TBD';
-        const roundName = this.getRoundName(round, rounds.length);
-
-        const isWin = match.winner === (match.player1 === index ? 1 : 2);
-        const isLoss = match.winner !== null && !isWin;
-        const isPending = match.winner === null && !match.isPlaceholder;
-
-        let matchStatus = '';
-        if (isWin) matchStatus = '✓';
-        else if (isLoss) matchStatus = '✗';
-        else if (isPending) matchStatus = '○';
-        else matchStatus = '—';
-
-        const bracketLabel = match.bracket === 'losers' ? ' (Losers)' : match.bracket === 'winners' ? ' (Winners)' : '';
-
-        pathHtml += `
-          <div class="bracket-round ${isPending ? 'active' : ''} ${isWin ? 'win' : ''} ${isLoss ? 'loss' : ''}">
-            <span class="round-label">${roundName}${bracketLabel}</span>
-            <span class="match-status">${matchStatus}</span>
-            <span class="opponent">vs ${this.escapeHtml(opponentName)}</span>
-          </div>
-        `;
-      });
-      pathHtml += '</div>';
-
-      scheduleItem.innerHTML = `
-        <div class="schedule-item__title">
-          <strong>${this.escapeHtml(player)}</strong>
-          ${statusHtml}
-        </div>
-        ${pathHtml}
-      `;
-
-      fragment.appendChild(scheduleItem);
     });
+
+    // Create bracket tree visualization
+    const bracketTree = this.createBracketTree(allMatches, players);
+
+    // Append bracket tree to fragment
+    fragment.appendChild(bracketTree);
+  }
+
+  /**
+   * Create bracket tree visualization element
+   */
+  createBracketTree(matches, players) {
+    const container = document.createElement('div');
+    container.className = 'bracket-tree';
+
+    // Group matches by round
+    const matchesByRound = {};
+    matches.forEach((match) => {
+      if (match.isPlaceholder && match.player1 === null && match.player2 === null) {
+        return; // Skip empty placeholders
+      }
+      const round = match.round || 1;
+      if (!matchesByRound[round]) {
+        matchesByRound[round] = [];
+      }
+      matchesByRound[round].push(match);
+    });
+
+    const rounds = Object.keys(matchesByRound).map(Number).sort((a, b) => a - b);
+    const totalRounds = rounds.length;
+
+    // Check if this is double elimination (has brackets)
+    const isDoubleElim = matches.some(m => m.bracket !== undefined);
+
+    if (isDoubleElim) {
+      // Separate winners and losers brackets
+      const winnersBracket = matches.filter(m => m.bracket === 'winners' || m.bracket === 'grand-finals');
+      const losersBracket = matches.filter(m => m.bracket === 'losers');
+
+      if (winnersBracket.length > 0) {
+        const winnersTitle = document.createElement('div');
+        winnersTitle.className = 'bracket-section-title';
+        winnersTitle.innerHTML = '🏆 Winners Bracket';
+        container.appendChild(winnersTitle);
+
+        const winnersTree = this.createSingleBracketTree(winnersBracket, players, 'winners');
+        container.appendChild(winnersTree);
+      }
+
+      if (losersBracket.length > 0) {
+        const losersTitle = document.createElement('div');
+        losersTitle.className = 'bracket-section-title';
+        losersTitle.innerHTML = '🔻 Losers Bracket';
+        container.appendChild(losersTitle);
+
+        const losersTree = this.createSingleBracketTree(losersBracket, players, 'losers');
+        container.appendChild(losersTree);
+      }
+
+      // Grand Finals
+      const grandFinals = matches.filter(m => m.bracket === 'grand-finals');
+      if (grandFinals.length > 0) {
+        const finalsTitle = document.createElement('div');
+        finalsTitle.className = 'bracket-section-title bracket-section-title--finals';
+        finalsTitle.innerHTML = '👑 Grand Finals';
+        container.appendChild(finalsTitle);
+
+        const finalsTree = this.createSingleBracketTree(grandFinals, players, 'grand-finals');
+        container.appendChild(finalsTree);
+      }
+    } else {
+      // Single elimination - render as single tree
+      const tree = this.createSingleBracketTree(matches, players, 'single');
+      container.appendChild(tree);
+    }
+
+    return container;
+  }
+
+  /**
+   * Create a single bracket tree (for single elim or one bracket of double elim)
+   */
+  createSingleBracketTree(matches, players, bracketType) {
+    const tree = document.createElement('div');
+    tree.className = `bracket-rounds bracket-rounds--${bracketType}`;
+
+    // Group by round
+    const matchesByRound = {};
+    matches.forEach((match) => {
+      const round = match.round || 1;
+      if (!matchesByRound[round]) {
+        matchesByRound[round] = [];
+      }
+      matchesByRound[round].push(match);
+    });
+
+    const rounds = Object.keys(matchesByRound).map(Number).sort((a, b) => a - b);
+    const totalRounds = rounds.length;
+
+    // Create columns for each round
+    rounds.forEach((round, roundIndex) => {
+      const roundColumn = document.createElement('div');
+      roundColumn.className = 'bracket-column';
+
+      const roundHeader = document.createElement('div');
+      roundHeader.className = 'bracket-column-header';
+      roundHeader.textContent = this.getRoundLabel(round, totalRounds,
+        bracketType === 'losers' ? 'double-elimination' : 'single-elimination');
+      roundColumn.appendChild(roundHeader);
+
+      const matchesContainer = document.createElement('div');
+      matchesContainer.className = 'bracket-column-matches';
+
+      // Sort matches by position for consistent display
+      const roundMatches = matchesByRound[round].sort((a, b) => (a.id || 0) - (b.id || 0));
+
+      roundMatches.forEach((match) => {
+        const matchCard = this.createBracketMatchCard(match, players);
+        matchesContainer.appendChild(matchCard);
+      });
+
+      roundColumn.appendChild(matchesContainer);
+      tree.appendChild(roundColumn);
+    });
+
+    return tree;
+  }
+
+  /**
+   * Create a match card for bracket view
+   */
+  createBracketMatchCard(match, players) {
+    const card = document.createElement('div');
+    card.className = 'bracket-match';
+
+    if (match.winner !== null) {
+      card.classList.add('bracket-match--completed');
+    }
+
+    // BYE matches
+    if (match.isBye) {
+      const p1Name = players[match.player1] || 'TBD';
+      card.innerHTML = `
+        <div class="bracket-match-player bracket-match-player--winner">
+          <div class="bracket-match-player-name">${this.escapeHtml(p1Name)}</div>
+          <div class="bracket-match-player-badge">BYE</div>
+        </div>
+      `;
+      return card;
+    }
+
+    const p1Name = players[match.player1] || 'TBD';
+    const p2Name = players[match.player2] || 'TBD';
+    const p1Wins = match.games ? match.games.filter(g => g === 1).length : 0;
+    const p2Wins = match.games ? match.games.filter(g => g === 2).length : 0;
+
+    const p1Winner = match.winner === 1;
+    const p2Winner = match.winner === 2;
+
+    card.innerHTML = `
+      <div class="bracket-match-player ${p1Winner ? 'bracket-match-player--winner' : p1Name === 'TBD' ? 'bracket-match-player--tbd' : ''}">
+        <div class="bracket-match-player-name">${this.escapeHtml(p1Name)}</div>
+        <div class="bracket-match-player-score">${p1Wins}</div>
+      </div>
+      <div class="bracket-match-vs">vs</div>
+      <div class="bracket-match-player ${p2Winner ? 'bracket-match-player--winner' : p2Name === 'TBD' ? 'bracket-match-player--tbd' : ''}">
+        <div class="bracket-match-player-name">${this.escapeHtml(p2Name)}</div>
+        <div class="bracket-match-player-score">${p2Wins}</div>
+      </div>
+    `;
+
+    return card;
   }
 
   /**
