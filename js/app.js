@@ -451,18 +451,19 @@ class App {
     tournamentManager.currentTournamentCode = code;
 
     // Check if current user is the tournament creator
+    console.log("🔍 JOIN: Starting creator check");
     if (typeof authManager !== 'undefined' && authManager.isSignedIn()) {
       // Ensure current user is loaded in firebaseManager before checking creator status
       if (!firebaseManager.currentUser) {
-        logger.debug("App", "Waiting for auth ready...");
+        console.log("🔍 JOIN: Waiting for auth ready...");
         await authManager.authReadyPromise;
         firebaseManager.currentUser = authManager.currentUser;
       }
 
-      logger.debug("App", `Current user: ${firebaseManager.currentUser?.uid}, checking creator status...`);
+      console.log("🔍 JOIN: Current user:", firebaseManager.currentUser?.uid);
       tournamentManager.isCreator = await firebaseManager.isCreator(code);
+      console.log("🔍 JOIN: Creator check result:", tournamentManager.isCreator);
       logger.info("App", `Joined as ${tournamentManager.isCreator ? "CREATOR" : "member"}: ${code}`);
-      logger.debug("App", `tournamentManager.isCreator = ${tournamentManager.isCreator}`);
 
       // Add to members list if not already a member
       try {
@@ -471,6 +472,7 @@ class App {
         logger.warn("App", "Could not join as member (continuing as viewer)", error);
       }
     } else {
+      console.log("🔍 JOIN: No auth or not signed in - setting isCreator to false");
       // Guests are never creators
       tournamentManager.isCreator = false;
       logger.info("App", `Viewing tournament as guest: ${code}`);
@@ -997,16 +999,18 @@ class App {
     const lockBtnText = uiManager.elements.lockBtnText;
     const lockedIndicator = uiManager.elements.lockedIndicator;
 
-    logger.debug("App", `updateLockButton called - isCreator: ${tournamentManager.isCreator}, locked: ${tournamentManager.locked}`);
+    console.log("🔒 LOCK BTN: updateLockButton called");
+    console.log("🔒 LOCK BTN: isCreator:", tournamentManager.isCreator);
+    console.log("🔒 LOCK BTN: locked:", tournamentManager.locked);
 
     if (!lockBtn || !lockBtnText) {
-      logger.warn("App", "Lock button elements not found");
+      console.warn("🔒 LOCK BTN: Elements not found!");
       return;
     }
 
     // Only show lock button to creator
     if (tournamentManager.isCreator) {
-      logger.debug("App", "Showing lock button for creator");
+      console.log("🔒 LOCK BTN: Showing button (user is creator)");
       lockBtn.style.display = "inline-block";
 
       // Update button text and style based on lock state
@@ -1018,7 +1022,7 @@ class App {
         lockBtn.className = "btn btn--warning btn--small";
       }
     } else {
-      logger.debug("App", "Hiding lock button (not creator)");
+      console.log("🔒 LOCK BTN: Hiding button (user is NOT creator)");
       lockBtn.style.display = "none";
     }
 
