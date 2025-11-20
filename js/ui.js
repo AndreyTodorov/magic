@@ -18,6 +18,26 @@ class UIManager {
   }
 
   /**
+   * Update schedule info title based on format
+   */
+  updateScheduleInfoTitle(format, matchesPerPlayer) {
+    const scheduleInfoTitle = this.elements.scheduleInfo?.querySelector('.schedule-info__title');
+    if (!scheduleInfoTitle) return;
+
+    // Check if this is an elimination format
+    const isElimination = format === TOURNAMENT_FORMATS.SINGLE_ELIMINATION ||
+                         format === TOURNAMENT_FORMATS.DOUBLE_ELIMINATION;
+
+    if (isElimination) {
+      scheduleInfoTitle.innerHTML = 'Player Schedule - Elimination Bracket';
+    } else {
+      scheduleInfoTitle.innerHTML = `Player Schedule - Each player competes in <span id="gamesPerPlayer">${matchesPerPlayer}</span> matches`;
+      // Re-cache the gamesPerPlayer element since we just recreated it
+      this.elements.gamesPerPlayer = document.getElementById("gamesPerPlayer");
+    }
+  }
+
+  /**
    * Cache DOM elements
    */
   cacheElements() {

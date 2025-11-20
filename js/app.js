@@ -493,8 +493,10 @@ class App {
     // Update UI
     uiManager.showSection("tournamentSection");
     uiManager.displayTournamentCode(code);
-    uiManager.elements.gamesPerPlayer.textContent =
-      tournamentManager.matchesPerPlayer;
+    uiManager.updateScheduleInfoTitle(
+      tournamentManager.format,
+      tournamentManager.matchesPerPlayer
+    );
 
     // Hide auth section and mode selector when in tournament
     const authSection = document.getElementById('authSection');
@@ -647,7 +649,10 @@ class App {
     logger.debug("App", "Updating UI to show tournament");
     uiManager.showSection("tournamentSection");
     uiManager.displayTournamentCode(code);
-    uiManager.elements.gamesPerPlayer.textContent = matchesPerPlayer;
+    uiManager.updateScheduleInfoTitle(
+      tournamentManager.format,
+      matchesPerPlayer
+    );
 
     // Hide auth section and mode selector when in tournament
     const authSection = document.getElementById('authSection');
