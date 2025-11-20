@@ -535,8 +535,9 @@ class App {
     // Render tournament
     this.renderTournament();
 
-    // Save session
-    this.saveTournamentSession(code, false);
+    // Save session - use the creator status we just determined above
+    console.log("🔍 JOIN: Saving session with isCreator:", tournamentManager.isCreator);
+    this.saveTournamentSession(code, tournamentManager.isCreator);
 
     logger.info("App", `Successfully joined tournament: ${code}`);
   }
