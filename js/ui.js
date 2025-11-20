@@ -17,6 +17,42 @@ class UIManager {
     this.selectedStage = null;
     // Track bracket view mode: 'full' or 'player-paths'
     this.bracketViewMode = 'full';
+    // Track selected player (for "that's me" feature)
+    this.selectedPlayerIndex = null;
+    // Long-press tracking
+    this.longPressTimer = null;
+    this.longPressThreshold = 500; // 500ms hold to trigger
+    // Load selected player from localStorage
+    this.loadSelectedPlayer();
+  }
+
+  /**
+   * Load selected player from localStorage
+   */
+  loadSelectedPlayer() {
+    try {
+      const saved = localStorage.getItem('mm_selected_player');
+      if (saved !== null) {
+        this.selectedPlayerIndex = parseInt(saved);
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  }
+
+  /**
+   * Save selected player to localStorage
+   */
+  saveSelectedPlayer() {
+    try {
+      if (this.selectedPlayerIndex !== null) {
+        localStorage.setItem('mm_selected_player', this.selectedPlayerIndex.toString());
+      } else {
+        localStorage.removeItem('mm_selected_player');
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
   }
 
   /**
@@ -732,7 +768,45 @@ class UIManager {
    * Render player paths view (individual player journeys)
    */
   renderPlayerPathsView(fragment, players, playerMatchesMap) {
-    players.forEach((player, index) => {
+    // Add "Show All" button if a player is selected
+    if (this.selectedPlayerIndex !== null) {
+      const showAllContainer = document.createElement('div');
+      showAllContainer.className = 'player-selection-controls';
+      showAllContainer.innerHTML = `
+        <div class="player-selection-info">
+          Showing: <strong>${this.escapeHtml(players[this.selectedPlayerIndex] || 'Unknown')}</strong>
+        </div>
+        <button class="player-selection-clear">✕ Show All Players</button>
+      `;
+
+      const clearBtn = showAllContainer.querySelector('.player-selection-clear');
+      clearBtn.addEventListener('click', () => {
+        this.selectedPlayerIndex = null;
+        this.saveSelectedPlayer();
+        // Re-render the schedule
+        this.renderSchedule(players, Array.from(playerMatchesMap.values()).flat(),
+          tournamentManager.format, tournamentManager.currentStage);
+      });
+
+      fragment.appendChild(showAllContainer);
+    }
+
+    // Add instruction hint if no player is selected
+    if (this.selectedPlayerIndex === null && players.length > 1) {
+      const hintContainer = document.createElement('div');
+      hintContainer.className = 'player-selection-hint';
+      hintContainer.innerHTML = `
+        💡 <strong>Tip:</strong> Click and hold on your name to mark yourself and see only your matches
+      `;
+      fragment.appendChild(hintContainer);
+    }
+
+    // Filter players if one is selected
+    const playersToShow = this.selectedPlayerIndex !== null
+      ? [{ name: players[this.selectedPlayerIndex], index: this.selectedPlayerIndex }]
+      : players.map((name, index) => ({ name, index }));
+
+    playersToShow.forEach(({ name: player, index }) => {
       const playerMatches = playerMatchesMap.get(index) || [];
 
       // Group matches by round/bracket
@@ -858,16 +932,81 @@ class UIManager {
       });
       pathHtml += '</div>';
 
+      // Add "You" badge if this is the selected player
+      const youBadge = this.selectedPlayerIndex === index
+        ? '<span class="player-you-badge">You</span>'
+        : '';
+
       scheduleItem.innerHTML = `
         <div class="schedule-item__title">
           <strong>${this.escapeHtml(player)}</strong>
+          ${youBadge}
           ${statusHtml}
         </div>
         ${pathHtml}
       `;
 
+      // Add long-press handlers for marking "that's me"
+      // Only add if not already selected (to allow selecting different players)
+      this.addLongPressHandler(scheduleItem, () => {
+        this.selectedPlayerIndex = index;
+        this.saveSelectedPlayer();
+        this.showAlert(`Marked "${player}" as you! Now showing only your matches.`, 'success', 3000);
+        // Re-render the schedule
+        this.renderSchedule(players, Array.from(playerMatchesMap.values()).flat(),
+          tournamentManager.format, tournamentManager.currentStage);
+      });
+
       fragment.appendChild(scheduleItem);
     });
+  }
+
+  /**
+   * Add long-press handler to an element
+   */
+  addLongPressHandler(element, callback) {
+    let pressTimer = null;
+    let longPressTriggered = false;
+
+    const startPress = (e) => {
+      longPressTriggered = false;
+      // Add visual feedback
+      element.classList.add('long-press-active');
+
+      pressTimer = setTimeout(() => {
+        longPressTriggered = true;
+        // Haptic feedback on mobile
+        if (navigator.vibrate) {
+          navigator.vibrate(50);
+        }
+        callback();
+        element.classList.remove('long-press-active');
+      }, this.longPressThreshold);
+    };
+
+    const cancelPress = (e) => {
+      if (pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+      }
+      element.classList.remove('long-press-active');
+
+      // Prevent click if long press was triggered
+      if (longPressTriggered) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    // Mouse events
+    element.addEventListener('mousedown', startPress);
+    element.addEventListener('mouseup', cancelPress);
+    element.addEventListener('mouseleave', cancelPress);
+
+    // Touch events
+    element.addEventListener('touchstart', startPress, { passive: true });
+    element.addEventListener('touchend', cancelPress);
+    element.addEventListener('touchcancel', cancelPress);
   }
 
   /**
