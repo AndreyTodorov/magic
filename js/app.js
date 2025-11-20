@@ -451,10 +451,6 @@ class App {
     tournamentManager.currentTournamentCode = code;
 
     // Check if current user is the tournament creator
-    console.log("🔍 JOIN: Starting creator check");
-    console.log("🔍 JOIN: authManager exists?", typeof authManager !== 'undefined');
-    console.log("🔍 JOIN: firebaseManager type:", firebaseManager.constructor.name);
-
     // For standalone mode (LocalStorageManager), use localStorage session to track creator status
     // because the mock user ID changes on every page load
     if (firebaseManager.constructor.name === 'LocalStorageManager') {
@@ -462,23 +458,14 @@ class App {
       const savedIsCreator = localStorage.getItem(SESSION_CONFIG.STORAGE_KEYS.IS_CREATOR) === "true";
       const savedCode = localStorage.getItem(SESSION_CONFIG.STORAGE_KEYS.TOURNAMENT_CODE);
 
-      console.log("🔍 JOIN: Standalone mode - using localStorage");
-      console.log("🔍 JOIN: savedCode:", savedCode, "currentCode:", code);
-      console.log("🔍 JOIN: savedIsCreator:", savedIsCreator);
-
       // Only trust the saved creator status if it's for the same tournament
       tournamentManager.isCreator = savedIsCreator && savedCode === code;
-      console.log("🔍 JOIN: Final isCreator:", tournamentManager.isCreator);
       logger.info("App", `Joined as ${tournamentManager.isCreator ? "CREATOR" : "viewer"}: ${code}`);
     } else {
       // Firebase mode - use real authentication
       // Wait for auth to be ready before checking sign-in status
       if (typeof authManager !== 'undefined') {
-        console.log("🔍 JOIN: Waiting for auth ready...");
         await authManager.authReadyPromise;
-        console.log("🔍 JOIN: Auth ready, currentUser:", authManager.currentUser?.uid || "none");
-      } else {
-        console.log("🔍 JOIN: authManager is undefined");
       }
 
       if (typeof authManager !== 'undefined' && authManager.isSignedIn()) {
@@ -487,10 +474,7 @@ class App {
           firebaseManager.currentUser = authManager.currentUser;
         }
 
-        console.log("🔍 JOIN: User is signed in, checking creator status...");
-        console.log("🔍 JOIN: Current user:", firebaseManager.currentUser?.uid);
         tournamentManager.isCreator = await firebaseManager.isCreator(code);
-        console.log("🔍 JOIN: Creator check result:", tournamentManager.isCreator);
         logger.info("App", `Joined as ${tournamentManager.isCreator ? "CREATOR" : "member"}: ${code}`);
 
         // Add to members list if not already a member
@@ -500,7 +484,6 @@ class App {
           logger.warn("App", "Could not join as member (continuing as viewer)", error);
         }
       } else {
-        console.log("🔍 JOIN: No auth or not signed in - setting isCreator to false");
         // Guests are never creators
         tournamentManager.isCreator = false;
         logger.info("App", `Viewing tournament as guest: ${code}`);
@@ -536,7 +519,6 @@ class App {
     this.renderTournament();
 
     // Save session - use the creator status we just determined above
-    console.log("🔍 JOIN: Saving session with isCreator:", tournamentManager.isCreator);
     this.saveTournamentSession(code, tournamentManager.isCreator);
 
     logger.info("App", `Successfully joined tournament: ${code}`);
@@ -1029,18 +1011,10 @@ class App {
     const lockBtnText = uiManager.elements.lockBtnText;
     const lockedIndicator = uiManager.elements.lockedIndicator;
 
-    console.log("🔒 LOCK BTN: updateLockButton called");
-    console.log("🔒 LOCK BTN: isCreator:", tournamentManager.isCreator);
-    console.log("🔒 LOCK BTN: locked:", tournamentManager.locked);
-
-    if (!lockBtn || !lockBtnText) {
-      console.warn("🔒 LOCK BTN: Elements not found!");
-      return;
-    }
+    if (!lockBtn || !lockBtnText) return;
 
     // Only show lock button to creator
     if (tournamentManager.isCreator) {
-      console.log("🔒 LOCK BTN: Showing button (user is creator)");
       lockBtn.style.display = "inline-block";
 
       // Update button text and style based on lock state
@@ -1052,7 +1026,6 @@ class App {
         lockBtn.className = "btn btn--warning btn--small";
       }
     } else {
-      console.log("🔒 LOCK BTN: Hiding button (user is NOT creator)");
       lockBtn.style.display = "none";
     }
 

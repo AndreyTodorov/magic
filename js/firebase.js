@@ -409,25 +409,14 @@ class FirebaseManager {
    * Check if current user is tournament creator
    */
   async isCreator(tournamentCode) {
-    if (!this.currentUser) {
-      console.warn("isCreator: No current user");
-      return false;
-    }
+    if (!this.currentUser) return false;
 
     try {
       const snapshot = await this.database
         .ref(`tournaments/${tournamentCode}/creator`)
         .once("value");
 
-      const creatorUid = snapshot.val();
-      const currentUid = this.currentUser.uid;
-      const isMatch = creatorUid === currentUid;
-
-      if (ENVIRONMENT === 'development') {
-        console.log(`isCreator check: creator=${creatorUid}, current=${currentUid}, match=${isMatch}`);
-      }
-
-      return isMatch;
+      return snapshot.val() === this.currentUser.uid;
     } catch (error) {
       console.error("Error checking creator status:", error);
       return false;

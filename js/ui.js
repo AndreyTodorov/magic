@@ -150,6 +150,16 @@ class UIManager {
             // Record that the user explicitly toggled the code display so
             // programmatic re-renders respect their choice unless forced.
             this.codeDisplayUserCollapsed = collapsed;
+
+            // Save state to localStorage per tournament
+            if (tournamentManager.currentTournamentCode) {
+              const key = `mm_code_display_${tournamentManager.currentTournamentCode}`;
+              try {
+                localStorage.setItem(key, collapsed.toString());
+              } catch (e) {
+                // Ignore localStorage errors
+              }
+            }
           };
 
           title.addEventListener("click", toggleCodeDisplay);
@@ -441,9 +451,8 @@ class UIManager {
     }
     if (this.elements.codeDisplay) {
       this.elements.codeDisplay.style.display = "block";
-      // Start collapsed (so it doesn't take too much space); user can expand
-      // Force initial collapsed state when first displaying the code
-      this.setCodeDisplayCollapsed({ collapsed: true, force: true });
+      // Load saved collapsed state for this tournament, or default to collapsed
+      this.loadCodeDisplayState();
     }
   }
 
@@ -489,6 +498,32 @@ class UIManager {
       el.classList.remove("collapsed");
       const title = el.querySelector(".code-display__title");
       if (title) title.setAttribute("aria-expanded", "true");
+    }
+  }
+
+  /**
+   * Load code display collapsed state from localStorage for current tournament
+   */
+  loadCodeDisplayState() {
+    if (!tournamentManager.currentTournamentCode) return;
+
+    const key = `mm_code_display_${tournamentManager.currentTournamentCode}`;
+    try {
+      const savedState = localStorage.getItem(key);
+      if (savedState !== null) {
+        // Restore saved state for this tournament
+        const collapsed = savedState === 'true';
+        this.codeDisplayUserCollapsed = collapsed;
+        this.setCodeDisplayCollapsed({ collapsed, force: true });
+      } else {
+        // No saved state - default to collapsed
+        this.codeDisplayUserCollapsed = null;
+        this.setCodeDisplayCollapsed({ collapsed: true, force: true });
+      }
+    } catch (e) {
+      // Ignore localStorage errors - default to collapsed
+      this.codeDisplayUserCollapsed = null;
+      this.setCodeDisplayCollapsed({ collapsed: true, force: true });
     }
   }
 
