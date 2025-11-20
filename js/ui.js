@@ -15,6 +15,8 @@ class UIManager {
     // Track the currently selected round/stage for filtering matches
     this.selectedRound = null;
     this.selectedStage = null;
+    // Track bracket view mode: 'full' or 'player-paths'
+    this.bracketViewMode = 'full';
   }
 
   /**
@@ -671,11 +673,39 @@ class UIManager {
   }
 
   /**
-   * Render elimination bracket schedule (shows bracket tree visualization)
+   * Render elimination bracket schedule (shows bracket tree visualization or player paths)
    */
   renderEliminationSchedule(fragment, players, playerMatchesMap) {
-    // Instead of showing individual player schedules, show the full bracket tree
-    // This is more intuitive for elimination tournaments
+    // Add view toggle controls
+    const toggleContainer = document.createElement('div');
+    toggleContainer.className = 'bracket-view-toggle';
+    toggleContainer.innerHTML = `
+      <div class="bracket-view-toggle__label">View:</div>
+      <div class="bracket-view-toggle__buttons">
+        <button class="bracket-view-toggle__btn ${this.bracketViewMode === 'full' ? 'active' : ''}" data-view="full">
+          🏆 Full Bracket
+        </button>
+        <button class="bracket-view-toggle__btn ${this.bracketViewMode === 'player-paths' ? 'active' : ''}" data-view="player-paths">
+          👤 My Matches
+        </button>
+      </div>
+    `;
+
+    // Add event listeners to toggle buttons
+    const buttons = toggleContainer.querySelectorAll('.bracket-view-toggle__btn');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const newView = btn.dataset.view;
+        if (newView !== this.bracketViewMode) {
+          this.bracketViewMode = newView;
+          // Re-render the schedule
+          this.renderSchedule(players, Array.from(playerMatchesMap.values()).flat(),
+            tournamentManager.format, tournamentManager.currentStage);
+        }
+      });
+    });
+
+    fragment.appendChild(toggleContainer);
 
     // Get all matches for the bracket
     const allMatches = [];
@@ -687,11 +717,157 @@ class UIManager {
       });
     });
 
-    // Create bracket tree visualization
-    const bracketTree = this.createBracketTree(allMatches, players);
+    // Render based on selected view mode
+    if (this.bracketViewMode === 'full') {
+      // Create bracket tree visualization
+      const bracketTree = this.createBracketTree(allMatches, players);
+      fragment.appendChild(bracketTree);
+    } else {
+      // Create player paths view
+      this.renderPlayerPathsView(fragment, players, playerMatchesMap);
+    }
+  }
 
-    // Append bracket tree to fragment
-    fragment.appendChild(bracketTree);
+  /**
+   * Render player paths view (individual player journeys)
+   */
+  renderPlayerPathsView(fragment, players, playerMatchesMap) {
+    players.forEach((player, index) => {
+      const playerMatches = playerMatchesMap.get(index) || [];
+
+      // Group matches by round/bracket
+      const matchesByRound = {};
+      let isInLosersBracket = false;
+      let wins = 0, losses = 0;
+
+      playerMatches.forEach((m) => {
+        if (m.isPlaceholder && m.player1 === null && m.player2 === null) {
+          return; // Skip empty placeholders
+        }
+
+        // Count wins/losses
+        if (m.winner !== null) {
+          const isPlayer1 = m.player1 === index;
+          const won = m.winner === (isPlayer1 ? 1 : 2);
+          if (won) wins++;
+          else losses++;
+        }
+
+        const round = m.round || 1;
+        if (!matchesByRound[round]) matchesByRound[round] = [];
+        matchesByRound[round].push(m);
+
+        // Check if player is in losers bracket
+        if (m.bracket === 'losers') {
+          isInLosersBracket = true;
+        }
+      });
+
+      // Find player's current status
+      let isEliminated = false;
+      let currentRound = null;
+      const rounds = Object.keys(matchesByRound).map(Number).sort((a, b) => a - b);
+
+      for (const round of rounds) {
+        const roundMatches = matchesByRound[round];
+        const hasUnfinished = roundMatches.some((m) => m.winner === null);
+
+        if (hasUnfinished) {
+          currentRound = round;
+          break;
+        }
+
+        // Check if lost this round
+        const lost = roundMatches.some((m) => {
+          const isPlayer1 = m.player1 === index;
+          return m.winner !== null && m.winner !== (isPlayer1 ? 1 : 2);
+        });
+
+        // Check if this loss was in losers bracket (means elimination in double elim)
+        const inLosersBracket = roundMatches.some((m) => m.bracket === 'losers');
+
+        if (lost && inLosersBracket) {
+          isEliminated = true;
+        }
+      }
+
+      const allCompleted =
+        playerMatches.length > 0 &&
+        playerMatches.every((m) => m.winner !== null || m.isPlaceholder);
+
+      const scheduleItem = document.createElement("div");
+      scheduleItem.className = `schedule-item${
+        allCompleted ? " completed" : ""
+      }${isEliminated ? " eliminated" : ""}`;
+
+      // Determine if this player is the champion
+      let isChampion = false;
+      if (allCompleted && !isEliminated && rounds.length > 0) {
+        const finalRound = rounds[rounds.length - 1];
+        const finalMatches = matchesByRound[finalRound];
+        if (finalMatches && finalMatches.length > 0) {
+          const finalMatch = finalMatches[0];
+          const isWin = finalMatch.winner === (finalMatch.player1 === index ? 1 : 2);
+          isChampion = isWin;
+        }
+      }
+
+      let statusHtml = "";
+      if (isEliminated) {
+        statusHtml = `<div class="player-status eliminated">Eliminated (${wins}-${losses})</div>`;
+      } else if (isChampion) {
+        statusHtml = `<div class="player-status">🏆 Champion (${wins}-${losses})</div>`;
+      } else if (allCompleted) {
+        statusHtml = `<div class="player-status">Eliminated (${wins}-${losses})</div>`;
+      } else if (currentRound) {
+        const roundName = this.getRoundName(currentRound, rounds.length);
+        const bracketInfo = isInLosersBracket ? ' (Losers)' : '';
+        statusHtml = `<div class="player-status active">→ ${roundName}${bracketInfo} (${wins}-${losses})</div>`;
+      } else if (playerMatches.length > 0) {
+        statusHtml = `<div class="player-status active">${wins}-${losses}</div>`;
+      }
+
+      // Build bracket path display
+      let pathHtml = '<div class="bracket-path">';
+      rounds.forEach((round, idx) => {
+        const roundMatches = matchesByRound[round];
+        const match = roundMatches[0];
+        const opponentIndex = match.player1 === index ? match.player2 : match.player1;
+        const opponentName = opponentIndex !== null ? players[opponentIndex] : 'TBD';
+        const roundName = this.getRoundName(round, rounds.length);
+
+        const isWin = match.winner === (match.player1 === index ? 1 : 2);
+        const isLoss = match.winner !== null && !isWin;
+        const isPending = match.winner === null && !match.isPlaceholder;
+
+        let matchStatus = '';
+        if (isWin) matchStatus = '✓';
+        else if (isLoss) matchStatus = '✗';
+        else if (isPending) matchStatus = '○';
+        else matchStatus = '—';
+
+        const bracketLabel = match.bracket === 'losers' ? ' (Losers)' : match.bracket === 'winners' ? ' (Winners)' : '';
+
+        pathHtml += `
+          <div class="bracket-round ${isPending ? 'active' : ''} ${isWin ? 'win' : ''} ${isLoss ? 'loss' : ''}">
+            <span class="round-label">${roundName}${bracketLabel}</span>
+            <span class="match-status">${matchStatus}</span>
+            <span class="opponent">vs ${this.escapeHtml(opponentName)}</span>
+          </div>
+        `;
+      });
+      pathHtml += '</div>';
+
+      scheduleItem.innerHTML = `
+        <div class="schedule-item__title">
+          <strong>${this.escapeHtml(player)}</strong>
+          ${statusHtml}
+        </div>
+        ${pathHtml}
+      `;
+
+      fragment.appendChild(scheduleItem);
+    });
   }
 
   /**
