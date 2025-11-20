@@ -452,37 +452,59 @@ class App {
 
     // Check if current user is the tournament creator
     console.log("🔍 JOIN: Starting creator check");
+    console.log("🔍 JOIN: authManager exists?", typeof authManager !== 'undefined');
+    console.log("🔍 JOIN: firebaseManager type:", firebaseManager.constructor.name);
 
-    // Wait for auth to be ready before checking sign-in status
-    if (typeof authManager !== 'undefined') {
-      console.log("🔍 JOIN: Waiting for auth ready...");
-      await authManager.authReadyPromise;
-      console.log("🔍 JOIN: Auth ready, currentUser:", authManager.currentUser?.uid || "none");
-    }
+    // For standalone mode (LocalStorageManager), use localStorage session to track creator status
+    // because the mock user ID changes on every page load
+    if (firebaseManager.constructor.name === 'LocalStorageManager') {
+      // In standalone mode, check localStorage for creator status
+      const savedIsCreator = localStorage.getItem(SESSION_CONFIG.STORAGE_KEYS.IS_CREATOR) === "true";
+      const savedCode = localStorage.getItem(SESSION_CONFIG.STORAGE_KEYS.TOURNAMENT_CODE);
 
-    if (typeof authManager !== 'undefined' && authManager.isSignedIn()) {
-      // Ensure current user is loaded in firebaseManager
-      if (!firebaseManager.currentUser) {
-        firebaseManager.currentUser = authManager.currentUser;
-      }
+      console.log("🔍 JOIN: Standalone mode - using localStorage");
+      console.log("🔍 JOIN: savedCode:", savedCode, "currentCode:", code);
+      console.log("🔍 JOIN: savedIsCreator:", savedIsCreator);
 
-      console.log("🔍 JOIN: User is signed in, checking creator status...");
-      console.log("🔍 JOIN: Current user:", firebaseManager.currentUser?.uid);
-      tournamentManager.isCreator = await firebaseManager.isCreator(code);
-      console.log("🔍 JOIN: Creator check result:", tournamentManager.isCreator);
-      logger.info("App", `Joined as ${tournamentManager.isCreator ? "CREATOR" : "member"}: ${code}`);
-
-      // Add to members list if not already a member
-      try {
-        await firebaseManager.joinTournament(code);
-      } catch (error) {
-        logger.warn("App", "Could not join as member (continuing as viewer)", error);
-      }
+      // Only trust the saved creator status if it's for the same tournament
+      tournamentManager.isCreator = savedIsCreator && savedCode === code;
+      console.log("🔍 JOIN: Final isCreator:", tournamentManager.isCreator);
+      logger.info("App", `Joined as ${tournamentManager.isCreator ? "CREATOR" : "viewer"}: ${code}`);
     } else {
-      console.log("🔍 JOIN: No auth or not signed in - setting isCreator to false");
-      // Guests are never creators
-      tournamentManager.isCreator = false;
-      logger.info("App", `Viewing tournament as guest: ${code}`);
+      // Firebase mode - use real authentication
+      // Wait for auth to be ready before checking sign-in status
+      if (typeof authManager !== 'undefined') {
+        console.log("🔍 JOIN: Waiting for auth ready...");
+        await authManager.authReadyPromise;
+        console.log("🔍 JOIN: Auth ready, currentUser:", authManager.currentUser?.uid || "none");
+      } else {
+        console.log("🔍 JOIN: authManager is undefined");
+      }
+
+      if (typeof authManager !== 'undefined' && authManager.isSignedIn()) {
+        // Ensure current user is loaded in firebaseManager
+        if (!firebaseManager.currentUser) {
+          firebaseManager.currentUser = authManager.currentUser;
+        }
+
+        console.log("🔍 JOIN: User is signed in, checking creator status...");
+        console.log("🔍 JOIN: Current user:", firebaseManager.currentUser?.uid);
+        tournamentManager.isCreator = await firebaseManager.isCreator(code);
+        console.log("🔍 JOIN: Creator check result:", tournamentManager.isCreator);
+        logger.info("App", `Joined as ${tournamentManager.isCreator ? "CREATOR" : "member"}: ${code}`);
+
+        // Add to members list if not already a member
+        try {
+          await firebaseManager.joinTournament(code);
+        } catch (error) {
+          logger.warn("App", "Could not join as member (continuing as viewer)", error);
+        }
+      } else {
+        console.log("🔍 JOIN: No auth or not signed in - setting isCreator to false");
+        // Guests are never creators
+        tournamentManager.isCreator = false;
+        logger.info("App", `Viewing tournament as guest: ${code}`);
+      }
     }
 
     // Update UI
