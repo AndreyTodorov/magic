@@ -16,9 +16,7 @@ class AuthManager {
   async initialize(firebaseAuth) {
     this.auth = firebaseAuth;
 
-    return new Promise((resolve) => {
-      this.authReadyPromise = resolve;
-
+    this.authReadyPromise = new Promise((resolve) => {
       // Listen for auth state changes
       this.auth.onAuthStateChanged((user) => {
         this.currentUser = user;
@@ -39,6 +37,8 @@ class AuthManager {
         }
       });
     });
+
+    return this.authReadyPromise;
   }
 
   /**
