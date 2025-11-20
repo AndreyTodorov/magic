@@ -617,6 +617,16 @@ class App {
     uiManager.displayTournamentCode(code);
     uiManager.elements.gamesPerPlayer.textContent = matchesPerPlayer;
 
+    // Hide auth section and mode selector when in tournament
+    const authSection = document.getElementById('authSection');
+    const modeSelector = document.getElementById('modeSelector');
+    if (authSection) {
+      authSection.style.display = 'none';
+    }
+    if (modeSelector) {
+      modeSelector.style.display = 'none';
+    }
+
     // Start listening to updates
     this.startTournamentListener(code);
 
