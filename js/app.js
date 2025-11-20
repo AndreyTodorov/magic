@@ -449,18 +449,21 @@ class App {
     const tournamentData = await firebaseManager.getTournamentData(code);
     tournamentManager.loadTournament(tournamentData);
     tournamentManager.currentTournamentCode = code;
-    tournamentManager.isCreator = false;
 
-    // Only add to members list if user is authenticated
-    // Unauthenticated users can view and update scores without being members
+    // Check if current user is the tournament creator
     if (typeof authManager !== 'undefined' && authManager.isSignedIn()) {
+      tournamentManager.isCreator = await firebaseManager.isCreator(code);
+      logger.info("App", `Joined as ${tournamentManager.isCreator ? "creator" : "member"}: ${code}`);
+
+      // Add to members list if not already a member
       try {
         await firebaseManager.joinTournament(code);
-        logger.info("App", `Joined as member: ${code}`);
       } catch (error) {
         logger.warn("App", "Could not join as member (continuing as viewer)", error);
       }
     } else {
+      // Guests are never creators
+      tournamentManager.isCreator = false;
       logger.info("App", `Viewing tournament as guest: ${code}`);
     }
 
@@ -960,6 +963,9 @@ class App {
       // Update UI
       this.updateLockButton();
 
+      // Re-render tournament to show lock state changes (badges, disabled buttons)
+      this.renderTournament(true);
+
       uiManager.showAlert(
         `Tournament ${newLockState ? "locked" : "unlocked"} successfully`,
         "success"
@@ -1170,9 +1176,10 @@ class App {
       const exists = await firebaseManager.tournamentExists(savedCode);
 
       if (exists) {
-        // Rejoin tournament
+        // Rejoin tournament (creator status will be checked automatically in joinTournament)
         uiManager.elements.tournamentCode.value = savedCode;
         await this.joinTournament(savedCode);
+
         if (ENVIRONMENT === 'development') {
           console.log("✓ Automatically rejoined tournament:", savedCode);
         }
