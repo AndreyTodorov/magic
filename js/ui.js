@@ -1410,6 +1410,11 @@ class UIManager {
       ? `<div class="badge badge-locked" style="background-color: #f39c12; color: white;">🔒 Locked</div>`
       : '';
 
+    // Add timer display if enabled
+    const timerDisplay = match.timer && match.timer.enabled
+      ? this.createTimerDisplay(match, p1Name, p2Name)
+      : '';
+
     card.innerHTML = `
       <div class="match-card__header">
         <div class="match-number">${matchLabel}</div>
@@ -1417,6 +1422,8 @@ class UIManager {
         ${lockedBadge}
         <div class="badge">Best of 3</div>
       </div>
+
+      ${timerDisplay}
 
       <div class="match-score-display">${p1Wins} - ${p2Wins}</div>
 
@@ -1429,6 +1436,112 @@ class UIManager {
     `;
 
     return card;
+  }
+
+  /**
+   * Create timer display for a match
+   */
+  createTimerDisplay(match, p1Name, p2Name) {
+    const timer = match.timer;
+    if (!timer || !timer.enabled) return '';
+
+    const p1Time = this.formatTime(timer.player1TimeMs);
+    const p2Time = this.formatTime(timer.player2TimeMs);
+    const isP1Active = timer.activePlayer === 1 && !timer.isPaused;
+    const isP2Active = timer.activePlayer === 2 && !timer.isPaused;
+    const isBufferActive = timer.bufferActive && !timer.isPaused;
+    const isExpired = timer.timeExpiredPlayer !== null;
+
+    // Determine timer state class
+    let timerStateClass = '';
+    if (isExpired) {
+      timerStateClass = 'expired';
+    } else if (!timer.isPaused && !isBufferActive) {
+      timerStateClass = 'running';
+    } else if (isBufferActive) {
+      timerStateClass = 'buffer';
+    }
+
+    // Format buffer time if active
+    const bufferDisplay = isBufferActive
+      ? `<div class="timer-buffer">Buffer: ${this.formatTime(timer.bufferMs)}</div>`
+      : '';
+
+    return `
+      <div class="match-timer ${timerStateClass}" data-match-id="${match.id}">
+        <div class="timer-clocks">
+          <div class="timer-clock ${isP1Active ? 'active' : ''} ${timer.timeExpiredPlayer === 1 ? 'expired' : ''}">
+            <div class="timer-player-name">${this.escapeHtml(p1Name)}</div>
+            <div class="timer-time" data-player="1">${p1Time}</div>
+          </div>
+          <div class="timer-clock ${isP2Active ? 'active' : ''} ${timer.timeExpiredPlayer === 2 ? 'expired' : ''}">
+            <div class="timer-player-name">${this.escapeHtml(p2Name)}</div>
+            <div class="timer-time" data-player="2">${p2Time}</div>
+          </div>
+        </div>
+        ${bufferDisplay}
+        ${this.createTimerControls(match)}
+      </div>
+    `;
+  }
+
+  /**
+   * Create timer control buttons
+   */
+  createTimerControls(match) {
+    const timer = match.timer;
+    if (!timer || match.winner !== null) return '';
+
+    const isRunning = !timer.isPaused && timer.activePlayer !== null;
+    const hasStarted = timer.startedAt !== null;
+
+    // Only show controls if match hasn't been decided by timeout
+    if (timer.timeExpiredPlayer !== null) {
+      return '<div class="timer-controls"><div class="timer-message">Time Expired!</div></div>';
+    }
+
+    return `
+      <div class="timer-controls">
+        ${!hasStarted ? `
+          <button class="timer-btn timer-btn--start" data-action="start" data-match-id="${match.id}" data-player="1">
+            Start Timer (${this.escapeHtml(match.player1Name || 'P1')} goes first)
+          </button>
+        ` : `
+          ${isRunning ? `
+            <button class="timer-btn timer-btn--pause" data-action="pause" data-match-id="${match.id}">
+              ⏸ Pause
+            </button>
+          ` : `
+            <button class="timer-btn timer-btn--resume" data-action="resume" data-match-id="${match.id}">
+              ▶ Resume
+            </button>
+          `}
+          <button class="timer-btn timer-btn--switch" data-action="switch" data-match-id="${match.id}" ${isRunning ? '' : 'disabled'}>
+            🔄 Switch Turn
+          </button>
+          <button class="timer-btn timer-btn--settings" data-action="settings" data-match-id="${match.id}">
+            ⚙️
+          </button>
+        `}
+      </div>
+    `;
+  }
+
+  /**
+   * Format time in MM:SS or HH:MM:SS
+   */
+  formatTime(milliseconds) {
+    if (milliseconds < 0) milliseconds = 0;
+
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   }
 
   /**

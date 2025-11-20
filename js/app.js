@@ -11,6 +11,7 @@ class App {
     this.lastRenderedView = null;
     this.pendingRenderFrame = null;
     this.lastMatchUpdate = null; // Track which match was just updated
+    this.timerIntervals = new Map(); // Store active timer intervals by match ID
   }
 
   /**
@@ -244,6 +245,21 @@ class App {
     document.addEventListener("click", (e) => {
       if (e.target.matches(".round-nav-btn")) {
         this.handleRoundNavigation(e.target);
+      }
+    });
+
+    // Timer control buttons (event delegation)
+    document.addEventListener("click", (e) => {
+      if (e.target.matches(".timer-btn")) {
+        this.handleTimerAction(e.target);
+      }
+    });
+
+    // Timer configuration checkbox toggle
+    document.getElementById('enableTimers')?.addEventListener('change', (e) => {
+      const timerOptions = document.getElementById('timerConfigOptions');
+      if (timerOptions) {
+        timerOptions.style.display = e.target.checked ? 'block' : 'none';
       }
     });
   }

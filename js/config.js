@@ -201,4 +201,17 @@ const APP_CONFIG = {
             },
         },
     },
+
+    // Match timer configuration (chess-style)
+    TIMER: {
+        ENABLED_BY_DEFAULT: false,
+        DEFAULT_TIME_MINUTES: 30,      // 30 minutes per player
+        DEFAULT_BUFFER_SECONDS: 15,    // 15 second buffer before timer starts
+        DEFAULT_INCREMENT_SECONDS: 0,  // No increment by default
+        MIN_TIME_MINUTES: 5,           // Minimum 5 minutes
+        MAX_TIME_MINUTES: 120,         // Maximum 2 hours
+        MAX_BUFFER_SECONDS: 60,        // Maximum 1 minute buffer
+        MAX_INCREMENT_SECONDS: 30,     // Maximum 30 second increment
+        TICK_INTERVAL: 100,            // Update every 100ms for smooth display
+    },
 };

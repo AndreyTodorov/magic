@@ -227,6 +227,66 @@
           ></select>
         </div>
 
+        <!-- Match Timer Configuration -->
+        <div class="timer-config-section">
+          <div class="form-group text-center">
+            <label class="checkbox-label checkbox-label--prominent">
+              <input type="checkbox" id="enableTimers" />
+              <span>⏱️ Enable Match Timers</span>
+            </label>
+            <div class="form-help-text">
+              Chess-style timers for tracking match time per player
+            </div>
+          </div>
+
+          <div id="timerConfigOptions" class="timer-config-options" style="display: none;">
+            <div class="form-group">
+              <label for="defaultTimeMinutes" class="form-label">Time Per Player:</label>
+              <select id="defaultTimeMinutes" class="form-select">
+                <option value="5">5 minutes</option>
+                <option value="10">10 minutes</option>
+                <option value="15">15 minutes</option>
+                <option value="20">20 minutes</option>
+                <option value="30" selected>30 minutes</option>
+                <option value="45">45 minutes</option>
+                <option value="60">60 minutes</option>
+                <option value="90">90 minutes</option>
+                <option value="120">120 minutes</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="defaultBufferSeconds" class="form-label">Buffer Before Start:</label>
+              <select id="defaultBufferSeconds" class="form-select">
+                <option value="0">No buffer</option>
+                <option value="5">5 seconds</option>
+                <option value="10">10 seconds</option>
+                <option value="15" selected>15 seconds</option>
+                <option value="30">30 seconds</option>
+                <option value="60">60 seconds</option>
+              </select>
+              <div class="form-help-text">
+                Grace period before timer starts counting (for game setup)
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="defaultIncrementSeconds" class="form-label">Time Increment Per Turn:</label>
+              <select id="defaultIncrementSeconds" class="form-select">
+                <option value="0" selected>No increment</option>
+                <option value="3">+3 seconds</option>
+                <option value="5">+5 seconds</option>
+                <option value="10">+10 seconds</option>
+                <option value="15">+15 seconds</option>
+                <option value="30">+30 seconds</option>
+              </select>
+              <div class="form-help-text">
+                Time added to your clock each time you pass the turn
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Player Name Inputs -->
         <div class="input-grid" id="playerInputs"></div>
 

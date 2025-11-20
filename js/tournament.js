@@ -35,6 +35,12 @@ class TournamentManager {
     this.format = APP_CONFIG.FORMATS.DEFAULT;
     this.formatConfig = {};
     this.currentStage = null;
+    this.timerConfig = {
+      enabled: false,
+      defaultTimeMinutes: APP_CONFIG.TIMER.DEFAULT_TIME_MINUTES,
+      defaultBufferSeconds: APP_CONFIG.TIMER.DEFAULT_BUFFER_SECONDS,
+      defaultIncrementSeconds: APP_CONFIG.TIMER.DEFAULT_INCREMENT_SECONDS,
+    };
   }
 
   /**
@@ -136,8 +142,9 @@ class TournamentManager {
    * @param {number} matchesPerPlayer - Matches per player (for round-robin)
    * @param {string} format - Tournament format type (optional, defaults to round-robin)
    * @param {Object} formatConfig - Format-specific configuration (optional)
+   * @param {Object} timerConfig - Timer configuration (optional)
    */
-  createTournament(playerNames, matchesPerPlayer, format = null, formatConfig = null) {
+  createTournament(playerNames, matchesPerPlayer, format = null, formatConfig = null, timerConfig = null) {
     this.players = playerNames;
     this.playerCount = playerNames.length;
     this.matchesPerPlayer = matchesPerPlayer;
@@ -160,8 +167,23 @@ class TournamentManager {
       }
     }
 
+    // Set timer configuration
+    this.timerConfig = timerConfig || {
+      enabled: false,
+      defaultTimeMinutes: APP_CONFIG.TIMER.DEFAULT_TIME_MINUTES,
+      defaultBufferSeconds: APP_CONFIG.TIMER.DEFAULT_BUFFER_SECONDS,
+      defaultIncrementSeconds: APP_CONFIG.TIMER.DEFAULT_INCREMENT_SECONDS,
+    };
+
     // Generate matches using format handler
     this.matches = formatHandler.generateMatches(this.players, this.formatConfig);
+
+    // Initialize timer state for each match if timers are enabled
+    if (this.timerConfig.enabled) {
+      this.matches.forEach(match => {
+        this.initializeMatchTimer(match);
+      });
+    }
 
     // Set initial stage for multi-stage formats
     if (this.format === TOURNAMENT_FORMATS.GROUP_STAGE) {
@@ -175,6 +197,30 @@ class TournamentManager {
     }
 
     return this.matches;
+  }
+
+  /**
+   * Initialize timer state for a match
+   * @param {Object} match - Match object to initialize timer for
+   */
+  initializeMatchTimer(match) {
+    const timeMs = this.timerConfig.defaultTimeMinutes * 60 * 1000;
+    const bufferMs = this.timerConfig.defaultBufferSeconds * 1000;
+    const incrementMs = this.timerConfig.defaultIncrementSeconds * 1000;
+
+    match.timer = {
+      enabled: true,
+      player1TimeMs: timeMs,
+      player2TimeMs: timeMs,
+      activePlayer: null,  // null = not started, 1 or 2 = active player
+      isPaused: true,      // Start paused
+      lastTickTime: null,  // Timestamp of last update
+      incrementMs: incrementMs,
+      bufferMs: bufferMs,
+      bufferActive: false, // Whether buffer is currently active
+      startedAt: null,     // When timer was first started
+      timeExpiredPlayer: null,  // Which player's time expired (if any)
+    };
   }
 
   /**
@@ -204,6 +250,14 @@ class TournamentManager {
     this.currentStage = tournamentData.currentStage || null;
     this.locked = tournamentData.locked || false;
 
+    // Load timer configuration (backward compatibility: timers disabled by default)
+    this.timerConfig = tournamentData.timerConfig || {
+      enabled: false,
+      defaultTimeMinutes: APP_CONFIG.TIMER.DEFAULT_TIME_MINUTES,
+      defaultBufferSeconds: APP_CONFIG.TIMER.DEFAULT_BUFFER_SECONDS,
+      defaultIncrementSeconds: APP_CONFIG.TIMER.DEFAULT_INCREMENT_SECONDS,
+    };
+
     // Convert Firebase object to array
     if (tournamentData.matches) {
       this.matches = Object.keys(tournamentData.matches)
@@ -225,10 +279,30 @@ class TournamentManager {
           // Normalize winner to null unless it is 1 or 2
           const winner =
             match.winner === 1 || match.winner === 2 ? match.winner : null;
+
+          // Load timer state if present
+          let timer = null;
+          if (match.timer) {
+            timer = {
+              enabled: match.timer.enabled !== undefined ? match.timer.enabled : false,
+              player1TimeMs: match.timer.player1TimeMs || 0,
+              player2TimeMs: match.timer.player2TimeMs || 0,
+              activePlayer: match.timer.activePlayer || null,
+              isPaused: match.timer.isPaused !== undefined ? match.timer.isPaused : true,
+              lastTickTime: match.timer.lastTickTime || null,
+              incrementMs: match.timer.incrementMs || 0,
+              bufferMs: match.timer.bufferMs || 0,
+              bufferActive: match.timer.bufferActive !== undefined ? match.timer.bufferActive : false,
+              startedAt: match.timer.startedAt || null,
+              timeExpiredPlayer: match.timer.timeExpiredPlayer || null,
+            };
+          }
+
           return {
             ...match,
             games,
             winner,
+            timer,
           };
         })
         .filter((match) => match !== null);
