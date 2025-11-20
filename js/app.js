@@ -454,12 +454,15 @@ class App {
     if (typeof authManager !== 'undefined' && authManager.isSignedIn()) {
       // Ensure current user is loaded in firebaseManager before checking creator status
       if (!firebaseManager.currentUser) {
+        logger.debug("App", "Waiting for auth ready...");
         await authManager.authReadyPromise;
         firebaseManager.currentUser = authManager.currentUser;
       }
 
+      logger.debug("App", `Current user: ${firebaseManager.currentUser?.uid}, checking creator status...`);
       tournamentManager.isCreator = await firebaseManager.isCreator(code);
-      logger.info("App", `Joined as ${tournamentManager.isCreator ? "creator" : "member"}: ${code}`);
+      logger.info("App", `Joined as ${tournamentManager.isCreator ? "CREATOR" : "member"}: ${code}`);
+      logger.debug("App", `tournamentManager.isCreator = ${tournamentManager.isCreator}`);
 
       // Add to members list if not already a member
       try {
@@ -994,10 +997,16 @@ class App {
     const lockBtnText = uiManager.elements.lockBtnText;
     const lockedIndicator = uiManager.elements.lockedIndicator;
 
-    if (!lockBtn || !lockBtnText) return;
+    logger.debug("App", `updateLockButton called - isCreator: ${tournamentManager.isCreator}, locked: ${tournamentManager.locked}`);
+
+    if (!lockBtn || !lockBtnText) {
+      logger.warn("App", "Lock button elements not found");
+      return;
+    }
 
     // Only show lock button to creator
     if (tournamentManager.isCreator) {
+      logger.debug("App", "Showing lock button for creator");
       lockBtn.style.display = "inline-block";
 
       // Update button text and style based on lock state
@@ -1009,6 +1018,7 @@ class App {
         lockBtn.className = "btn btn--warning btn--small";
       }
     } else {
+      logger.debug("App", "Hiding lock button (not creator)");
       lockBtn.style.display = "none";
     }
 
