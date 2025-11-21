@@ -2236,11 +2236,13 @@ body {
   }
 
   .header-bar__actions {
-    gap: var(--spacing-xs);
+    gap: var(--spacing-sm);
     flex-wrap: nowrap;
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    /* Add padding to prevent buttons from touching edges */
+    padding: 0 var(--spacing-xs);
     /* Hide scrollbar but keep functionality */
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -2253,6 +2255,11 @@ body {
   .header-bar__actions .btn {
     white-space: nowrap;
     flex-shrink: 0;
+  }
+
+  .header-bar__actions .btn--small {
+    padding: 8px 12px;
+    font-size: clamp(0.8rem, 2vw, 0.9rem);
   }
 
   .progress-bar {
