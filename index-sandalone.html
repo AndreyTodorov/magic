@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Primary Meta Tags -->
-    <title>Magic Mikes (Local Mode) - MTG Tournament Manager | Offline Swiss & Elimination Brackets</title>
+    <title>
+      Magic Mikes (Local Mode) - MTG Tournament Manager | Offline Swiss &
+      Elimination Brackets
+    </title>
     <meta
       name="title"
       content="Magic Mikes (Local Mode) - MTG Tournament Manager | Offline Swiss & Elimination Brackets"
@@ -20,23 +23,47 @@
     />
     <meta name="author" content="Magic Mikes Tournament" />
     <meta name="theme-color" content="#8b5cf6" />
-    <link rel="canonical" href="https://magicmikes.app/local" />
+    <link rel="canonical" href="https://andreytodorov.github.io/magic/local" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://magicmikes.app/local" />
-    <meta property="og:title" content="Magic Mikes (Local Mode) - MTG Tournament Manager" />
-    <meta property="og:description" content="Offline Magic: The Gathering tournament management tool. Create and manage tournaments locally in your browser with no internet required." />
-    <meta property="og:image" content="https://magicmikes.app/og-image.jpg" />
+    <meta
+      property="og:url"
+      content="https://andreytodorov.github.io/magic/local"
+    />
+    <meta
+      property="og:title"
+      content="Magic Mikes (Local Mode) - MTG Tournament Manager"
+    />
+    <meta
+      property="og:description"
+      content="Offline Magic: The Gathering tournament management tool. Create and manage tournaments locally in your browser with no internet required."
+    />
+    <meta
+      property="og:image"
+      content="https://andreytodorov.github.io/magic/og-image.jpg"
+    />
     <meta property="og:site_name" content="Magic Mikes" />
     <meta property="og:locale" content="en_US" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://magicmikes.app/local" />
-    <meta property="twitter:title" content="Magic Mikes (Local Mode) - MTG Tournament Manager" />
-    <meta property="twitter:description" content="Offline Magic: The Gathering tournament management tool with local storage support." />
-    <meta property="twitter:image" content="https://magicmikes.app/twitter-card.jpg" />
+    <meta
+      property="twitter:url"
+      content="https://andreytodorov.github.io/magic/local"
+    />
+    <meta
+      property="twitter:title"
+      content="Magic Mikes (Local Mode) - MTG Tournament Manager"
+    />
+    <meta
+      property="twitter:description"
+      content="Offline Magic: The Gathering tournament management tool with local storage support."
+    />
+    <meta
+      property="twitter:image"
+      content="https://andreytodorov.github.io/magic/twitter-card.jpg"
+    />
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
@@ -44,36 +71,36 @@
 
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "Magic Mikes Tournament Manager (Local Mode)",
-      "description": "Offline Magic: The Gathering tournament management tool with local storage support for Swiss, Round Robin, Elimination, and Group Stage formats.",
-      "url": "https://magicmikes.app/local",
-      "applicationCategory": "UtilitiesApplication",
-      "operatingSystem": "Web Browser",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      },
-      "featureList": [
-        "Swiss Tournament Pairing",
-        "Elimination Brackets",
-        "Round Robin Tournaments",
-        "Group Stage Playoffs",
-        "Offline Support",
-        "Local Storage",
-        "Live Standings",
-        "Automated Match Generation",
-        "Best of 3 Scoring"
-      ],
-      "browserRequirements": "Requires JavaScript. Requires HTML5.",
-      "potentialAction": {
-        "@type": "UseAction",
-        "target": "https://magicmikes.app/local"
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Magic Mikes Tournament Manager (Local Mode)",
+        "description": "Offline Magic: The Gathering tournament management tool with local storage support for Swiss, Round Robin, Elimination, and Group Stage formats.",
+        "url": "https://andreytodorov.github.io/magic/local",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "featureList": [
+          "Swiss Tournament Pairing",
+          "Elimination Brackets",
+          "Round Robin Tournaments",
+          "Group Stage Playoffs",
+          "Offline Support",
+          "Local Storage",
+          "Live Standings",
+          "Automated Match Generation",
+          "Best of 3 Scoring"
+        ],
+        "browserRequirements": "Requires JavaScript. Requires HTML5.",
+        "potentialAction": {
+          "@type": "UseAction",
+          "target": "https://andreytodorov.github.io/magic/local"
+        }
       }
-    }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -172,7 +199,9 @@
         id="formatSelectionSection"
         aria-labelledby="formatSelectionTitle"
       >
-        <h2 class="section-title" id="formatSelectionTitle">Choose Tournament Format</h2>
+        <h2 class="section-title" id="formatSelectionTitle">
+          Choose Tournament Format
+        </h2>
         <div class="format-grid" id="formatGrid">
           <!-- Format cards will be dynamically generated -->
         </div>
@@ -186,7 +215,9 @@
         aria-labelledby="createTitle"
       >
         <div class="format-header">
-          <button class="btn btn--text btn--small" id="backToFormatBtn">← Change Format</button>
+          <button class="btn btn--text btn--small" id="backToFormatBtn">
+            ← Change Format
+          </button>
           <h3 class="format-title" id="selectedFormatTitle"></h3>
         </div>
 
@@ -261,7 +292,11 @@
         <!-- Tournament Header -->
         <div class="header-bar">
           <div class="header-bar__actions">
-            <button class="btn btn--warning btn--small" id="lockTournamentBtn" style="display: none;">
+            <button
+              class="btn btn--warning btn--small"
+              id="lockTournamentBtn"
+              style="display: none"
+            >
               <span id="lockBtnText">🔒 Lock Tournament</span>
             </button>
             <button class="btn btn--danger btn--small" id="leaveTournamentBtn">
@@ -280,18 +315,31 @@
         </div>
 
         <!-- Locked Indicator -->
-        <div class="alert alert--warning" id="lockedIndicator" style="display: none; margin-bottom: var(--spacing-md);">
-          🔒 <strong>Tournament Locked:</strong> Match results cannot be changed. Only the creator can unlock.
+        <div
+          class="alert alert--warning"
+          id="lockedIndicator"
+          style="display: none; margin-bottom: var(--spacing-md)"
+        >
+          🔒 <strong>Tournament Locked:</strong> Match results cannot be
+          changed. Only the creator can unlock.
         </div>
 
         <!-- Tournament Info -->
-        <div class="tournament-info" id="tournamentInfo" style="display: none;">
+        <div class="tournament-info" id="tournamentInfo" style="display: none">
           <span class="tournament-info__badge" id="formatBadge"></span>
-          <span class="tournament-info__badge" id="stageBadge" style="display: none;"></span>
+          <span
+            class="tournament-info__badge"
+            id="stageBadge"
+            style="display: none"
+          ></span>
         </div>
 
         <!-- Stage Advancement Button -->
-        <div class="stage-advancement" id="stageAdvancement" style="display: none;">
+        <div
+          class="stage-advancement"
+          id="stageAdvancement"
+          style="display: none"
+        >
           <button class="btn btn--primary" id="advanceStageBtn">
             <span id="advanceStageText">Advance to Next Round</span>
           </button>
@@ -418,8 +466,15 @@
           </aside>
 
           <!-- Round/Stage Navigation -->
-          <div class="round-navigation" id="roundNavigation" style="display: none;">
-            <div class="round-navigation__buttons" id="roundNavigationButtons"></div>
+          <div
+            class="round-navigation"
+            id="roundNavigation"
+            style="display: none"
+          >
+            <div
+              class="round-navigation__buttons"
+              id="roundNavigationButtons"
+            ></div>
           </div>
 
           <main
