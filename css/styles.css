@@ -20,8 +20,8 @@
   --color-accent-green: #86efac;
 
   --color-text-primary: #000000;
-  --color-text-secondary: #1f2937;
-  --color-text-tertiary: #4b5563;
+  --color-text-secondary: #111827;
+  --color-text-tertiary: #374151;
 
   --color-bg-primary: #ffffff;
   --color-bg-secondary: #fff1f2; /* Very light pink/red tint */
@@ -70,6 +70,26 @@
   --z-fixed: 1000;
   --z-modal: 2000;
   --z-tooltip: 3000;
+}
+
+/* === SKIP TO CONTENT LINK (Accessibility) === */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-primary);
+  color: white;
+  padding: 8px 16px;
+  text-decoration: none;
+  font-weight: 700;
+  z-index: var(--z-tooltip);
+  border-radius: 0 0 var(--radius-md) 0;
+  border: var(--border-width) solid var(--color-border);
+  box-shadow: var(--shadow-md);
+}
+
+.skip-link:focus {
+  top: 0;
 }
 
 /* === RESET & BASE === */
@@ -680,7 +700,7 @@ body {
 }
 
 .form-warning {
-  color: #856404;
+  color: #664d03;
   background: #fff3cd;
   padding: 8px 12px;
   border-radius: var(--radius-sm);
@@ -689,11 +709,11 @@ body {
 }
 
 .form-info {
-  color: #004085;
-  background: #cce5ff;
+  color: #052c65;
+  background: #cfe2ff;
   padding: 8px 12px;
   border-radius: var(--radius-sm);
-  border-left: 3px solid #007bff;
+  border-left: 3px solid #0d6efd;
   font-size: 0.85rem;
 }
 
@@ -1429,7 +1449,7 @@ body {
 .scoring-legend__details {
   margin-top: var(--spacing-sm);
   padding: var(--spacing-sm);
-  background: rgba(25, 118, 210, 0.04);
+  background: #f8fafc;
   border-radius: var(--radius-sm);
   font-size: clamp(0.75rem, 2vw, 0.9rem);
   color: var(--color-text-secondary);
@@ -1796,8 +1816,8 @@ body {
 .round-nav-btn.disabled {
   opacity: 0.4;
   cursor: not-allowed;
-  background: #f0f0f0;
-  color: #999;
+  background: #e5e7eb;
+  color: #6b7280;
   pointer-events: none;
 }
 
@@ -1877,7 +1897,7 @@ body {
 
 .tbd-text {
   font-size: 0.85em;
-  color: #666;
+  color: #4b5563;
   font-style: italic;
 }
 

@@ -3,12 +3,77 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Primary Meta Tags -->
+    <title>Magic Mikes - MTG Tournament Manager | Real-time Swiss & Elimination Brackets</title>
+    <meta
+      name="title"
+      content="Magic Mikes - MTG Tournament Manager | Real-time Swiss & Elimination Brackets"
+    />
     <meta
       name="description"
-      content="Magic Mikes - Real-time Best of 3 Tournament Manager"
+      content="Professional Magic: The Gathering tournament management tool. Create and manage Swiss, Round Robin, Elimination, and Group Stage tournaments with real-time sync, live standings, and automated pairings."
     />
+    <meta
+      name="keywords"
+      content="Magic The Gathering, MTG tournament, tournament manager, Swiss pairing, elimination bracket, MTG organizer, tournament software, magic tournament, TCG tournament, card game tournament, real-time tournament, tournament brackets"
+    />
+    <meta name="author" content="Magic Mikes Tournament" />
+    <meta name="theme-color" content="#8b5cf6" />
+    <link rel="canonical" href="https://magicmikes.app/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://magicmikes.app/" />
+    <meta property="og:title" content="Magic Mikes - MTG Tournament Manager | Real-time Swiss & Elimination Brackets" />
+    <meta property="og:description" content="Professional Magic: The Gathering tournament management tool. Create and manage Swiss, Round Robin, Elimination, and Group Stage tournaments with real-time sync and live standings." />
+    <meta property="og:image" content="https://magicmikes.app/og-image.jpg" />
+    <meta property="og:site_name" content="Magic Mikes" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://magicmikes.app/" />
+    <meta property="twitter:title" content="Magic Mikes - MTG Tournament Manager" />
+    <meta property="twitter:description" content="Professional Magic: The Gathering tournament management tool with real-time sync, live standings, and automated pairings." />
+    <meta property="twitter:image" content="https://magicmikes.app/twitter-card.jpg" />
+
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <title>Magic Mikes</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Magic Mikes Tournament Manager",
+      "description": "Professional Magic: The Gathering tournament management tool with real-time sync, live standings, and automated pairings for Swiss, Round Robin, Elimination, and Group Stage formats.",
+      "url": "https://magicmikes.app/",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "Swiss Tournament Pairing",
+        "Elimination Brackets",
+        "Round Robin Tournaments",
+        "Group Stage Playoffs",
+        "Real-time Synchronization",
+        "Live Standings",
+        "Automated Match Generation",
+        "Best of 3 Scoring"
+      ],
+      "browserRequirements": "Requires JavaScript. Requires HTML5.",
+      "potentialAction": {
+        "@type": "UseAction",
+        "target": "https://magicmikes.app/"
+      }
+    }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -18,6 +83,9 @@
     <link rel="stylesheet" href="css/styles.css" />
   </head>
   <body>
+    <!-- Skip to Main Content Link for Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
     <!-- Connection Status Indicator -->
     <div class="connection-status" id="connectionStatus">
       <div class="status-dot"></div>
@@ -30,7 +98,7 @@
     </button>
 
     <!-- Main Container -->
-    <div class="container">
+    <div class="container" id="main-content">
       <!-- Header -->
       <header class="app-header">
         <h1 class="app-title">Magic Mikes</h1>
@@ -434,7 +502,7 @@
                   or a circular tie), the quality score (sum of beaten
                   opponents' points) is used next.
                 </p>
-                <p style="font-size: 0.9em; color: #666; margin-top: 8px">
+                <p style="font-size: 0.9em; color: #4b5563; margin-top: 8px">
                   You can change scoring values in <code>js/config.js</code> —
                   see the APP_CONFIG.SCORING section.
                 </p>

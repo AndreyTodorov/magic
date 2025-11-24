@@ -1848,7 +1848,7 @@ class UIManager {
               <strong>Quality Score:</strong> ${(
                 stat.qualityScore || 0
               ).toFixed(1)}<br>
-              <em style="font-size: 0.9em; color: #666;">
+              <em style="font-size: 0.9em; color: #4b5563;">
                 (Sum of beaten opponents' points)
               </em>
             </div>
