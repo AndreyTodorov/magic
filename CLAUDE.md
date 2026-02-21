@@ -208,14 +208,14 @@ async updateTournament(code, data)
 async leaveTournament(code)
 subscribeTournament(code, callback)
 unsubscribe()
-getUserTournaments()          // Returns array of { code, ...tournamentData }
+async getUserTournaments()    // Returns array of { code, ...tournamentData }
 ```
 
 This allows the app to work identically in both modes. The mode is determined by which HTML file is opened.
 
 **My Tournaments tracking** (per-mode details):
 - **LocalStorageManager**: `getUserTournaments()` returns all locally stored tournaments — every local tournament belongs to the current user.
-- **FirebaseManager**: tracks created tournaments in localStorage key `mm_my_tournament_codes` (JSON array of snapshots). Written when `createTournament()` succeeds, removed when `deleteTournament()` is called. Extra helpers: `trackMyTournament(code, snapshot)`, `untrackMyTournament(code)`.
+- **FirebaseManager**: tracks created tournament codes in the Firebase Realtime Database under `users/{uid}/tournaments/{code}` (value = server timestamp). This makes the list available from any device when the user is logged in. Written by `trackMyTournament(code)` when `createTournament()` succeeds; removed by `untrackMyTournament(code)` when a tournament is deleted. Both helpers are async.
 
 ### View State Management
 

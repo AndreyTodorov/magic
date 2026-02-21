@@ -103,6 +103,12 @@ const DATABASE_RULES = `
           ".indexOn": [".value"]
         }
       }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
     }
   }
 }
