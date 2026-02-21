@@ -406,37 +406,66 @@ class FirebaseManager {
   }
 
   /**
-   * Get tournaments tracked in localStorage for this browser
-   * Returns an array of objects with { code, ...tournamentData }
+   * Get tournaments created by the current user from Firebase.
+   * Returns an array of objects with { code, ...tournamentData }, sorted newest-first.
    */
-  getUserTournaments() {
-    const stored = localStorage.getItem('mm_my_tournament_codes');
-    if (!stored) return [];
+  async getUserTournaments() {
+    if (!this.isInitialized || !this.currentUser?.uid) return [];
+
     try {
-      return JSON.parse(stored);
-    } catch {
+      const codesSnapshot = await this.database
+        .ref(`users/${this.currentUser.uid}/tournaments`)
+        .once('value');
+
+      if (!codesSnapshot.exists()) return [];
+
+      const codes = Object.keys(codesSnapshot.val());
+
+      const results = await Promise.all(
+        codes.map(async (code) => {
+          const tSnapshot = await this.database.ref(`tournaments/${code}`).once('value');
+          if (!tSnapshot.exists()) return null;
+          return { code, ...tSnapshot.val() };
+        })
+      );
+
+      return results
+        .filter(Boolean)
+        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    } catch (error) {
+      console.error('Error fetching user tournaments:', error);
       return [];
     }
   }
 
   /**
-   * Track a created tournament code in localStorage
+   * Track a created tournament in Firebase under users/{uid}/tournaments/{code}
    */
-  trackMyTournament(code, snapshot) {
-    const list = this.getUserTournaments();
-    // Avoid duplicates
-    if (!list.find((t) => t.code === code)) {
-      list.unshift({ code, ...snapshot });
-      localStorage.setItem('mm_my_tournament_codes', JSON.stringify(list));
+  async trackMyTournament(code) {
+    if (!this.isInitialized || !this.currentUser?.uid) return;
+
+    try {
+      await this.database
+        .ref(`users/${this.currentUser.uid}/tournaments/${code}`)
+        .set(firebase.database.ServerValue.TIMESTAMP);
+    } catch (error) {
+      console.error('Error tracking tournament:', error);
     }
   }
 
   /**
-   * Remove a tournament from the local tracking list
+   * Remove a tournament from the user's Firebase tracking list
    */
-  untrackMyTournament(code) {
-    const list = this.getUserTournaments().filter((t) => t.code !== code);
-    localStorage.setItem('mm_my_tournament_codes', JSON.stringify(list));
+  async untrackMyTournament(code) {
+    if (!this.isInitialized || !this.currentUser?.uid) return;
+
+    try {
+      await this.database
+        .ref(`users/${this.currentUser.uid}/tournaments/${code}`)
+        .remove();
+    } catch (error) {
+      console.error('Error untracking tournament:', error);
+    }
   }
 
   /**

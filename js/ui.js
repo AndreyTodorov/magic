@@ -2075,13 +2075,22 @@ class UIManager {
 
   /**
    * Render the "My Tournaments" card list
-   * @param {Array} tournaments - Array of tournament objects with a `code` property
+   * @param {Array|null} tournaments - Array of tournament objects with a `code` property,
+   *   or null to show a loading indicator while data is being fetched from Firebase.
    */
   renderMyTournaments(tournaments) {
     const grid = this.elements.tournamentsGrid;
     if (!grid) return;
 
-    if (!tournaments || tournaments.length === 0) {
+    if (tournaments === null) {
+      grid.innerHTML = `
+        <div class="tournaments-empty">
+          <p class="tournaments-empty__text">Loading tournaments...</p>
+        </div>`;
+      return;
+    }
+
+    if (tournaments.length === 0) {
       grid.innerHTML = `
         <div class="tournaments-empty">
           <p class="tournaments-empty__text">No tournaments found. Create one to get started!</p>
