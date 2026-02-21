@@ -222,6 +222,33 @@ class App {
       });
     });
 
+    // Back to mode selector from My Tournaments
+    document.getElementById("backFromMyTournamentsBtn")?.addEventListener("click", () => {
+      uiManager.showSection("modeSelector");
+      document.querySelectorAll(".mode-btn").forEach((btn) => btn.classList.remove("active"));
+    });
+
+    // Tournament card quick actions (event delegation)
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-action]");
+      if (!btn) return;
+      const action = btn.dataset.action;
+      const code = btn.dataset.code;
+      if (!code) return;
+
+      if (action === "rejoin") {
+        this.joinTournament(code).catch((err) => {
+          uiManager.showAlert(err.message || "Failed to join tournament", "error");
+        });
+      } else if (action === "delete") {
+        this.handleDeleteTournament(code);
+      } else if (action === "copy") {
+        navigator.clipboard?.writeText(code).then(() => {
+          uiManager.showAlert(`Code ${code} copied!`, "success");
+        });
+      }
+    });
+
     // Back to format selection from create section
     uiManager.elements.backToFormatBtn?.addEventListener("click", () => {
       uiManager.renderFormatCards();
@@ -288,7 +315,20 @@ class App {
       uiManager.showSection(["modeSelector", "formatSelectionSection"]);
     } else if (mode === "join") {
       uiManager.showSection(["modeSelector", "joinSection"]);
+    } else if (mode === "my-tournaments") {
+      this.showMyTournaments();
     }
+  }
+
+  /**
+   * Show the My Tournaments list
+   */
+  showMyTournaments() {
+    const tournaments = firebaseManager.getUserTournaments
+      ? firebaseManager.getUserTournaments()
+      : [];
+    uiManager.renderMyTournaments(tournaments);
+    uiManager.showSection(["modeSelector", "myTournamentsSection"]);
   }
 
   /**
@@ -1114,6 +1154,28 @@ class App {
     } finally {
       // Reset button state
       uiManager.elements.advanceStageBtn.disabled = false;
+    }
+  }
+
+  /**
+   * Delete a tournament from My Tournaments list
+   */
+  async handleDeleteTournament(code) {
+    if (!confirm(`Delete tournament ${code}? This cannot be undone.`)) return;
+
+    try {
+      await firebaseManager.deleteTournament(code);
+      // If the deleted tournament is the active one, clear the session
+      if (tournamentManager.currentTournamentCode === code) {
+        this.leaveTournament();
+        return;
+      }
+      // Refresh the list
+      this.showMyTournaments();
+      uiManager.showAlert(`Tournament ${code} deleted.`, "success");
+    } catch (error) {
+      logger.error("App", "Failed to delete tournament", error);
+      uiManager.showAlert("Failed to delete tournament.", "error");
     }
   }
 
