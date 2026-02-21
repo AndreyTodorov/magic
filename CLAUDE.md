@@ -208,9 +208,14 @@ async updateTournament(code, data)
 async leaveTournament(code)
 subscribeTournament(code, callback)
 unsubscribe()
+getUserTournaments()          // Returns array of { code, ...tournamentData }
 ```
 
 This allows the app to work identically in both modes. The mode is determined by which HTML file is opened.
+
+**My Tournaments tracking** (per-mode details):
+- **LocalStorageManager**: `getUserTournaments()` returns all locally stored tournaments — every local tournament belongs to the current user.
+- **FirebaseManager**: tracks created tournaments in localStorage key `mm_my_tournament_codes` (JSON array of snapshots). Written when `createTournament()` succeeds, removed when `deleteTournament()` is called. Extra helpers: `trackMyTournament(code, snapshot)`, `untrackMyTournament(code)`.
 
 ### View State Management
 
@@ -220,6 +225,17 @@ The UI has three switchable views (tabs):
 - **Matches**: All matches with game-by-game result entry
 
 Current view persists to localStorage (`mm_selected_view`) for UX consistency.
+
+### My Tournaments View
+
+Accessible from the mode selector ("My Tournaments" button). Shows a responsive card grid of every tournament the user created. Each card displays:
+- Tournament code (monospace, copyable)
+- Format and player-count badges
+- Match progress bar (completed / total)
+- Created date
+- Quick actions: **Rejoin**, **Delete**, **Copy Code**
+
+Rendered by `UIManager.renderMyTournaments(tournaments)`. Cards are sorted newest-first. The section is shown via `uiManager.showSection(["modeSelector", "myTournamentsSection"])` so the mode buttons stay visible.
 
 ## Firebase Setup
 
