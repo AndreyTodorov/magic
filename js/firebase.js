@@ -406,6 +406,40 @@ class FirebaseManager {
   }
 
   /**
+   * Get tournaments tracked in localStorage for this browser
+   * Returns an array of objects with { code, ...tournamentData }
+   */
+  getUserTournaments() {
+    const stored = localStorage.getItem('mm_my_tournament_codes');
+    if (!stored) return [];
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Track a created tournament code in localStorage
+   */
+  trackMyTournament(code, snapshot) {
+    const list = this.getUserTournaments();
+    // Avoid duplicates
+    if (!list.find((t) => t.code === code)) {
+      list.unshift({ code, ...snapshot });
+      localStorage.setItem('mm_my_tournament_codes', JSON.stringify(list));
+    }
+  }
+
+  /**
+   * Remove a tournament from the local tracking list
+   */
+  untrackMyTournament(code) {
+    const list = this.getUserTournaments().filter((t) => t.code !== code);
+    localStorage.setItem('mm_my_tournament_codes', JSON.stringify(list));
+  }
+
+  /**
    * Check if current user is tournament creator
    */
   async isCreator(tournamentCode) {

@@ -664,22 +664,32 @@ class App {
     const matchesObject = tournamentManager.getMatchesForFirebase();
     logger.debug("App", `Saving tournament ${code} to Firebase...`);
 
+    const tournamentPayload = {
+      players: playerNames,
+      matches: matchesObject,
+      matchesPerPlayer: matchesPerPlayer,
+      format: tournamentManager.format,
+      formatConfig: tournamentManager.formatConfig,
+      currentStage: tournamentManager.currentStage,
+      locked: false,
+    };
+
     try {
       await Promise.race([
-        firebaseManager.createTournament(code, {
-          players: playerNames,
-          matches: matchesObject,
-          matchesPerPlayer: matchesPerPlayer,
-          format: tournamentManager.format,
-          formatConfig: tournamentManager.formatConfig,
-          currentStage: tournamentManager.currentStage,
-          locked: false,
-        }),
+        firebaseManager.createTournament(code, tournamentPayload),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Firebase save timeout after 10s')), 10000)
         )
       ]);
       logger.debug("App", `Tournament ${code} saved to Firebase successfully`);
+
+      // Track the created tournament so it appears in "My Tournaments"
+      if (firebaseManager.trackMyTournament) {
+        firebaseManager.trackMyTournament(code, {
+          ...tournamentPayload,
+          createdAt: Date.now(),
+        });
+      }
     } catch (error) {
       logger.error("App", `Failed to save to Firebase: ${error.message}`);
       throw error;
@@ -1165,6 +1175,10 @@ class App {
 
     try {
       await firebaseManager.deleteTournament(code);
+      // Remove from local tracking list (Firebase mode)
+      if (firebaseManager.untrackMyTournament) {
+        firebaseManager.untrackMyTournament(code);
+      }
       // If the deleted tournament is the active one, clear the session
       if (tournamentManager.currentTournamentCode === code) {
         this.leaveTournament();
