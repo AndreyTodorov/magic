@@ -15,6 +15,7 @@ A browser-based Best of 3 tournament management system for Magic: The Gathering,
 - **Mobile-Friendly** - Responsive design works on phones and tablets
 - **Live Standings** - Real-time rankings with detailed tiebreaker information
 - **Multiple Views** - Schedule, Standings, and Matches tabs for easy navigation
+- **My Tournaments** - Card list of all tournaments you created with quick Rejoin, Delete, and Copy Code actions
 - **Fast Performance** - Optimized rendering and caching
 
 ## Quick Start
@@ -373,6 +374,7 @@ Track active issues and planned features in [docs/ISSUES.md](docs/ISSUES.md):
 - [x] Three-tab view for quick switching
 - [x] Player schedule completion indicators
 - [x] Tournament membership enforcement
+- [x] My Tournaments card list with quick actions (Rejoin, Delete, Copy Code)
 
 ## Troubleshooting
 
