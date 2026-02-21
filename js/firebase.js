@@ -406,37 +406,31 @@ class FirebaseManager {
   }
 
   /**
-   * Get tournaments tracked in localStorage for this browser
+   * Get all tournaments created by the current user from Firebase.
+   * Queries by the `creator` field so results are consistent across devices.
    * Returns an array of objects with { code, ...tournamentData }
    */
-  getUserTournaments() {
-    const stored = localStorage.getItem('mm_my_tournament_codes');
-    if (!stored) return [];
+  async getUserTournaments() {
+    if (!this.isInitialized || !this.currentUser?.uid) return [];
+
     try {
-      return JSON.parse(stored);
-    } catch {
+      const snapshot = await this.database
+        .ref('tournaments')
+        .orderByChild('creator')
+        .equalTo(this.currentUser.uid)
+        .once('value');
+
+      if (!snapshot.exists()) return [];
+
+      const tournaments = [];
+      snapshot.forEach((child) => {
+        tournaments.push({ code: child.key, ...child.val() });
+      });
+      return tournaments;
+    } catch (error) {
+      console.error("Error fetching user tournaments:", error);
       return [];
     }
-  }
-
-  /**
-   * Track a created tournament code in localStorage
-   */
-  trackMyTournament(code, snapshot) {
-    const list = this.getUserTournaments();
-    // Avoid duplicates
-    if (!list.find((t) => t.code === code)) {
-      list.unshift({ code, ...snapshot });
-      localStorage.setItem('mm_my_tournament_codes', JSON.stringify(list));
-    }
-  }
-
-  /**
-   * Remove a tournament from the local tracking list
-   */
-  untrackMyTournament(code) {
-    const list = this.getUserTournaments().filter((t) => t.code !== code);
-    localStorage.setItem('mm_my_tournament_codes', JSON.stringify(list));
   }
 
   /**

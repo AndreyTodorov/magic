@@ -98,7 +98,7 @@ const DATABASE_RULES = `
       "$tournamentId": {
         ".read": true,
         ".write": true,
-        ".indexOn": ["createdAt"],
+        ".indexOn": ["createdAt", "creator"],
         "members": {
           ".indexOn": [".value"]
         }
