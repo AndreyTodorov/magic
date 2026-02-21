@@ -45,6 +45,8 @@ class UIManager {
       // Sections
       modeSelector: document.getElementById("modeSelector"),
       joinSection: document.getElementById("joinSection"),
+      myTournamentsSection: document.getElementById("myTournamentsSection"),
+      tournamentsGrid: document.getElementById("tournamentsGrid"),
       formatSelectionSection: document.getElementById("formatSelectionSection"),
       createSection: document.getElementById("createSection"),
       tournamentSection: document.getElementById("tournamentSection"),
@@ -204,6 +206,7 @@ class UIManager {
     [
       "modeSelector",
       "joinSection",
+      "myTournamentsSection",
       "formatSelectionSection",
       "createSection",
       "tournamentSection",
@@ -2068,6 +2071,69 @@ class UIManager {
     document.querySelectorAll(".mode-btn").forEach((btn) => {
       btn.classList.remove("active");
     });
+  }
+
+  /**
+   * Render the "My Tournaments" card list
+   * @param {Array} tournaments - Array of tournament objects with a `code` property
+   */
+  renderMyTournaments(tournaments) {
+    const grid = this.elements.tournamentsGrid;
+    if (!grid) return;
+
+    if (!tournaments || tournaments.length === 0) {
+      grid.innerHTML = `
+        <div class="tournaments-empty">
+          <p class="tournaments-empty__text">No tournaments found. Create one to get started!</p>
+        </div>`;
+      return;
+    }
+
+    // Sort newest first
+    const sorted = [...tournaments].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+    grid.innerHTML = sorted.map((t) => {
+      const players = Array.isArray(t.players) ? t.players : [];
+      const matches = Array.isArray(t.matches) ? t.matches :
+        (t.matches && typeof t.matches === 'object' ? Object.values(t.matches) : []);
+      const completed = matches.filter((m) => m && m.completed).length;
+      const total = matches.length;
+      const progressPct = total > 0 ? Math.round((completed / total) * 100) : 0;
+      const format = t.format || 'round-robin';
+      const formatLabel = format.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const createdDate = t.createdAt
+        ? new Date(t.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+        : 'Unknown date';
+
+      return `
+        <div class="tournament-list-card" data-code="${t.code}">
+          <div class="tournament-list-card__header">
+            <span class="tournament-list-card__code">${t.code}</span>
+            <button class="btn btn--text tournament-list-card__copy" data-action="copy" data-code="${t.code}" title="Copy code">
+              Copy
+            </button>
+          </div>
+          <div class="tournament-list-card__meta">
+            <span class="badge">${formatLabel}</span>
+            <span class="badge badge-group">${players.length} Players</span>
+          </div>
+          <div class="tournament-list-card__progress">
+            <div class="tournament-list-card__progress-bar">
+              <div class="tournament-list-card__progress-fill" style="width:${progressPct}%"></div>
+            </div>
+            <span class="tournament-list-card__progress-text">${completed}/${total} matches</span>
+          </div>
+          <div class="tournament-list-card__date">Created ${createdDate}</div>
+          <div class="tournament-list-card__actions">
+            <button class="btn btn--success btn--small" data-action="rejoin" data-code="${t.code}">
+              Rejoin
+            </button>
+            <button class="btn btn--danger btn--small" data-action="delete" data-code="${t.code}">
+              Delete
+            </button>
+          </div>
+        </div>`;
+    }).join('');
   }
 
   /**

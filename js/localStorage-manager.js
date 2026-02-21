@@ -225,6 +225,15 @@ class LocalStorageManager {
   }
 
   /**
+   * Get all tournaments with their codes as an array
+   * In standalone mode all stored tournaments belong to the local user
+   */
+  getUserTournaments() {
+    const tournaments = this.getAllTournaments();
+    return Object.entries(tournaments).map(([code, data]) => ({ code, ...data }));
+  }
+
+  /**
    * Register callback for connection changes (mock)
    */
   onConnectionChange(callback) {
