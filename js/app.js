@@ -323,12 +323,13 @@ class App {
   /**
    * Show the My Tournaments list
    */
-  showMyTournaments() {
+  async showMyTournaments() {
+    uiManager.showSection(["modeSelector", "myTournamentsSection"]);
+    uiManager.renderMyTournamentsLoading();
     const tournaments = firebaseManager.getUserTournaments
-      ? firebaseManager.getUserTournaments()
+      ? await firebaseManager.getUserTournaments()
       : [];
     uiManager.renderMyTournaments(tournaments);
-    uiManager.showSection(["modeSelector", "myTournamentsSection"]);
   }
 
   /**
@@ -683,13 +684,6 @@ class App {
       ]);
       logger.debug("App", `Tournament ${code} saved to Firebase successfully`);
 
-      // Track the created tournament so it appears in "My Tournaments"
-      if (firebaseManager.trackMyTournament) {
-        firebaseManager.trackMyTournament(code, {
-          ...tournamentPayload,
-          createdAt: Date.now(),
-        });
-      }
     } catch (error) {
       logger.error("App", `Failed to save to Firebase: ${error.message}`);
       throw error;
@@ -1175,10 +1169,6 @@ class App {
 
     try {
       await firebaseManager.deleteTournament(code);
-      // Remove from local tracking list (Firebase mode)
-      if (firebaseManager.untrackMyTournament) {
-        firebaseManager.untrackMyTournament(code);
-      }
       // If the deleted tournament is the active one, clear the session
       if (tournamentManager.currentTournamentCode === code) {
         this.leaveTournament();

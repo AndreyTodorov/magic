@@ -2074,6 +2074,18 @@ class UIManager {
   }
 
   /**
+   * Show a loading spinner while My Tournaments are being fetched
+   */
+  renderMyTournamentsLoading() {
+    const grid = this.elements.tournamentsGrid;
+    if (!grid) return;
+    grid.innerHTML = `
+      <div class="tournaments-empty">
+        <p class="tournaments-empty__text">Loading tournaments...</p>
+      </div>`;
+  }
+
+  /**
    * Render the "My Tournaments" card list
    * @param {Array} tournaments - Array of tournament objects with a `code` property
    */
