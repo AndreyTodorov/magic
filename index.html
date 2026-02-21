@@ -227,6 +227,13 @@
         >
           Join Tournament
         </button>
+        <button
+          class="mode-btn"
+          data-mode="my-tournaments"
+          aria-label="View my tournaments"
+        >
+          My Tournaments
+        </button>
       </nav>
 
       <!-- Join Tournament Section -->
@@ -258,6 +265,19 @@
           </button>
           <div id="joinError" role="alert" aria-live="polite"></div>
         </form>
+      </section>
+
+      <!-- My Tournaments Section -->
+      <section
+        class="section section--padded"
+        id="myTournamentsSection"
+        aria-labelledby="myTournamentsTitle"
+      >
+        <h2 class="section-title" id="myTournamentsTitle">My Tournaments</h2>
+        <div class="tournaments-grid" id="tournamentsGrid">
+          <!-- Tournament cards rendered dynamically -->
+        </div>
+        <button class="btn btn--text" id="backFromMyTournamentsBtn">← Back</button>
       </section>
 
       <!-- Format Selection Section -->
