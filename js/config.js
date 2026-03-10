@@ -97,8 +97,11 @@ const DATABASE_RULES = `
     "tournaments": {
       "$tournamentId": {
         ".read": true,
-        ".write": true,
+        ".write": "!data.exists() ? auth != null : (!data.child('locked').exists() || data.child('locked').val() == false || (auth != null && data.child('creator').val() == auth.uid))",
         ".indexOn": ["createdAt", "creator"],
+        "locked": {
+          ".write": "auth != null && data.parent().child('creator').val() == auth.uid"
+        },
         "members": {
           ".indexOn": [".value"]
         }
