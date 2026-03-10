@@ -480,11 +480,6 @@ class App {
    * Join existing tournament
    */
   async joinTournament(code) {
-    // Ensure auth is ready before any Firebase read (rules require auth != null)
-    if (typeof authManager !== 'undefined' && firebaseManager.constructor.name !== 'LocalStorageManager') {
-      await authManager.authReadyPromise;
-    }
-
     // Check if tournament exists
     const exists = await firebaseManager.tournamentExists(code);
     if (!exists) {
