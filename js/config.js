@@ -95,6 +95,7 @@ const DATABASE_RULES = `
 {
   "rules": {
     "tournaments": {
+      ".read": "auth != null",
       "$tournamentId": {
         ".read": true,
         ".write": "!data.exists() ? auth != null : (!data.child('locked').exists() || data.child('locked').val() == false || (auth != null && data.child('creator').val() == auth.uid))",
