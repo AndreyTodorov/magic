@@ -153,7 +153,7 @@ class FirebaseManager {
 
       if (error.code === 'PERMISSION_DENIED') {
         console.error("⚠️ PERMISSION DENIED - Check your database rules!");
-        console.error("Expected rules:", DATABASE_RULES);
+        console.error("Expected rules: see", DATABASE_RULES_FILE);
       }
     });
   }
@@ -516,8 +516,12 @@ if (typeof window !== 'undefined') {
     // Test tournaments path access
     console.log('Testing tournaments path access...');
     try {
-      const tournamentsRef = firebaseManager.database.ref('tournaments');
-      const snapshot = await tournamentsRef.limitToFirst(1).once('value');
+      // The rules only allow listing your own tournaments, never the whole list
+      const tournamentsRef = firebaseManager.database
+        .ref('tournaments')
+        .orderByChild('creator')
+        .equalTo(firebaseManager.currentUser?.uid ?? '');
+      const snapshot = await tournamentsRef.once('value');
       console.log('✓ Can read tournaments path');
       console.log('Tournaments found:', snapshot.numChildren());
     } catch (error) {
@@ -526,8 +530,7 @@ if (typeof window !== 'undefined') {
       if (error.code === 'PERMISSION_DENIED') {
         console.error('\n⚠️  PERMISSION DENIED ERROR');
         console.error('Your database rules are blocking access.');
-        console.error('\nRequired rules:');
-        console.error(DATABASE_RULES);
+        console.error('\nRequired rules: see', DATABASE_RULES_FILE);
         console.error('\nTo fix:');
         console.error('1. Go to Firebase Console → Realtime Database → Rules');
         console.error('2. Replace existing rules with the rules shown above');

@@ -879,8 +879,8 @@ class App {
       tournamentManager.matches
     );
 
-    // Update stage advancement button
-    const canAdvance = tournamentManager.canAdvanceStage();
+    // Update stage advancement button (creator only: the database rules allow nobody else to change the stage)
+    const canAdvance = tournamentManager.isCreator && tournamentManager.canAdvanceStage();
     uiManager.updateStageAdvancement(
       canAdvance,
       tournamentManager.format,
@@ -1122,6 +1122,11 @@ class App {
    * Handle advance stage button click
    */
   async handleAdvanceStage() {
+    if (!tournamentManager.isCreator) {
+      uiManager.showAlert("Only the tournament creator can advance to the next stage", "warning");
+      return;
+    }
+
     const format = tournamentManager.format;
     let confirmMessage = "Advance to the next stage?";
 

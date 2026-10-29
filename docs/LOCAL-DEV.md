@@ -362,7 +362,7 @@ Use during development and testing:
 
 For production deployment, use more restrictive rules with data validation.
 
-See the complete production rules in `firebase-database-rules.json` (if exists) or contact the project maintainer.
+The production rules are in `firebase-database-rules.json`.
 
 **Security features:**
 - Data validation (player count, match structure, etc.)

@@ -1,67 +1,59 @@
 {
   "rules": {
     "tournaments": {
+      ".read": "auth != null && query.orderByChild === 'creator' && query.equalTo === auth.uid",
+      ".indexOn": ["creator"],
+
       "$tournamentId": {
         ".read": true,
-
-        ".write": "auth != null && !data.exists()",
-
-        ".validate": "newData.hasChildren(['players', 'matches', 'matchesPerPlayer', 'creator'])",
-
-        "players": {
-          ".write": "auth != null && (
-            data.parent().child('creator').val() === auth.uid ||
-            data.parent().child('members').child(auth.uid).exists()
-          )",
-          ".validate": "newData.isString() || (newData.hasChildren() && newData.val() !== null)"
-        },
+        ".write": "auth != null && (data.exists() ? data.child('creator').val() === auth.uid : newData.child('creator').val() === auth.uid)",
+        ".validate": "newData.hasChildren(['players', 'matches', 'creator'])",
 
         "matches": {
-          ".write": true,
+          ".write": "data.parent().exists() && data.parent().child('locked').val() !== true",
           ".validate": "newData.hasChildren()",
           "$matchId": {
-            ".validate": "newData.hasChildren(['player1', 'player2', 'games', 'completed'])",
-            "player1": {
-              ".validate": "newData.isNumber()"
-            },
-            "player2": {
-              ".validate": "newData.isNumber()"
-            },
-            "games": {
-              ".validate": "newData.hasChildren()",
-              "$gameIndex": {
-                ".validate": "newData.val() === null || newData.isNumber()"
-              }
-            },
-            "completed": {
-              ".validate": "newData.isBoolean()"
-            }
+            ".validate": "newData.hasChildren()"
           }
         },
 
-        "matchesPerPlayer": {
-          ".write": "auth != null && (
-            data.parent().child('creator').val() === auth.uid ||
-            data.parent().child('members').child(auth.uid).exists()
-          )",
-          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 20"
-        },
-
-        "creator": {
-          ".write": "auth != null && !data.exists()",
-          ".validate": "newData.val() === auth.uid"
+        "locked": {
+          ".write": "data.parent().exists() && newData.val() === true",
+          ".validate": "newData.isBoolean()"
         },
 
         "members": {
-          ".read": true,
-          ".write": "auth != null",
           "$uid": {
-            ".validate": "newData.isBoolean() && ($uid === auth.uid || root.child('tournaments').child($tournamentId).child('creator').val() === auth.uid)"
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "newData.isBoolean()"
           }
         },
 
+        "players": {
+          ".validate": "newData.hasChildren()"
+        },
+
+        "creator": {
+          ".validate": "newData.isString()"
+        },
+
+        "matchesPerPlayer": {
+          ".validate": "newData.isNumber()"
+        },
+
+        "format": {
+          ".validate": "newData.isString()"
+        },
+
+        "formatConfig": {
+          ".validate": "newData.hasChildren()"
+        },
+
+        "currentStage": {
+          ".validate": "newData.isString()"
+        },
+
         "createdAt": {
-          ".write": "auth != null && !data.exists()",
           ".validate": "newData.isNumber()"
         },
 

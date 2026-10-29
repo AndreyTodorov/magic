@@ -245,7 +245,7 @@ In production (`APPCHECK_CONFIG.ENABLED`), `App.init()` waits on `recaptchaConse
 
 1. Create project at https://console.firebase.google.com/
 2. Enable Realtime Database in test mode
-3. Set database rules (see [config.js](js/config.js) `DATABASE_RULES`)
+3. Set database rules: paste [firebase-database-rules.json](firebase-database-rules.json) into Realtime Database → Rules (the single source)
 4. Copy config from Project Settings → General → Web app
 5. Update credentials in [js/config.js](js/config.js)
 6. (Optional) Enable App Check with reCAPTCHA
