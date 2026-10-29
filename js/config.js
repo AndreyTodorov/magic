@@ -88,29 +88,10 @@ if (typeof window !== 'undefined') {
 }
 
 /**
- * Recommended Database Rules
- * Copy and paste into Firebase Console > Realtime Database > Rules
+ * Database rules live in firebase-database-rules.json (the single source).
+ * Deploy them via Firebase Console > Realtime Database > Rules.
  */
-const DATABASE_RULES = `
-{
-  "rules": {
-    "tournaments": {
-      ".read": "auth != null",
-      "$tournamentId": {
-        ".read": true,
-        ".write": "!data.exists() ? auth != null : (!data.child('locked').exists() || data.child('locked').val() == false || (auth != null && data.child('creator').val() == auth.uid))",
-        ".indexOn": ["createdAt", "creator"],
-        "locked": {
-          ".write": "auth != null && data.parent().child('creator').val() == auth.uid"
-        },
-        "members": {
-          ".indexOn": [".value"]
-        }
-      }
-    }
-  }
-}
-`;
+const DATABASE_RULES_FILE = 'firebase-database-rules.json';
 
 /**
  * Authentication Configuration
