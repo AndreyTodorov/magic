@@ -406,6 +406,40 @@ class FirebaseManager {
   }
 
   /**
+   * Delete the signed-in account and every tournament it created (Art. 17 GDPR).
+   * The password is confirmed first, so a wrong one stops before anything is removed.
+   * Tournaments go before the sign-in account: if they cannot be deleted, the account
+   * stays and the user can retry. Unlike getUserTournaments(), a failed query throws
+   * here, because treating it as "no tournaments" would leave them behind.
+   */
+  async deleteAccount(password) {
+    const user = this.auth?.currentUser;
+    if (!user || !user.email) {
+      throw new Error("Sign in to delete your account");
+    }
+
+    await user.reauthenticateWithCredential(
+      firebase.auth.EmailAuthProvider.credential(user.email, password)
+    );
+
+    const snapshot = await this.database
+      .ref('tournaments')
+      .orderByChild('creator')
+      .equalTo(user.uid)
+      .once('value');
+
+    const updates = {};
+    snapshot.forEach((child) => {
+      updates[`tournaments/${child.key}`] = null;
+    });
+    if (Object.keys(updates).length > 0) {
+      await this.database.ref().update(updates);
+    }
+
+    await user.delete();
+  }
+
+  /**
    * Get all tournaments created by the current user from Firebase.
    * Queries by the `creator` field so results are consistent across devices.
    * Returns an array of objects with { code, ...tournamentData }
