@@ -560,6 +560,49 @@ body {
   gap: var(--spacing-md);
 }
 
+/* reCAPTCHA consent prompt (js/consent.js): only the header, the prompt and the legal links show until it is answered */
+body.consent-pending .container > :not(.app-header):not(#consentSection):not(.legal-links) {
+  display: none !important;
+}
+
+.consent__title {
+  margin: 0 0 var(--spacing-md);
+}
+
+.consent p {
+  margin: 0 0 var(--spacing-lg);
+}
+
+.consent__alt {
+  margin-top: var(--spacing-lg);
+}
+
+/* Impressum and privacy links at the bottom of every page */
+.legal-links {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl) 0;
+  font-size: 0.85rem;
+}
+
+.legal-links a {
+  color: var(--color-text-secondary);
+}
+
+/* Delete account form, opened from the user info bar */
+.delete-account {
+  padding: 16px;
+  background: var(--color-bg-secondary);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.delete-account[hidden] {
+  display: none;
+}
+
 /* User Info Bar */
 .user-info {
   display: flex;
