@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy policy – Magic Mikes</title>
+<meta name="description" content="Privacy policy of Magic Mikes: tournaments and accounts in Google Firebase, reCAPTCHA only with consent, and your rights.">
+<link rel="canonical" href="https://magic.atdrv.eu/privacy/">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<style>
+  /* Static page: the app's palette and self-hosted Space Grotesk. */
+  @font-face { font-family: "Space Grotesk"; font-weight: 600 700; font-display: swap; src: url("../fonts/space-grotesk-600-700-latin.woff2") format("woff2"); }
+  body { margin: 0; padding: 32px 16px 48px; background: #fff1f2; color: #111827; font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 720px; margin: 0 auto; background: #fff; border: 3px solid #000; border-radius: 16px; box-shadow: 6px 6px 0 #000; padding: 28px 32px 32px; }
+  h1, h2 { font-family: "Space Grotesk", system-ui, sans-serif; color: #000; }
+  h1 { margin: 12px 0 8px; font-size: clamp(28px, 7vw, 40px); line-height: 1.1; overflow-wrap: break-word; }
+  h2 { margin: 28px 0 6px; font-size: 20px; }
+  p, ul { margin: 0 0 12px; }
+  li { margin-bottom: 4px; }
+  a { color: #7c3aed; font-weight: 600; }
+  code { background: #e0f2fe; border-radius: 4px; padding: 1px 5px; font-size: 0.9em; }
+  .lede { color: #374151; }
+  .back { font-size: 15px; }
+  button { font: inherit; font-weight: 700; padding: 8px 16px; border: 2px solid #000; border-radius: 10px; background: #fde047; cursor: pointer; }
+  footer { max-width: 720px; margin: 20px auto 0; display: flex; gap: 20px; justify-content: center; font-size: 14px; }
+  @media (max-width: 600px) { main { padding: 20px; } }
+</style>
+</head>
+<body>
+<main>
+<p class="back"><a href="../">← Magic Mikes</a></p>
+<h1>Privacy policy</h1>
+<p class="lede">Who is responsible for this site, which data is processed, and your rights.</p>
+
+<h2>Who is responsible</h2>
+<p>Andrey Todorov<br>Oberstraße 27<br>47051 Duisburg<br>Germany<br>Email: <a href="mailto:support@atdrv.eu">support@atdrv.eu</a></p>
+<p>This is a private, non-commercial website for running Magic: The Gathering tournaments. It has no advertising, no analytics and no tracking. The fonts and the Firebase software are hosted on this site. Full contact details are in the <a href="../impressum/">Impressum</a>.</p>
+
+<h2>Hosting</h2>
+<p>This site is hosted on GitHub Pages, a service of GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA. To deliver a page, your browser sends GitHub’s servers technical data such as your IP address, the date and time, the page requested, the website you came from and your browser and operating system. According to GitHub, the IP addresses of visitors to GitHub Pages sites are logged and stored for security purposes. GitHub processes these logs as its own controller and decides how long it keeps them; I have no access to them.</p>
+<p>The legal basis is Art. 6(1)(f) GDPR: the legitimate interest in delivering this website reliably and securely. GitHub is certified under the EU–U.S. Data Privacy Framework, for which the European Commission has adopted an adequacy decision (Art. 45 GDPR), and also uses the EU standard contractual clauses. Details are in the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub privacy statement</a> and the <a href="https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages">GitHub Pages documentation</a>.</p>
+
+<h2>Offline mode</h2>
+<p>The <a href="../index-sandalone.html">offline mode</a> keeps tournaments only in your browser’s local storage (<code>magic_mikes_tournaments</code>). Nothing is sent anywhere and no consent is needed. To delete the data, delete the tournaments in the app or clear the stored data for this site in your browser settings.</p>
+
+<h2>Online mode: tournaments and accounts (Google Firebase)</h2>
+<p>The online mode syncs tournaments between devices through Firebase, a service of Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland, which processes this data on my behalf under the Firebase data processing terms (Art. 28 GDPR).</p>
+<ul>
+  <li><strong>Tournaments</strong> are stored in the Firebase Realtime Database, on servers in Belgium (europe-west1): the player names you enter, the matches and results, the format, the time of creation, and the user IDs of the organiser and of signed-in members. <strong>Anyone who knows a tournament’s code can see it</strong>, including the player names, and can enter results; until the organiser locks the tournament, anyone with the code can also change or delete it. Signed-in users can technically read all tournaments. Please use first names or nicknames for players and share the code only with the people taking part.</li>
+  <li><strong>Accounts</strong> are needed to create tournaments. Firebase Authentication stores your email address, your display name and a hash of your password, together with the time of sign-up and last sign-in and the IP address used. Google may process this data on servers in the USA. If you use “Forgot password”, Firebase sends the reset email.</li>
+  <li>To keep you signed in, Firebase stores a login token in your browser (IndexedDB). This is necessary for the account you asked for (§ 25(2) no. 2 TDDDG).</li>
+</ul>
+<p>The legal basis is Art. 6(1)(b) GDPR: providing the tournaments and the account you asked for. For player names you enter about other people, it is Art. 6(1)(f) GDPR: the legitimate interest in running the tournament. Where data is processed in the USA, Google is certified under the EU–U.S. Data Privacy Framework and also uses the EU standard contractual clauses. Details are in the <a href="https://firebase.google.com/support/privacy">Firebase privacy information</a> and the <a href="https://policies.google.com/privacy">Google privacy policy</a>.</p>
+<p>Tournaments are kept until the organiser deletes them. You can delete a tournament you created under “My Tournaments”, and you can delete your account together with every tournament you created at any time: sign in and choose <strong>Delete account</strong>. If a player wants their name removed from a tournament, they can ask the organiser or write to me.</p>
+
+<h2>Google reCAPTCHA (online mode, only with your consent)</h2>
+<p>To protect the database from abuse, the online mode uses Firebase App Check with Google reCAPTCHA (Google Ireland Limited). reCAPTCHA stores information on your device and sends Google data about your device and your visit, such as your IP address, browser details and how you interact with the page; Google may process it in the USA. It only starts after you agree on the first screen of the online mode. The legal basis is your consent (§ 25(1) TDDDG and Art. 6(1)(a) GDPR). Without consent you can use the offline mode. Details are in the <a href="https://policies.google.com/privacy">Google privacy policy</a> and the <a href="https://policies.google.com/terms">Google terms</a>.</p>
+<p>You can withdraw your consent at any time with effect for the future. The online mode will ask again before it starts reCAPTCHA. To also remove what Google has stored, clear the cookies for google.com in your browser.</p>
+<p><button type="button" id="withdrawConsent">Withdraw reCAPTCHA consent</button> <span id="withdrawStatus" role="status"></span></p>
+
+<h2>Your settings in your browser</h2>
+<p>To work, the app keeps a few entries in your browser’s local storage: the tab you last looked at (<code>mm_selected_view</code>), the tournament you are in so you can rejoin it (<code>currentTournament</code>, <code>isCreator</code>, <code>sessionTimestamp</code>), the log level for troubleshooting (<code>mm_log_level</code>) and your reCAPTCHA choice (<code>mm_recaptcha_consent</code>). They stay on your device, are never transmitted, and are stored only to provide the app you are using (§ 25(2) no. 2 TDDDG). To delete them, clear the stored data for this site in your browser settings.</p>
+
+<h2>Contact by email</h2>
+<p>If you write to me, I process your email address, your message and the time it was sent in order to answer you. The legal basis is Art. 6(1)(f) GDPR, the legitimate interest in answering enquiries. Emails are handled by my email provider on my behalf. I delete them when the enquiry is settled, unless the law requires me to keep them.</p>
+
+<h2>Your rights</h2>
+<p>Under the GDPR you have the right to access (Art. 15), rectification (Art. 16), erasure (Art. 17), restriction of processing (Art. 18) and data portability (Art. 20). To use them, write to <a href="mailto:support@atdrv.eu">support@atdrv.eu</a>. Requests about the hosting logs may also need to go to GitHub.</p>
+<p><strong>Right to object:</strong> you can object at any time, on grounds relating to your particular situation, to processing based on legitimate interests (Art. 6(1)(f) GDPR), as described above for hosting, player names and email (Art. 21 GDPR).</p>
+<p>You also have the right to lodge a complaint with a data protection supervisory authority (Art. 77 GDPR), for example the one in the EU country where you live or work.</p>
+
+<h2>Changes</h2>
+<p>This policy is updated when the website changes. Last updated: <time datetime="2026-10-29">29 October 2026</time>.</p>
+
+<script>
+  // Same key as js/consent.js; removing it makes the online mode ask again before starting reCAPTCHA.
+  document.getElementById('withdrawConsent').addEventListener('click', function () {
+    try { localStorage.removeItem('mm_recaptcha_consent'); } catch (e) {}
+    document.getElementById('withdrawStatus').textContent = 'Consent withdrawn.';
+  });
+</script>
+
+</main>
+<footer>
+  <a href="../impressum/">Impressum</a>
+  <a href="../privacy/">Privacy</a>
+</footer>
+</body>
+</html>

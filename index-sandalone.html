@@ -102,12 +102,16 @@
         }
       }
     </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700;800;900&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Space Grotesk, self-hosted in fonts/ (latin, 600–700) -->
+    <style>
+      @font-face {
+        font-family: "Space Grotesk";
+        font-style: normal;
+        font-weight: 600 700;
+        font-display: swap;
+        src: url("fonts/space-grotesk-600-700-latin.woff2") format("woff2");
+      }
+    </style>
     <link rel="stylesheet" href="css/styles.css" />
   </head>
   <body>
@@ -501,6 +505,12 @@
           ></main>
         </div>
       </section>
+
+      <!-- Impressum and privacy links -->
+      <footer class="legal-links">
+        <a href="impressum/">Impressum</a>
+        <a href="privacy/">Privacy</a>
+      </footer>
     </div>
 
     <!-- Load scripts in order -->

@@ -22,6 +22,12 @@ class App {
     // Cache DOM elements
     uiManager.cacheElements();
 
+    // Firebase mode in production: App Check runs Google reCAPTCHA, which may only
+    // start after the visitor agrees (js/consent.js, loaded by index.html only)
+    if (typeof recaptchaConsent !== 'undefined' && APPCHECK_CONFIG.ENABLED) {
+      await recaptchaConsent.request();
+    }
+
     // Initialize Firebase
     const firebaseOk = await firebaseManager.initialize();
     if (!firebaseOk) {
@@ -80,6 +86,19 @@ class App {
     // Logout button
     document.getElementById('logoutBtn')?.addEventListener('click', () =>
       this.handleLogout()
+    );
+
+    // Delete account
+    document.getElementById('deleteAccountBtn')?.addEventListener('click', () => {
+      document.getElementById('deleteAccountForm').hidden = false;
+      document.getElementById('deleteAccountPassword').focus();
+    });
+    document.getElementById('deleteAccountCancel')?.addEventListener('click', () => {
+      document.getElementById('deleteAccountForm').hidden = true;
+      uiManager.clearError('deleteAccountError');
+    });
+    document.getElementById('deleteAccountForm')?.addEventListener('submit', (e) =>
+      this.handleDeleteAccount(e)
     );
 
     // Forgot password
@@ -1390,6 +1409,37 @@ class App {
     const result = await authManager.signOut();
     if (result.success) {
       logger.info('App', 'User logged out');
+    }
+  }
+
+  /**
+   * Handle account deletion: the account and every tournament it created
+   */
+  async handleDeleteAccount(event) {
+    event.preventDefault();
+
+    const password = document.getElementById('deleteAccountPassword').value;
+    const confirmBtn = document.getElementById('deleteAccountConfirm');
+
+    uiManager.setButtonLoading(confirmBtn, true, '🔄 Deleting...');
+    uiManager.clearError('deleteAccountError');
+
+    try {
+      if (tournamentManager.currentTournamentCode) {
+        this.leaveTournament();
+      }
+      await firebaseManager.deleteAccount(password);
+      logger.info('App', 'Account deleted');
+      alert('Your account and your tournaments have been deleted.');
+      location.reload();
+    } catch (error) {
+      const wrongPassword = ['auth/wrong-password', 'auth/invalid-credential', 'auth/invalid-login-credentials'].includes(error.code);
+      uiManager.showError(
+        'deleteAccountError',
+        wrongPassword ? 'That password is not correct.' : authManager.getErrorMessage(error)
+      );
+    } finally {
+      uiManager.setButtonLoading(confirmBtn, false);
     }
   }
 

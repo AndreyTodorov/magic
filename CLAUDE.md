@@ -237,6 +237,10 @@ Accessible from the mode selector ("My Tournaments" button). Shows a responsive 
 
 Rendered by `UIManager.renderMyTournaments(tournaments)`. Cards are sorted newest-first. The section is shown via `uiManager.showSection(["modeSelector", "myTournamentsSection"])` so the mode buttons stay visible.
 
+### reCAPTCHA consent
+
+In production (`APPCHECK_CONFIG.ENABLED`), `App.init()` waits on `recaptchaConsent.request()` ([consent.js](js/consent.js)) before starting Firebase, because App Check runs Google reCAPTCHA, which needs consent (§ 25 TDDDG). Until the visitor agrees, only the header, `#consentSection` and the legal links show (`body.consent-pending`). The choice is stored in localStorage (`mm_recaptcha_consent`); the privacy page can withdraw it. Standalone mode does not load consent.js and needs no consent.
+
 ## Firebase Setup
 
 1. Create project at https://console.firebase.google.com/
@@ -251,9 +255,13 @@ Rendered by `UIManager.renderMyTournaments(tournaments)`. Cards are sorted newes
 ```
 ├── index.html                 # Firebase mode (production)
 ├── index-sandalone.html       # Standalone mode (local testing)
+├── impressum/, privacy/       # Static legal pages, linked from both modes' footer
+├── fonts/                     # Space Grotesk, self-hosted
 ├── css/
 │   └── styles.css            # All styles with CSS variables
 └── js/
+    ├── consent.js            # reCAPTCHA consent prompt (index.html only)
+    ├── vendor/               # Firebase SDK, self-hosted (no requests to gstatic.com)
     ├── config.js             # Configuration & credentials
     ├── logger.js             # Logging utility
     ├── firebase.js           # Firebase integration

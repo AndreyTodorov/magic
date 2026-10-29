@@ -98,12 +98,16 @@
         }
       }
     </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700;800;900&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Space Grotesk, self-hosted in fonts/ (latin, 600–700) -->
+    <style>
+      @font-face {
+        font-family: "Space Grotesk";
+        font-style: normal;
+        font-weight: 600 700;
+        font-display: swap;
+        src: url("fonts/space-grotesk-600-700-latin.woff2") format("woff2");
+      }
+    </style>
     <link rel="stylesheet" href="css/styles.css" />
   </head>
   <body>
@@ -124,6 +128,23 @@
       <header class="app-header">
         <h1 class="app-title">Magic Mikes</h1>
       </header>
+
+      <!-- reCAPTCHA consent (js/consent.js): shown before Firebase starts, until the visitor agrees -->
+      <section class="section section--padded consent" id="consentSection" hidden>
+        <h2 class="consent__title">Before you start</h2>
+        <p>
+          This online mode syncs tournaments through Google Firebase. To protect the database
+          from abuse it uses Google reCAPTCHA, which stores information on your device and sends
+          data about your device and visit to Google, including to the USA. It only starts if you
+          agree. You can withdraw your consent at any time on the
+          <a href="privacy/">privacy page</a>.
+        </p>
+        <button type="button" class="btn" id="consentAccept">Agree and continue</button>
+        <p class="consent__alt">
+          Prefer not to? <a href="index-sandalone.html">Use the offline mode</a>: it keeps
+          everything on this device and needs no consent.
+        </p>
+      </section>
 
       <!-- Auth Section (shown when not logged in) -->
       <section class="section section--padded" id="authSection">
@@ -208,8 +229,34 @@
       <!-- User Info (shown when logged in) -->
       <div class="user-info" id="userInfo" style="display: none">
         <span>👤 <span id="userName"></span></span>
-        <button class="btn btn--text btn--small" id="logoutBtn">Logout</button>
+        <span>
+          <button class="btn btn--text btn--small" id="deleteAccountBtn">Delete account</button>
+          <button class="btn btn--text btn--small" id="logoutBtn">Logout</button>
+        </span>
       </div>
+
+      <!-- Delete account (shown from the user info bar) -->
+      <form class="auth-form delete-account" id="deleteAccountForm" hidden>
+        <p>
+          This deletes your account and every tournament you created, with the player names
+          and results in them. It cannot be undone.
+        </p>
+        <div class="form-group">
+          <label for="deleteAccountPassword" class="form-label">Password:</label>
+          <input
+            type="password"
+            id="deleteAccountPassword"
+            class="form-input"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+        <button type="submit" class="btn btn--danger" id="deleteAccountConfirm">
+          Delete permanently
+        </button>
+        <button type="button" class="btn btn--text" id="deleteAccountCancel">Cancel</button>
+        <div id="deleteAccountError" role="alert" aria-live="polite"></div>
+      </form>
 
       <!-- Mode Selection -->
       <nav class="mode-selector" id="modeSelector">
@@ -602,13 +649,18 @@
           ></main>
         </div>
       </section>
+      <!-- Impressum and privacy links -->
+      <footer class="legal-links">
+        <a href="impressum/">Impressum</a>
+        <a href="privacy/">Privacy</a>
+      </footer>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.5.0/firebase-app-check-compat.js"></script>
+    <!-- Firebase SDK, self-hosted (js/vendor/) so loading the page contacts no Google server -->
+    <script src="js/vendor/firebase-12.5.0/firebase-app-compat.js"></script>
+    <script src="js/vendor/firebase-12.5.0/firebase-database-compat.js"></script>
+    <script src="js/vendor/firebase-12.5.0/firebase-auth-compat.js"></script>
+    <script src="js/vendor/firebase-12.5.0/firebase-app-check-compat.js"></script>
 
     <!-- Application Scripts -->
     <!-- Load local config first if it exists (gitignored for development) -->
@@ -619,6 +671,7 @@
     <script src="js/logger.js"></script>
     <script src="js/config.js"></script>
     <script src="js/tournament-formats.js"></script>
+    <script src="js/consent.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/firebase.js"></script>
     <script src="js/tournament.js"></script>
