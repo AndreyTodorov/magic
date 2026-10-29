@@ -35,6 +35,30 @@
 
         "creator": {
           ".validate": "newData.isString()"
+        },
+
+        "matchesPerPlayer": {
+          ".validate": "newData.isNumber()"
+        },
+
+        "format": {
+          ".validate": "newData.isString()"
+        },
+
+        "formatConfig": {
+          ".validate": "newData.hasChildren()"
+        },
+
+        "currentStage": {
+          ".validate": "newData.isString()"
+        },
+
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        },
+
+        "$other": {
+          ".validate": false
         }
       }
     }
